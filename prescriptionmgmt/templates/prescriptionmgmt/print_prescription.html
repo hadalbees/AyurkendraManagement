@@ -1,0 +1,50 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  {% include "includes/head.html" %}
+  <style>
+    @media print { .no-print { display:none } }
+    .pres-head { text-align:center; margin-bottom:10px; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container py-4">
+    <div class="pres-head">
+      <h2>Ayurvedic Hospital</h2>
+      <p>Prescription — {{ prescription.prescription_no }}</p>
+    </div>
+
+    <p><strong>Patient:</strong> {{ prescription.patient.patient_name }} ({{ prescription.patient.patient_unique_id }})</p>
+    <p><strong>Doctor:</strong> {{ prescription.doctor.get_full_name }}</p>
+    <p><strong>Date:</strong> {{ prescription.created_at|date:"Y-m-d H:i" }}</p>
+
+    <table>
+      <thead>
+        <tr><th>#</th><th>Medicine</th><th>Dosage</th><th>Duration (days)</th><th>Qty</th><th>Instructions</th></tr>
+      </thead>
+      <tbody>
+        {% for it in items %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ it.medicine_name }}</td>
+            <td>{{ it.dosage }}</td>
+            <td>{{ it.duration_days }}</td>
+            <td>{{ it.quantity }}</td>
+            <td>{{ it.instructions }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <p><strong>Notes:</strong> {{ prescription.notes }}</p>
+
+    <div class="no-print" style="margin-top:10px;">
+      <button onclick="window.print()">Print</button>
+      <a href="{% url 'prescriptionmgmt:create' %}">New Prescription</a>
+    </div>
+  </div>
+</body>
+</html>

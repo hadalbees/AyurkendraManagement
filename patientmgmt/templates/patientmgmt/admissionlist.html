@@ -1,0 +1,79 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+
+    {% include "includes/header.html" %}
+
+    <div class="container-fluid py-3">
+
+        <div class="card my-4">
+            <div class="card-header bg-gradient-dark text-white py-3">
+                <h5 class="mb-0">All Admissions</h5>
+            </div>
+
+            <div class="card-body px-0">
+                <div class="table-responsive p-3">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Patient</th>
+                                <th>Room</th>
+                                <th>Bed</th>
+                                <th>Admitted</th>
+                                <th>Status</th>
+                                <th width="180">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in admissions %}
+                            <tr>
+                                <td>{{ a.patient.patient_name }}</td>
+                                <td>{{ a.room_number }}</td>
+                                <td>{{ a.bed_id }}</td>
+                                <td>{{ a.admission_date|date:"d M Y, h:i A" }}</td>
+                                <td>{{ a.current_status }}</td>
+                                <td>
+                                    <a href="{% url 'patientmgmt:patient_detail' a.patient.pk %}" class="btn btn-sm btn-primary">
+                                        View Patient
+                                    </a>
+
+                                    <a class="btn btn-sm btn-light"
+                                        href="{% url 'patientmgmt:admission_edit' a.patient.pk a.pk %}">Edit</a>
+
+                                    {% if a.current_status == "ACTIVE" %}
+                                    <form method="post"
+                                        action="{% url 'patientmgmt:admission_discharge' a.patient.pk a.pk %}"
+                                        style="display:inline;">
+                                        {% csrf_token %}
+                                        <button class="btn btn-sm btn-danger">Discharge</button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center">No admissions found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {% include "includes/footer.html" %}
+
+</main>
+
+{% include "includes/script.html" %}
+
+</body>
+</html>

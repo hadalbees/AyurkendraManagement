@@ -1,0 +1,204 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<style>
+/* ================= FORM UI ================= */
+.form-card {
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+
+.section-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #065f46;
+  margin-bottom: 10px;
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.form-footer {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+  margin-top: 20px;
+}
+</style>
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">Edit Patient</h4>
+      <p class="text-muted text-sm mb-0">
+        Update patient details and visit information
+      </p>
+    </div>
+
+    <a href="{% url 'patientmgmt:patient_detail' patient.pk %}"
+       class="btn btn-outline-secondary rounded-pill px-4">
+      ← Back to Profile
+    </a>
+  </div>
+
+  <!-- FORM CARD -->
+  <div class="card form-card">
+    
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- ================= CLINICAL INFO ================= -->
+        <div class="section-title">Clinical Information</div>
+        <div class="row g-3 mb-4">
+
+          <div class="col-md-6">
+            <label class="form-label">Consultant Doctor</label>
+            <input name="consultant_doctor"
+                   class="form-control"
+                   value="{{ patient.consultant_doctor }}">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Department</label>
+            <input name="department"
+                   class="form-control"
+                   value="{{ patient.department }}">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Assigned Doctor</label>
+            <input name="assigned_doctor"
+                   class="form-control"
+                   value="{{ patient.assigned_doctor }}">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Visit / Admit Date</label>
+            <input name="visit_date"
+                   type="date"
+                   class="form-control"
+                   value="{{ patient.visit_date }}">
+          </div>
+        </div>
+
+        <!-- ================= PATIENT INFO ================= -->
+        <div class="section-title">Personal Information</div>
+        <div class="row g-3 mb-4">
+
+        <div class="col-md-6">
+          <label class="form-label">
+              Patient Name <span class="required">*</span>
+          </label>
+
+          <div class="input-group">
+              <!-- Prefix -->
+              <select name="prefix" class="form-select" style="max-width: 110px;" required>
+                  <option value="Mr." {{ patient.prefix == 'Mr.' ? 'selected' : '' }}>Mr.</option>
+                  <option value="Mrs." {{ patient.prefix == 'Mrs.' ? 'selected' : '' }}>Mrs.</option>
+                  <option value="Ms." {{ patient.prefix == 'Ms.' ? 'selected' : '' }}>Ms.</option>
+                  <option value="Miss" {{ patient.prefix == 'Miss' ? 'selected' : '' }}>Miss</option>
+                  <option value="Baby" {{ patient.prefix == 'Baby' ? 'selected' : '' }}>Baby</option>
+                  <option value="Master" {{ patient.prefix == 'Master' ? 'selected' : '' }}>Master</option>
+              </select>
+
+              <!-- Patient Name -->
+              <input name="patient_name"
+                    class="form-control"
+                    value="{{ patient.patient_name }}"
+                    required>
+          </div>
+      </div>
+
+
+          <div class="col-md-3">
+            <label class="form-label">Age</label>
+            <input name="age"
+                   type="number"
+                   class="form-control"
+                   value="{{ patient.age }}">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Gender</label>
+            <select name="gender" class="form-select">
+              <option value="M" {% if patient.gender == "M" %}selected{% endif %}>Male</option>
+              <option value="F" {% if patient.gender == "F" %}selected{% endif %}>Female</option>
+              <option value="O" {% if patient.gender == "O" %}selected{% endif %}>Other</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Phone</label>
+            <input name="phone"
+                   class="form-control"
+                   value="{{ patient.phone }}">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input name="email"
+                   type="email"
+                   class="form-control"
+                   value="{{ patient.email }}">
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label">Address</label>
+            <textarea name="address"
+                      rows="2"
+                      class="form-control">{{ patient.address }}</textarea>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Patient Type</label>
+            <select name="patient_type" class="form-select">
+              <option value="OP" {% if patient.patient_type == "OP" %}selected{% endif %}>Outpatient</option>
+              <option value="IP" {% if patient.patient_type == "IP" %}selected{% endif %}>Inpatient</option>
+            </select>
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label">Notes</label>
+            <textarea name="notes"
+                      rows="2"
+                      class="form-control">{{ patient.notes }}</textarea>
+          </div>
+
+        </div>
+
+        <!-- ================= ACTIONS ================= -->
+        <div class="form-footer d-flex justify-content-end gap-2">
+          <a href="{% url 'patientmgmt:patient_detail' patient.pk %}"
+             class="btn btn-light px-4">
+            Cancel
+          </a>
+          <button type="submit"
+                  class="btn btn-success px-5">
+            Save Changes
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

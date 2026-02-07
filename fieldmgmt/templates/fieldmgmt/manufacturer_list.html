@@ -1,0 +1,153 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">Manufacturer Management</h4>
+      <p class="text-muted text-sm mb-0">
+        Manage manufacturers and contact information
+      </p>
+    </div>
+
+    <a href="{% url 'fieldmgmt:manufacturer_add' %}"
+       class="btn btn-success rounded-pill px-4"
+       style="background:#c1e7d2;color:#065f46;">
+      + Add Manufacturer
+    </a>
+  </div>
+
+  <!-- MANUFACTURER TABLE -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for m in manufacturers %}
+            <tr>
+
+              <td class="fw-semibold">{{ forloop.counter }}</td>
+
+              <td>
+                <div class="fw-semibold text-sm">{{ m.name }}</div>
+              </td>
+
+              <td>{{ m.phone|default:"—" }}</td>
+              <td>{{ m.email|default:"—" }}</td>
+
+              <!-- ACTIONS (STAFF LIST STYLE) -->
+              <td class="text-center">
+                <a href="{% url 'fieldmgmt:manufacturer_edit' m.id %}"
+                   class="icon-btn edit"
+                   title="Edit">
+                  <i class="material-symbols-rounded edit-icon-color"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    edit
+                  </i>
+                </a>
+
+                <a href="{% url 'fieldmgmt:manufacturer_delete' m.id %}"
+                   class="icon-btn delete"
+                   title="Delete"
+                   onclick="return confirm('Delete this manufacturer?')">
+                  <i class="material-symbols-rounded text-danger"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    delete
+                  </i>
+                </a>
+              </td>
+
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-4">
+                No manufacturers found
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION -->
+      {% if manufacturers.paginator.num_pages > 1 %}
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+
+        <div class="text-muted text-sm">
+          Showing
+          <strong>{{ manufacturers.start_index }}</strong>
+          to
+          <strong>{{ manufacturers.end_index }}</strong>
+          of
+          <strong>{{ manufacturers.paginator.count }}</strong>
+          manufacturers
+        </div>
+
+        <nav>
+          <ul class="pagination mb-0">
+
+            {% if manufacturers.has_previous %}
+              <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ manufacturers.previous_page_number }}">
+                  Previous
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Previous</span>
+              </li>
+            {% endif %}
+
+            {% if manufacturers.has_next %}
+              <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ manufacturers.next_page_number }}">
+                  Next
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Next</span>
+              </li>
+            {% endif %}
+
+          </ul>
+        </nav>
+
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

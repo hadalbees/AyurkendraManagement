@@ -1,0 +1,47 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  {% include "includes/head.html" %}
+</head>
+<body>
+  {% include "includes/header.html" %}
+  <div class="container py-5">
+    <h3>Mark Today's Attendance ({{ user.get_full_name|default:user.username }})</h3>
+    <div id="statusBox" class="mb-3">
+      <!-- optionally show today's status if exists -->
+      {% with today=now|date:"Y-m-d" %}
+        {% comment %} you could query existing attendance and pass to template {% endcomment %}
+      {% endwith %}
+    </div>
+
+    <form id="markForm">
+      {% csrf_token %}
+      <div class="btn-group" role="group">
+        <button class="btn btn-success" type="button" onclick="mark('Present')">Mark Present</button>
+        <button class="btn btn-danger" type="button" onclick="mark('Absent')">Mark Absent</button>
+      </div>
+    </form>
+  </div>
+
+  {% include "includes/script.html" %}
+  <script>
+    function csrftoken() { return document.querySelector('[name=csrfmiddlewaretoken]').value; }
+
+    function mark(status) {
+      fetch("{% url 'attendancemgmt:employee_mark' %}", {
+        method: 'POST',
+        headers: {'X-CSRFToken': csrftoken()},
+        body: new URLSearchParams({status: status})
+      }).then(r => r.json()).then(data=>{
+        if (data.ok) {
+          alert("Marked " + data.status + " for " + data.date);
+          location.reload();
+        } else {
+          alert("Error: " + JSON.stringify(data));
+        }
+      }).catch(e=>{ alert("Network error"); console.error(e); });
+    }
+  </script>
+</body>
+</html>

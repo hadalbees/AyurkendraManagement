@@ -1,0 +1,495 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative min-vh-100 border-radius-lg">
+
+  {% include "includes/header.html" %}
+  {% include "includes/breadcrumb.html" %}
+
+  {% if request.user.is_superuser or "dashboard" in user_permissions %}
+
+  <!-- ================= WELCOME ================= -->
+  <div class="container-fluid py-3 dashboard-welcome">
+    <h4 class="mb-1">
+      Welcome back, {{ request.user.get_full_name|default:request.user.username }}
+    </h4>
+    <p class="text-muted mb-0">
+      Here is what's happening in the hospital today.
+    </p>
+  </div>
+
+  <!-- ================= DASHBOARD CARDS ================= -->
+  <div class="container-fluid">
+    <div class="row g-3">
+
+      <!-- Today Patients -->
+      <div class="col-xl-3 col-md-6 col-12">
+        <div class="card dashboard-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p class="card-title">Today Patients</p>
+                <h4 class="card-value">{{ total_today_patients }}</h4>
+              </div>
+              <div class="icon-box bg-primary-soft">
+                <i class="material-symbols-rounded text-primary">group</i>
+              </div>
+            </div>
+            <div class="progress mt-3 card-progress">
+              <div class="progress-bar bg-primary" style="width:70%"></div>
+            </div>
+            <small class="text-muted">New registrations today</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attendance -->
+      <div class="col-xl-3 col-md-6 col-12">
+        <div class="card dashboard-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p class="card-title">Attendance</p>
+                <h4 class="card-value">{{ attendance_percentage }}%</h4>
+              </div>
+              <div class="icon-box bg-success-soft">
+                <i class="material-symbols-rounded text-success">person_check</i>
+              </div>
+            </div>
+            <div class="progress mt-3 card-progress">
+              <div class="progress-bar bg-success"
+                   style="width:{{ attendance_percentage }}%"></div>
+            </div>
+            <small class="text-muted">Present staff today</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Revenue -->
+      <div class="col-xl-3 col-md-6 col-12">
+        <div class="card dashboard-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p class="card-title">Today's Revenue</p>
+                <h4 class="card-value">₹ {{ today_revenue }}</h4>
+              </div>
+              <div class="icon-box bg-info-soft">
+                <i class="material-symbols-rounded text-info">payments</i>
+              </div>
+            </div>
+            <div class="progress mt-3 card-progress">
+              <div class="progress-bar bg-info" style="width:60%"></div>
+            </div>
+            <small class="text-muted">Revenue generated today</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock Alert -->
+      <div class="col-xl-3 col-md-6 col-12">
+        <div class="card dashboard-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p class="card-title">Stock Alert</p>
+                <h4 class="card-value">{{ low_stock_count }}</h4>
+              </div>
+              <div class="icon-box bg-danger-soft">
+                <i class="material-symbols-rounded text-danger">warning</i>
+              </div>
+            </div>
+            <div class="progress mt-3 card-progress">
+              <div class="progress-bar bg-danger" style="width:40%"></div>
+            </div>
+            <span class="badge bg-danger mt-2">Low Stock</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <div class="container-fluid mt-4">
+    <div class="row g-4">
+
+      <!-- LEFT CONTENT -->
+      <div class="col-lg-9 col-12">
+
+        {% if request.user.is_superuser or "prescription" in user_permissions %}
+
+        <!-- Patient Details -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="mb-3">Patient Details</h5>
+
+            <form id="presForm" method="post" action="{% url 'prescriptionmgmt:create' %}">
+              {% csrf_token %}
+
+              <div class="row g-3">
+                <div class="col-md-3 col-6">
+                  <label>Prescription No</label>
+                  <input type="text" class="form-control" value="{{ prescription_no }}" readonly>
+                </div>
+
+                <div class="col-md-3 col-6">
+                  <label>Patient ID</label>
+                  <input type="text" id="patient_id" class="form-control" onblur="fetchPatientById()">
+                </div>
+
+                <div class="col-md-3 col-12">
+                  <label>Patient Name</label>
+                  <input list="patientList" id="patient_name" class="form-control" onblur="fetchPatientByName()">
+                  <datalist id="patientList">
+                    {% for p in patients %}
+                    <option value="{{ p.patient_name }}"></option>
+                    {% endfor %}
+                  </datalist>
+                </div>
+
+                <div class="col-md-1 col-6">
+                  <label>Age</label>
+                  <input type="text" id="p_age" class="form-control" readonly>
+                </div>
+
+                <div class="col-md-2 col-6">
+                  <label>Gender</label>
+                  <input type="text" id="p_gender" class="form-control" readonly>
+                </div>
+              </div>
+          </div>
+        </div>
+
+        <!-- Medicine Allocation -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="mb-3">Medicine Allocation</h5>
+
+            <!-- Desktop header -->
+            <div class="row fw-bold text-sm mb-2 d-none d-md-flex">
+              <div class="col-md-3">Medicine</div>
+              <div class="col-md-2">Name</div>
+              <div class="col-md-1">Unit</div>
+              <div class="col-md-2">Dosage</div>
+              <div class="col-md-1">Duration</div>
+              <div class="col-md-1">Qty</div>
+              <div class="col-md-1">Food</div>
+              <div class="col-md-1">Action</div>
+            </div>
+
+            <div id="medContainer"></div>
+
+            <button type="button" class="btn btn-outline-secondary mt-3" id="addMedBtn">
+              + Add Medicine
+            </button>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label>Notes</label>
+                <textarea class="form-control"></textarea>
+              </div>
+
+              <div class="col-md-3 col-6">
+                <label>Next Visit</label>
+                <input type="date" class="form-control" value="{{ today }}">
+              </div>
+
+              <div class="col-md-3 col-6 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                  Save Prescription
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        </form>
+        {% endif %}
+      </div>
+
+      <!-- RIGHT ACTIVITY PANEL -->
+      <div class="col-lg-3 col-12">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="mb-3">Recent Activity</h6>
+
+            <div class="activity-panel">
+              <div class="activity-item">
+                <span class="activity-icon bg-primary">
+                  <i class="material-symbols-rounded">person_add</i>
+                </span>
+                <div>
+                  <strong>New Patient Registered</strong>
+                  <div class="text-muted text-sm">10 mins ago</div>
+                </div>
+              </div>
+
+              <div class="activity-item">
+                <span class="activity-icon bg-warning">
+                  <i class="material-symbols-rounded">warning</i>
+                </span>
+                <div>
+                  <strong>Stock Alert</strong>
+                  <div class="text-muted text-sm">Ashwagandha running low</div>
+                </div>
+              </div>
+
+              <div class="activity-item">
+                <span class="activity-icon bg-success">
+                  <i class="material-symbols-rounded">receipt_long</i>
+                </span>
+                <div>
+                  <strong>Bill Generated</strong>
+                  <div class="text-muted text-sm">Invoice #4023</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {% endif %}
+
+</main>
+
+{% include "includes/script.html" %}
+
+
+<!-- ===== YOUR ORIGINAL SCRIPT (UNCHANGED) ===== -->
+<script>
+// === FETCH PATIENT USING ID === //
+  function fetchPatientById() {
+    const pid = document.getElementById("patient_id").value;
+    if (!pid) return;
+
+    fetch("{% url 'prescriptionmgmt:get_patient' %}?patient_id=" + encodeURIComponent(pid))
+      .then(r => r.json())
+      .then(data => {
+        if (!data.error) {
+          document.getElementById("patient_name").value = data.patient_name;
+          document.getElementById("p_age").value = data.age;
+          document.getElementById("p_gender").value = data.gender;
+        } else {
+          alert(data.error);
+        }
+      });
+  }
+
+  // === FETCH PATIENT USING NAME === //
+  function fetchPatientByName() {
+    const name = document.getElementById("patient_name").value;
+    if (!name) return;
+
+    fetch("{% url 'prescriptionmgmt:get_patient' %}?patient_name=" + encodeURIComponent(name))
+      .then(r => r.json())
+      .then(data => {
+        if (!data.error) {
+          document.getElementById("patient_id").value = data.patient_unique_id;
+          document.getElementById("p_age").value = data.age;
+          document.getElementById("p_gender").value = data.gender;
+        } else {
+          alert(data.error);
+        }
+      });
+  }
+
+  // === STOCK DATA PROVIDED FROM BACKEND === //
+const STOCKS = {
+  {% for s in stocks %}
+  "{{ s.id }}": {
+    id: "{{ s.id }}",
+    name: "{{ s.medicine.name|escapejs }}",
+    unit: "{{ s.unit }}",
+    price: "{{ s.selling_price }}",
+    qty: "{{ s.quantity }}"
+  },
+  {% endfor %}
+};
+
+  // === ADD MEDICINE ROW === //
+  document.getElementById("addMedBtn").addEventListener("click", addMedRow);
+
+ function addMedRow(prefill = {}) {
+  const container = document.getElementById("medContainer");
+
+  const row = document.createElement("div");
+  row.className = "row g-2 mb-2 med-row align-items-center";
+
+  // Medicine select
+  const stockCol = document.createElement("div");
+  stockCol.className = "col-md-3";
+  const stockSel = document.createElement("select");
+  stockSel.name = "stock_id[]";
+  stockSel.className = "form-control";
+  stockSel.innerHTML = '<option value="">Select Medicine</option>';
+  for (const id in STOCKS) {
+    const s = STOCKS[id];
+    const opt = document.createElement("option");
+    opt.value = id;
+    opt.text = `${s.name} ₹${s.price} — Avl:${s.qty}`;
+    stockSel.appendChild(opt);
+  }
+  stockCol.appendChild(stockSel);
+  row.appendChild(stockCol);
+
+  // Medicine name
+  const medNameCol = document.createElement("div");
+  medNameCol.className = "col-md-2";
+  const medNameInput = document.createElement("input");
+  medNameInput.type = "text";
+  medNameInput.name = "medicine_name[]";
+  medNameInput.placeholder = "Name";
+  medNameInput.className = "form-control";
+  medNameCol.appendChild(medNameInput);
+  row.appendChild(medNameCol);
+
+  // ✅ UNIT FIELD
+  const unitCol = document.createElement("div");
+  unitCol.className = "col-md-1";
+  const unitInput = document.createElement("input");
+  unitInput.type = "text";
+  unitInput.name = "unit[]";
+  unitInput.placeholder = "Unit";
+  unitInput.className = "form-control";
+  unitInput.readOnly = true;
+  unitCol.appendChild(unitInput);
+  row.appendChild(unitCol);
+
+  // Auto fill name + unit
+  stockSel.onchange = () => onStockChange(stockSel, medNameInput, unitInput);
+
+  // Dosage
+  const dosageCol = document.createElement("div");
+  dosageCol.className = "col-md-2";
+
+  const dosageSelect = document.createElement("select");
+  dosageSelect.name = "dosage[]";
+  dosageSelect.className = "form-control";
+  dosageSelect.innerHTML = `
+    <option value="">Select Dosage</option>
+    <option value="1-1-1">1-1-1</option>
+    <option value="1-0-1">1-0-1</option>
+    <option value="1-0-0">1-0-0</option>
+    <option value="0-1-1">0-1-1</option>
+    <option value="0-1-0">0-1-0</option>
+    <option value="0-0-1">0-0-1</option>
+    <option value="Other">Other</option>
+  `;
+
+  const customDoseInput = document.createElement("input");
+  customDoseInput.type = "text";
+  customDoseInput.name = "custom_dosage[]";
+  customDoseInput.placeholder = "Custom";
+  customDoseInput.className = "form-control mt-1 d-none";
+
+  dosageSelect.addEventListener("change", () => {
+    if (dosageSelect.value === "Other") {
+      customDoseInput.classList.remove("d-none");
+    } else {
+      customDoseInput.classList.add("d-none");
+      customDoseInput.value = "";
+    }
+  });
+
+  dosageCol.appendChild(dosageSelect);
+  dosageCol.appendChild(customDoseInput);
+  row.appendChild(dosageCol);
+
+  // Duration
+  const durationCol = document.createElement("div");
+  durationCol.className = "col-md-1";
+  const durInput = document.createElement("input");
+  durInput.type = "number";
+  durInput.name = "duration[]";
+  durInput.placeholder = "Days";
+  durInput.className = "form-control";
+  durationCol.appendChild(durInput);
+  row.appendChild(durationCol);
+
+  // Quantity
+  const qtyCol = document.createElement("div");
+  qtyCol.className = "col-md-1";
+  const qtyInput = document.createElement("input");
+  qtyInput.type = "number";
+  qtyInput.name = "quantity[]";
+  qtyInput.placeholder = "Qty";
+  qtyInput.className = "form-control";
+  qtyCol.appendChild(qtyInput);
+  row.appendChild(qtyCol);
+
+  // Food timing
+  const foodCol = document.createElement("div");
+  foodCol.className = "col-md-1";
+  const foodSel = document.createElement("select");
+  foodSel.name = "food_timing[]";
+  foodSel.className = "form-control";
+  foodSel.innerHTML = `
+    <option value="">Timing</option>
+    <option value="Before Food">Before Food</option>
+    <option value="After Food">After Food</option>
+    <option value="With Food">With Food</option>
+    <option value="Other">Other</option>
+  `;
+  foodCol.appendChild(foodSel);
+  row.appendChild(foodCol);
+
+// Remove (dashboard-style delete icon with soft background)
+const remCol = document.createElement("div");
+remCol.className = "col-md-1 d-flex justify-content-center align-items-center";
+
+const rm = document.createElement("div");
+rm.className = "delete-icon";
+rm.innerHTML = `
+  <i class="material-symbols-rounded"
+     style="font-variation-settings:'FILL' 1;">
+    delete
+  </i>
+`;
+
+rm.onclick = () => container.removeChild(row);
+
+remCol.appendChild(rm);
+row.appendChild(remCol);
+
+
+
+  container.appendChild(row);
+}
+
+
+  // === AUTO FILL MEDICINE NAME === //
+  function onStockChange(sel, medNameInput, unitInput) {
+  const sid = sel.value;
+  if (!sid) {
+    medNameInput.value = "";
+    unitInput.value = "";
+    return;
+  }
+
+  const s = STOCKS[sid];
+  medNameInput.value = s.name;
+  unitInput.value = s.unit;   // 👈 THIS IS YOUR MAIN REQUIREMENT
+}
+
+  // initial row
+  addMedRow();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,398 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<style>
+/* ================= AUTOCOMPLETE ================= */
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 9999;
+  display: none;
+}
+
+.suggestion-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+}
+.suggestion-item:hover {
+  background: #f0fdf4;
+}
+.no-result {
+  padding: 10px 14px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* ================= FORM UI ================= */
+.section-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: #065f46;
+  margin-bottom: 10px;
+}
+
+.form-card {
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.form-footer {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 16px;
+  margin-top: 20px;
+}
+
+</style>
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">Patient Registration</h4>
+      <p class="text-muted text-sm mb-0">
+        Register OP / IP patient and assign doctors
+      </p>
+    </div>
+
+    <a href="{% url 'patientmgmt:patient_list' %}"
+       class="btn btn-outline-secondary rounded-pill px-4">
+      ← Back to Patients
+    </a>
+  </div>
+
+  <!-- FORM CARD -->
+  <div class="card form-card">
+
+    <div class="card-body">
+      <form method="post" action="{% url 'patientmgmt:patient_register' %}" enctype="multipart/form-data"> 
+        {% csrf_token %}
+
+        <!-- ================= CLINICAL INFO ================= -->
+        <div class="section-title">Clinical Information</div>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label">Consultant Doctor</label>
+            <input name="consultant_doctor" class="form-control">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Department</label>
+            <input name="department" class="form-control">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Assigned Doctor</label>
+            <input name="assigned_doctor" class="form-control">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Visit / Admit Date</label>
+            <input id="visit_date" name="visit_date" type="date" class="form-control">
+          </div>
+        </div>
+
+        <!-- ================= PATIENT INFO ================= -->
+        <div class="section-title">Patient Information</div>
+        <div class="row g-3 mb-4">
+
+         <div class="col-md-6 position-relative">
+          <label class="form-label">
+              Patient Name <span class="required">*</span>
+          </label>
+
+          <div class="input-group">
+              <!-- Prefix Dropdown -->
+              <select class="form-select" name="prefix" style="max-width: 110px;">
+                  <option value="Mr.">Mr.</option>
+                  <option value="Mrs.">Mrs.</option>
+                  <option value="Ms.">Ms.</option>
+                  <option value="Miss">Miss</option>
+                  <option value="Baby">Baby</option>
+                  <option value="Master">Master</option>
+              </select>
+
+              <!-- Patient Name Input -->
+              <input id="patient_name"
+                    name="patient_name"
+                    class="form-control"
+                    placeholder="Search existing patient..."
+                    autocomplete="off"
+                    required>
+          </div>
+
+          <!-- Suggestions -->
+          <div id="suggestionsBox" class="suggestions shadow-sm"></div>
+      </div>
+
+
+          <div class="col-md-3">
+            <label class="form-label">Age <span class="required">*</span></label>
+            <input name="age" type="number" class="form-control" required>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Gender <span class="required">*</span></label>
+            <select name="gender" class="form-select" required>
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+              <option value="O">Other</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Phone</label>
+            <input name="phone" class="form-control">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">DOB</label>
+            <input name="dob" type="date" class="form-control">
+          </div>  
+          
+          <div class="col-md-6">
+            <label class="form-label">ID Card</label>
+            <input name="id_card" type="text" class="form-control">
+          </div>  
+          <div class="col-md-6">
+            <label class="form-label">ID Card Image(Optional)</label>
+            <input name="id_card_image" type="file" class="form-control">
+          </div>  
+          <div class="col-md-6">
+            <label class="form-label">Emergency Contact</label>
+            <input name="emergency_contact" type="text" class="form-control">
+          </div> 
+          <div class="col-md-6 position-relative">
+            <label class="form-label">
+              Referred By
+            </label>
+
+            <!-- Visible input (Name + Phone) -->
+            <input type="text"
+                  id="referredByInput"
+                  class="form-control"
+                  placeholder="Search patient name"
+                  autocomplete="off"
+                  >
+
+            <!-- Hidden input (ONLY Patient ID saved) -->
+            <input type="hidden"
+                  name="refered_by"
+                  id="referredById">
+
+            <div id="referredSuggestions"
+                class="border bg-white position-absolute w-100 shadow-sm"
+                style="display:none; max-height:200px; overflow-y:auto; z-index:999;">
+            </div>
+          </div>
+
+
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input name="email" type="email" class="form-control">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Patient Type</label>
+            <select name="patient_type" class="form-select">
+              <option value="OP">Outpatient</option>
+              <option value="IP">Inpatient</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Address</label>
+            <textarea name="address" rows="2" class="form-control"></textarea>
+          </div>
+
+          <div class="col-md-12">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" rows="2" class="form-control"></textarea>
+          </div>
+        </div>
+
+        <!-- ================= ACTIONS ================= -->
+        <div class="form-footer d-flex justify-content-end gap-2">
+          <a href="{% url 'patientmgmt:patient_list' %}"
+             class="btn btn-light px-4">
+            Cancel
+          </a>
+          <button type="submit"
+                  class="btn btn-success px-5">
+            Register Patient
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+
+<!-- ================= EXISTING JS (UNCHANGED) ================= -->
+<script>
+/* ================= VISIT DATE ================= */
+document.addEventListener("DOMContentLoaded", function () {
+  document.getElementById("visit_date").value =
+    new Date().toISOString().split("T")[0];
+});
+
+/* ================= PATIENT NAME AUTOCOMPLETE (UNCHANGED) ================= */
+const suggestionUrl = "{% url 'patientmgmt:get_patient_suggestions' %}";
+const box = document.getElementById("suggestionsBox");
+const input = document.getElementById("patient_name");
+
+input.addEventListener("input", function () {
+  const query = this.value.trim();
+  if (query.length < 2) {
+    box.style.display = "none";
+    clearPatientFields();
+    return;
+  }
+
+  fetch(`${suggestionUrl}?q=${query}`)
+    .then(res => res.json())
+    .then(data => {
+      box.innerHTML = "";
+      box.style.display = "block";
+
+      if (data.length === 0) {
+        box.innerHTML = `<div class="no-result">No results found</div>`;
+        clearPatientFields();
+        return;
+      }
+
+      data.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "suggestion-item";
+        div.innerHTML = `<strong>${item.patient_name}</strong><br><small>${item.phone}</small>`;
+        Object.assign(div.dataset, item);
+
+        div.onclick = () => {
+          input.value = item.patient_name;
+          fillPatientFields(div);
+          box.style.display = "none";
+        };
+        box.appendChild(div);
+      });
+    });
+});
+
+function fillPatientFields(opt) {
+  document.querySelector("input[name='age']").value = opt.dataset.age || "";
+  document.querySelector("select[name='gender']").value = opt.dataset.gender || "M";
+  document.querySelector("input[name='phone']").value = opt.dataset.phone || "";
+  document.querySelector("input[name='email']").value = opt.dataset.email || "";
+  document.querySelector("textarea[name='address']").value = opt.dataset.address || "";
+  document.querySelector("select[name='patient_type']").value = opt.dataset.patient_type || "OP";
+}
+
+function clearPatientFields() {
+  document.querySelector("input[name='age']").value = "";
+  document.querySelector("select[name='gender']").value = "M";
+  document.querySelector("input[name='phone']").value = "";
+  document.querySelector("input[name='email']").value = "";
+  document.querySelector("textarea[name='address']").value = "";
+  document.querySelector("select[name='patient_type']").value = "OP";
+}
+
+document.addEventListener("click", function (e) {
+  if (!input.contains(e.target) && !box.contains(e.target)) {
+    box.style.display = "none";
+  }
+});
+
+/* ================= REFERRED BY (FIXED & STABLE) ================= */
+/* ================= REFERRED BY (FINAL FIX) ================= */
+
+const refInput  = document.getElementById("referredByInput");
+const refHidden = document.getElementById("referredById");
+const refBox    = document.getElementById("referredSuggestions");
+
+refInput.addEventListener("input", function () {
+    const q = this.value.trim();
+
+    if (q.length < 2) {
+        refBox.style.display = "none";
+        refBox.innerHTML = "";
+        return;
+    }
+
+    fetch("{% url 'patientmgmt:get_patient_suggestions' %}?q=" + encodeURIComponent(q))
+        .then(res => res.json())
+        .then(data => {
+            if (!Array.isArray(data) || data.length === 0) {
+                refBox.style.display = "none";
+                return;
+            }
+
+            refBox.innerHTML = data.map(p => `
+              <div class="referred-item px-2 py-2 border-bottom"
+                   data-id="${p.id}"
+                   data-name="${p.patient_name}"
+                   data-phone="${p.phone || ""}"
+                   style="cursor:pointer">
+                <strong>${p.patient_name}</strong><br>
+                <small>📞 ${p.phone || ""}</small>
+              </div>
+            `).join("");
+
+            refBox.style.display = "block";
+
+            document.querySelectorAll(".referred-item").forEach(item => {
+                item.addEventListener("mousedown", function (e) {
+                    e.preventDefault(); // critical
+
+                    const id = this.dataset.id;
+
+                    refHidden.value = id; // ✅ REAL ID NOW
+                    refInput.value =
+                        this.dataset.name +
+                        (this.dataset.phone ? ` (${this.dataset.phone})` : "");
+
+                    refBox.style.display = "none";
+                });
+            });
+        });
+});
+
+// hide dropdown
+document.addEventListener("click", function (e) {
+    if (!refInput.contains(e.target) && !refBox.contains(e.target)) {
+        refBox.style.display = "none";
+    }
+});
+</script>
+
+
+</body>
+</html>

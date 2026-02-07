@@ -1,0 +1,137 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <h4 class="fw-bold mb-3">{{ title }}</h4>
+
+
+
+  <!-- ================= FILTER BAR ================= -->
+<div class="card mb-3 p-3">
+  <div class="row g-3 align-items-end">
+
+    <!-- Patient Search -->
+    <div class="col-md-4">
+      <label class="form-label">Patient</label>
+      <input type="text"
+             id="patientSearch"
+             class="form-control"
+             placeholder="Search ID or name">
+      <input type="hidden" id="patientId">
+      <div id="patientSuggestions" class="list-group position-absolute w-100" style="width:auto;z-index:11111;"></div>
+    </div>
+
+    <!-- Payment Status -->
+    <div class="col-md-3">
+      <label class="form-label">Payment Status</label>
+      <select id="paymentStatus" class="form-select">
+        <option value="">All</option>
+        <option value="Paid">Paid</option>
+        <option value="Pending">Pending</option>
+      </select>
+    </div>
+
+    <!-- Actions -->
+    <div class="col-md-5 text-end">
+      <button class="btn btn-primary" onclick="loadBills()">Filter</button>
+      <button class="btn btn-success" onclick="printAll()">Print</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ================= TABLE ================= -->
+<div class="card shadow-sm">
+  <div class="table-responsive">
+    <table class="table align-items-center mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Bill No</th>
+          <th>Patient</th>
+          <th>Date</th>
+          <th>Total</th>
+          <th>Payment Status</th>
+          <th>Payment Mode</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="billTableBody">
+        {% include "billingmgmt/partials/inpatient_rows.html" %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+<script>
+const BILL_TYPE = "inpatient"; // change to inpatient / outpatient
+
+function loadBills() {
+  const pid = patientId.value;
+  const status = paymentStatus.value;
+
+  fetch(`/billing/billing/filter/${BILL_TYPE}/?patient_id=${pid}&status=${status}`)
+    .then(res => res.text())
+    .then(html => {
+      billTableBody.innerHTML = html;
+      printAllBtn.classList.toggle("d-none", html.includes("No bills"));
+    });
+}
+
+function printAll() {
+  const pid = patientId.value;
+  const status = paymentStatus.value;
+  window.open(`/billing/billing/print-all/${BILL_TYPE}/?patient_id=${pid}&status=${status}`);
+}
+
+
+// ---- Patient Suggestion ----
+document.getElementById("patientSearch").addEventListener("input", function () {
+  const q = this.value.trim();
+  if (q.length < 2) return;
+
+  fetch(`/billing/get_patient_suggestions/?q=${q}`)
+    .then(res => res.json())
+    .then(data => {
+      const box = document.getElementById("patientSuggestions");
+      box.innerHTML = "";
+
+      data.forEach(p => {
+        box.innerHTML += `
+          <a href="#"
+             class="list-group-item list-group-item-action"
+             onclick="selectPatient('${p.patient_unique_id}','${p.name}')">
+            ${p.patient_unique_id} - ${p.name}
+          </a>
+        `;
+      });
+    });
+});
+
+function selectPatient(id, name) {
+  document.getElementById("patientSearch").value = `${id} - ${name}`;
+  document.getElementById("patientId").value = id;
+  document.getElementById("patientSuggestions").innerHTML = "";
+}
+
+
+</script>
+
+</body>
+</html>

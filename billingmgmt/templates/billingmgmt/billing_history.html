@@ -1,0 +1,113 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <h4 class="fw-bold mb-4 text-center">Billing History</h4>
+
+  <div class="billing-row">
+
+    <!-- MEDICAL -->
+    <a href="{% url 'billingmgmt:medical_billing_list' %}" class="text-decoration-none">
+      <div class="billing-card medical">
+        <div class="billing-icon">
+          <i class="material-symbols-rounded"
+             style="font-variation-settings:'FILL' 1">
+            medication
+          </i>
+        </div>
+        <div>
+          <div class="billing-title">Medical</div>
+          <div class="billing-sub">Medicine bills</div>
+        </div>
+        <div class="billing-count">{{ medical_count }}</div>
+      </div>
+    </a>
+
+    <!-- THERAPY -->
+    <a href="{% url 'billingmgmt:therapy_billing_list' %}" class="text-decoration-none">
+      <div class="billing-card therapy">
+        <div class="billing-icon">
+          <i class="material-symbols-rounded"
+             style="font-variation-settings:'FILL' 1">
+            spa
+          </i>
+        </div>
+        <div>
+          <div class="billing-title">Therapy</div>
+          <div class="billing-sub">Treatment bills</div>
+        </div>
+        <div class="billing-count">{{ therapy_count }}</div>
+      </div>
+    </a>
+
+    <!-- INPATIENT -->
+    <a href="{% url 'billingmgmt:inpatient_billing_list' %}" class="text-decoration-none">
+      <div class="billing-card inpatient">
+        <div class="billing-icon">
+          <i class="material-symbols-rounded"
+             style="font-variation-settings:'FILL' 1">
+            local_hospital
+          </i>
+        </div>
+        <div>
+          <div class="billing-title">Inpatient</div>
+          <div class="billing-sub">Admission bills</div>
+        </div>
+        <div class="billing-count">{{ inpatient_count }}</div>
+      </div>
+    </a>
+
+    <!-- OUTPATIENT -->
+    <a href="{% url 'billingmgmt:outpatient_billing_list' %}" class="text-decoration-none">
+      <div class="billing-card outpatient">
+        <div class="billing-icon">
+          <i class="material-symbols-rounded"
+             style="font-variation-settings:'FILL' 1">
+            outpatient_med
+          </i>
+        </div>
+        <div>
+          <div class="billing-title">Outpatient</div>
+          <div class="billing-sub">Consultation bills</div>
+        </div>
+        <div class="billing-count">{{ outpatient_count }}</div>
+      </div>
+    </a>
+
+    <!-- PATIENT COMBINED -->
+  <a href="{% url 'billingmgmt:combined_billing_view' %}" class="text-decoration-none">
+    <div class="billing-card combined">
+      <div class="billing-icon">
+        <i class="material-symbols-rounded"
+          style="font-variation-settings:'FILL' 1">
+          receipt_long
+        </i>
+      </div>
+      <div>
+        <div class="billing-title">CONSOLIDATED BILL</div>
+        <div class="billing-sub">All bills together</div>
+      </div>
+      <div class="billing-count">ALL</div>
+    </div>
+  </a>
+
+
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

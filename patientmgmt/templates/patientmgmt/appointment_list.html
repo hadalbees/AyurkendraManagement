@@ -1,0 +1,187 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+  <!-- PAGE HEADER (SAME AS THERAPY LIST) -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">Appointment Management</h4>
+      <p class="text-muted text-sm mb-0">
+        Manage patient appointments and schedules
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'patientmgmt:appointment_add' %}"
+         class="btn btn-success rounded-pill px-4"
+         style="background:#c1e7d2;color:#065f46;">
+        + New Appointment
+      </a>
+
+      <a href="{% url 'patientmgmt:patient_register' %}"
+         class="btn btn-outline-success rounded-pill px-4">
+        + Add Patient
+      </a>
+    </div>
+  </div>
+
+  <!-- APPOINTMENT TABLE -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Patient</th>
+              <th>Phone</th>
+              <th>Type</th>
+              <th>Therapy</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for a in appointments %}
+            <tr>
+              <td class="fw-semibold">{{ forloop.counter }}</td>
+
+              <td>
+                <div class="fw-semibold text-sm">
+                  {{ a.patient.patient_name }}
+                </div>
+                <div class="text-muted text-xs">
+                  {{ a.patient.patient_unique_id }}
+                </div>
+              </td>
+
+              <td>{{ a.patient.phone }}</td>
+
+              <td>
+                <span class="badge bg-light text-dark px-3">
+                  {{ a.appointment_type }}
+                </span>
+              </td>
+
+              <td>
+                {{ a.therapy.name|default:"-" }}
+              </td>
+
+              <td>{{ a.appointment_date }}</td>
+              <td>{{ a.appointment_time }}</td>
+
+              <td>
+                {% if a.status == "Completed" %}
+                  <span class="badge bg-success">Completed</span>
+                {% elif a.status == "Cancelled" %}
+                  <span class="badge bg-danger">Cancelled</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark">Pending</span>
+                {% endif %}
+              </td>
+
+              <!-- ACTIONS (SAME AS THERAPY / STAFF LIST) -->
+              <td class="text-center">
+                <a href="{% url 'patientmgmt:appointment_edit' a.id %}"
+                   class="icon-btn edit"
+                   title="Edit">
+                  <i class="material-symbols-rounded edit-icon-color"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    edit
+                  </i>
+                </a>
+
+                <a href="{% url 'patientmgmt:appointment_delete' a.id %}"
+                   class="icon-btn delete"
+                   title="Delete"
+                   onclick="return confirm('Delete this appointment?')">
+                  <i class="material-symbols-rounded text-danger"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    delete
+                  </i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-4">
+                No appointments found
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION (SAME AS THERAPY LIST) -->
+      {% if appointments.paginator.num_pages > 1 %}
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+
+        <div class="text-muted text-sm">
+          Showing
+          <strong>{{ appointments.start_index }}</strong>
+          to
+          <strong>{{ appointments.end_index }}</strong>
+          of
+          <strong>{{ appointments.paginator.count }}</strong>
+          appointments
+        </div>
+
+        <nav>
+          <ul class="pagination mb-0">
+
+            {% if appointments.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ appointments.previous_page_number }}">
+                  Previous
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Previous</span>
+              </li>
+            {% endif %}
+
+            {% if appointments.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ appointments.next_page_number }}">
+                  Next
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Next</span>
+              </li>
+            {% endif %}
+
+          </ul>
+        </nav>
+
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

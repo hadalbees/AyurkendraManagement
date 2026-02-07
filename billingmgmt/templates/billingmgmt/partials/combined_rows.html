@@ -1,0 +1,11 @@
+{% for r in records %}
+<tr>
+  <td>{{ forloop.counter }}</td>
+  <td>{{ r.date|date:"d M Y" }}</td>
+  <td>{{ r.bill_no }}</td>
+  <td>{{ r.type_label }}</td>
+  <td>₹{{ r.total }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="5" class="text-center text-muted">No data</td></tr>
+{% endfor %}

@@ -1,0 +1,258 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<style>
+.patient-card {
+  border-radius: 18px;
+  box-shadow: 0 10px 35px rgba(0,0,0,.08);
+}
+.info-box {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 14px;
+}
+.info-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+}
+.info-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+.section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #065f46;
+}
+</style>
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- ================= HEADER ================= -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">{{ patient.patient_name }}</h4>
+      <p class="text-muted text-sm mb-0">
+        Patient Profile & Medical Summary
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'patientmgmt:patient_edit' patient.id %}"
+         class="btn btn-success rounded-pill px-4">
+        ✏ Edit Patient
+      </a>
+      <a href="{% url 'reportmgmt:patientreports' patient.pk %}"
+         class="btn btn-outline-primary rounded-pill px-4">
+        📁 Reports
+      </a>
+    </div>
+  </div>
+
+  <!-- ================= PATIENT INFO ================= -->
+  <div class="card patient-card mb-4">
+    <div class="card-body">
+
+      <div class="section-title mb-3">Basic Information</div>
+
+      <div class="row g-3 mb-4">
+
+        <div class="col-md-3">
+          <div class="info-box">
+            <div class="info-title">Patient ID</div>
+            <div class="info-value">{{ patient.id }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="info-box">
+            <div class="info-title">Gender</div>
+            <div class="info-value">{{ patient.get_gender_display }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="info-box">
+            <div class="info-title">Age</div>
+            <div class="info-value">{{ patient.age }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="info-box">
+            <div class="info-title">Patient Type</div>
+            <span class="badge bg-primary mt-1">
+              {{ patient.get_patient_type_display }}
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="section-title mb-3">Contact & Clinical Info</div>
+
+      <div class="row g-3 mb-4">
+
+        <div class="col-md-3">
+          <div class="info-box">
+            <div class="info-title">Phone</div>
+            <div class="info-value">{{ patient.phone }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="info-box">
+            <div class="info-title">Email</div>
+            <div class="info-value">{{ patient.email|default:"-" }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="info-box">
+            <div class="info-title">Department</div>
+            <div class="info-value">{{ patient.department|default:"-" }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="info-box">
+            <div class="info-title">Consultant Doctor</div>
+            <div class="info-value">{{ patient.consultant_doctor|default:"-" }}</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="section-title mb-2">Notes</div>
+      <div class="info-box">
+        {{ patient.notes|default:"No notes added." }}
+      </div>
+
+    </div>
+  </div>
+
+<!-- ================= BILLING HISTORY ================= -->
+<div class="card patient-card mb-5">
+  <div class="card-body">
+
+    <!-- SECTION TITLE (SAME AS PROFILE) -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div class="section-title">
+        Billing History
+      </div>
+
+      <a href="{% url 'billingmgmt:download_all_bills' patient.id %}"
+         class="btn btn-sm btn-outline-secondary"
+         target="_blank">
+        Download All
+      </a>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-responsive">
+      <table class="table align-items-center mb-0">
+
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Bill Type</th>
+            <th>Bill No</th>
+            <th>Date</th>
+            <th>Amount</th>
+            <th class="text-center">Status</th>
+            <th class="text-center">Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for b in all_bills %}
+          <tr>
+
+            <!-- S NO -->
+            <td class="fw-semibold">
+              {{ forloop.counter }}
+            </td>
+
+            <!-- TYPE -->
+            <td>
+              <span class="badge bg-light text-dark px-3 py-1">
+                {{ b.type }}
+              </span>
+            </td>
+
+            <!-- BILL NO -->
+            <td class="fw-semibold">
+              {{ b.bill_no }}
+            </td>
+
+            <!-- DATE -->
+            <td>
+              {{ b.date|date:"d M Y" }}
+            </td>
+
+            <!-- AMOUNT -->
+            <td class="fw-bold">
+              ₹ {{ b.total }}
+            </td>
+
+            <!-- STATUS -->
+            <td class="text-center">
+              {% if b.status == "Paid" %}
+                <span class="badge bg-success">Paid</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Pending</span>
+              {% endif %}
+            </td>
+
+            <!-- ACTION -->
+            <td class="text-center">
+              <a href="{% url b.pdf_url b.ref %}"
+                 class="btn btn-sm btn-outline-primary"
+                 target="_blank"
+                 title="View Bill">
+                View
+              </a>
+            </td>
+
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              No billing records found
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+
+      </table>
+    </div>
+
+  </div>
+</div>
+
+
+
+
+
+
+</div>
+
+{% include "includes/footer.html" %}
+
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

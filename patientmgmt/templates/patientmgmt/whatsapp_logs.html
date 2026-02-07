@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+{% include "includes/head.html" %}
+<body>
+
+{% include "includes/sidebar.html" %}
+<main class="main-content">
+{% include "includes/header.html" %}
+
+<div class="container py-4">
+<div class="card">
+    <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+        <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+        <h6 class="text-white text-capitalize ps-3">
+            WhatsApp Message Logs
+        </h6>
+        </div>
+    </div>
+<div class="card-body">
+<table class="table table-bordered table-hover">
+<thead>
+<tr>
+<th>#</th>
+<th>Phone</th>
+<th>Message</th>
+<th>Status</th>
+<th>Date</th>
+<th>Error</th>
+</tr>
+</thead>
+<tbody>
+{% for log in logs %}
+<tr>
+<td>{{ forloop.counter }}</td>
+<td>{{ log.phone }}</td>
+<td>{{ log.message|truncatechars:40 }}</td>
+<td>
+<span class="badge 
+{% if log.status == 'sent' %}bg-success
+{% elif log.status == 'failed' %}bg-danger
+{% else %}bg-warning{% endif %}">
+{{ log.status }}
+</span>
+</td>
+<td>{{ log.created_at|date:"d-m-Y H:i" }}</td>
+<td>{{ log.error_message }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="6" class="text-center">No logs found</td></tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+{%include "includes/footer.html"%}
+</div>
+</main>
+{%include "includes/script.html"%}
+</body>
+</html>

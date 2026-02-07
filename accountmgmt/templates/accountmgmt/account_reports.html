@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+{% include "includes/head.html" %}
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+    <!-- FILTER -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">From Date</label>
+                    <input type="date" name="from_date"
+                           value="{{ from_date }}" class="form-control">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">To Date</label>
+                    <input type="date" name="to_date"
+                           value="{{ to_date }}" class="form-control">
+                </div>
+
+                <div class="col-md-6">
+                    <button class="btn btn-primary">Apply</button>
+                    <a href="{% url 'accountmgmt:account_reports' %}"
+                       class="btn btn-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="row">
+
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h6>Medical Income</h6>
+                    <h4 class="text-success">₹ {{ medical_total }}</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h6>Therapy Income</h6>
+                    <h4 class="text-success">₹ {{ therapy_total }}</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h6>Inpatient Income</h6>
+                    <h4 class="text-success">₹ {{ inpatient_total }}</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <h6>Outpatient Income</h6>
+                    <h4 class="text-success">₹ {{ outpatient_total }}</h4>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- TOTALS -->
+    <div class="row mt-3 pb-3">
+
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h6>Total Income</h6>
+                    <h3>₹ {{ total_income }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h6>Total Expense</h6>
+                    <h3>₹ {{ total_expense }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card {% if profit_type == 'Profit' %}bg-info{% else %}bg-warning{% endif %} text-white">
+                <div class="card-body text-center">
+                    <h6>{{ profit_type }}</h6>
+                    <h3>₹ {{ profit_value }}</h3>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- QUICK LINKS -->
+    <div class="card mt-4">
+       <div class="card-header">
+    <h6 class="mb-0">Detailed Reports</h6>
+  </div>
+        <div class="card-body">
+            <a href="{% url 'accountmgmt:ledger_list' %}" class="btn btn-outline-dark me-2">
+                Ledger
+            </a>
+            <a href="{% url 'accountmgmt:expense_list' %}" class="btn btn-outline-dark me-2">
+                Expense Report
+            </a>
+        </div>
+    </div>
+{%include "includes/footer.html"%}
+</div>
+</main>
+{%include "includes/script.html"%}
+</body>
+</html>

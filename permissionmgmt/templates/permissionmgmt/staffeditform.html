@@ -1,0 +1,165 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+{% include "includes/breadcrumb.html" %}
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER -->
+  <div class="mb-4">
+    <h4 class="page-title mb-1">Edit Staff</h4>
+    <p class="page-subtitle">
+      Update staff details, role, and permissions below.
+    </p>
+  </div>
+
+  <form role="form" method="POST">
+    {% csrf_token %}
+
+    <!-- ================= STAFF INFO ================= -->
+    <div class="form-card mb-4">
+      <div class="section-header">
+        <i class="material-symbols-rounded">person</i>
+        Staff Information
+      </div>
+
+      <div class="row g-3">
+        <!-- Name -->
+        <div class="col-md-6">
+          <label class="form-label">Name <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control"
+                 value="{{ staff.username }}" required>
+        </div>
+
+        <!-- Role -->
+        <div class="col-md-6">
+          <label class="form-label">Role <span class="text-danger">*</span></label>
+          <select name="role" class="form-select" required>
+            <option value="">Select Role</option>
+            {% for r in roles %}
+              <option value="{{ r.id }}"
+                {% if staff.role and staff.role.id == r.id %}selected{% endif %}>
+                {{ r.role_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Gender -->
+        <div class="col-md-6">
+          <label class="form-label">Gender <span class="text-danger">*</span></label>
+          <select name="gender" class="form-select" required>
+            <option value="">Select Gender</option>
+            <option value="male" {% if staff.gender == "male" %}selected{% endif %}>Male</option>
+            <option value="female" {% if staff.gender == "female" %}selected{% endif %}>Female</option>
+            <option value="other" {% if staff.gender == "other" %}selected{% endif %}>Other</option>
+          </select>
+        </div>
+
+        <!-- Email -->
+        <div class="col-md-6">
+          <label class="form-label">Email <span class="text-danger">*</span></label>
+          <input type="email" name="email" class="form-control"
+                 value="{{ staff.email }}" required>
+        </div>
+
+        <!-- Mobile -->
+        <div class="col-md-6">
+          <label class="form-label">Mobile Number <span class="text-danger">*</span></label>
+          <input type="text" name="mobile_number" class="form-control"
+                 value="{{ staff.mobile_number }}" required>
+        </div>
+
+        <!-- Password -->
+        <div class="col-md-6">
+          <label class="form-label">Password</label>
+          <div class="password-wrapper">
+            <input type="password" id="password" name="password"
+                   class="form-control pe-5">
+            <span class="password-eye" onclick="togglePassword()">
+              <i id="passwordIcon" class="material-symbols-rounded">visibility</i>
+            </span>
+          </div>
+          <small id="passError" class="text-danger"></small>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= PERMISSIONS ================= -->
+    <div class="form-card mb-4">
+      <div class="section-header">
+        <i class="material-symbols-rounded">lock</i>
+        Permissions
+      </div>
+
+      <div class="row">
+        {% for perm_value, perm_label in permissions_list %}
+        <div class="col-md-3">
+          <div class="permission-box form-check">
+            <input class="form-check-input" type="checkbox"
+                   name="permission"
+                   value="{{ perm_value }}"
+                   id="perm_{{ perm_value }}"
+                   {% if perm_value in selected_permissions %}checked{% endif %}>
+            <label class="form-check-label" for="perm_{{ perm_value }}">
+              {{ perm_label }}
+            </label>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ================= SUBMIT ================= -->
+    <div class="text-center">
+      <button type="submit" class="btn bg-gradient-dark submit-btn">
+        Update Staff
+      </button>
+    </div>
+
+  </form>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+
+<!-- ===== PASSWORD SCRIPT (UNCHANGED) ===== -->
+<script>
+function validatePassword() {
+    const password = document.getElementById("password").value;
+    const error = document.getElementById("passError");
+    const regex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+
+    if (password && !regex.test(password)) {
+        error.innerHTML =
+          "Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.";
+    } else {
+        error.innerHTML = "";
+    }
+}
+document.getElementById("password").addEventListener("input", validatePassword);
+
+function togglePassword() {
+    const input = document.getElementById('password');
+    const icon = document.getElementById('passwordIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = 'visibility_off';
+    } else {
+        input.type = 'password';
+        icon.textContent = 'visibility';
+    }
+}
+</script>
+
+</body>
+</html>

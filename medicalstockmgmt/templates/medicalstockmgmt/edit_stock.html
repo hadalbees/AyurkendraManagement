@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-2">
+    <div class="card my-4">
+
+        <!-- Styled Header (Matches All Forms) -->
+        <div class="card-header p-0 position-relative mt-n4 mx-3 z-index-2">
+            <div class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3">
+                <h6 class="text-white ps-3 text-capitalize">Edit Medical Stock</h6>
+            </div>
+        </div>
+
+        <div class="card-body">
+
+            <form method="post" action="{% url 'medicalstockmgmt:updatestock' stock.id %}">
+                {% csrf_token %}
+
+                <!-- Form Fields -->
+                <div class="row g-3">
+                    
+                    <!-- Batch Number -->
+                    <div class="col-md-4">
+                        <label class="form-label">Batch Number</label>
+                        <input type="text" class="form-control" value="{{ stock.batch_number }}" readonly>
+                    </div>
+
+                    <!-- Medicine Name -->
+                    <div class="col-md-4">
+                        <label class="form-label">Medicine Name</label>
+                        <input type="text" class="form-control" value="{{ stock.medicine.name }}" readonly>
+                    </div>
+
+                    <!-- Quantity -->
+                    <div class="col-md-4">
+                        <label class="form-label">Quantity Available</label>
+                        <input type="number" name="quantity" class="form-control" value="{{ stock.quantity }}" required>
+                    </div>
+
+                    <!-- Selling Price -->
+                    <div class="col-md-4">
+                        <label class="form-label">Selling Price (₹)</label>
+                        <input type="number" name="selling_price" class="form-control" value="{{ stock.selling_price }}" readonly>
+                    </div>
+
+                    <!-- Manufacture Date -->
+                    <div class="col-md-4">
+                        <label class="form-label">Manufacture Date</label>
+                        <input type="date" name="manufacture_date" class="form-control"
+                               value="{{ stock.manufacture_date|date:'Y-m-d' }}" readonly>
+                    </div>
+
+                    <!-- Expiry Date -->
+                    <div class="col-md-4">
+                        <label class="form-label">Expiry Date</label>
+                        <input type="date" name="expiry_date" class="form-control"
+                               value="{{ stock.expiry_date|date:'Y-m-d' }}" readonly>
+                    </div>
+
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-end mt-4">
+                    <button type="submit" class="btn bg-gradient-dark">
+                        💾 Update Stock
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+{% include "includes/script.html" %}
+
+</body>
+</html>

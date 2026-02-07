@@ -1,0 +1,141 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- 🔹 PAGE HEADER (SAME AS IMAGE) -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="mb-1">Add Report</h4>
+      <p class="text-sm text-muted mb-0">
+        Upload patient medical report and related documents
+      </p>
+    </div>
+
+    <a href="{% url 'reportmgmt:patientreports' patient.id %}" class="btn btn-outline-secondary">
+      ← Back
+    </a>
+  </div>
+
+  <!-- 🔹 FORM CARD -->
+  <div class="card shadow-sm">
+    <div class="card-body p-4">
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- ROW 1 -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">
+              Report Title <span class="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              name="report_title"
+              class="form-control"
+              placeholder="Enter report title"
+              required
+            >
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">
+              Report Type <span class="text-danger">*</span>
+            </label>
+            <select name="report_type" class="form-select" required>
+              <option value="">Select report type</option>
+              <option value="LAB">Lab Report</option>
+              <option value="SCAN">Scan / X-Ray</option>
+              <option value="PRESCRIPTION">Prescription</option>
+              <option value="DISCHARGE">Discharge Summary</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ROW 2 -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label class="form-label">
+              Report Date <span class="text-danger">*</span>
+            </label>
+            <input
+              type="date"
+              name="report_date"
+              class="form-control"
+              required
+            >
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">
+              Upload Report <span class="text-danger">*</span>
+            </label>
+            <input
+              type="file"
+              name="uploaded_file"
+              class="form-control"
+              required
+            >
+          </div>
+        </div>
+
+        <!-- DESCRIPTION -->
+        <div class="mb-4">
+          <label class="form-label">Notes</label>
+          <textarea
+            name="notes"
+            rows="4"
+            class="form-control"
+            placeholder="Optional report notes"
+          ></textarea>
+        </div>
+
+        <!-- ACTION BUTTONS (SAME AS IMAGE) -->
+        <div class="d-flex justify-content-end gap-2">
+          <a
+            href="{% url 'reportmgmt:patientreports' patient.id %}"
+            class="btn btn-outline-secondary"
+          >
+            Cancel
+          </a>
+
+          <button type="submit" class="btn btn-success">
+            Save Report
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+
+<!-- 🔹 SCRIPT -->
+<script>
+  // Auto-fill today's date
+  document.addEventListener("DOMContentLoaded", function () {
+    const dateInput = document.querySelector('input[name="report_date"]');
+    if (dateInput && !dateInput.value) {
+      dateInput.value = new Date().toISOString().split("T")[0];
+    }
+  });
+</script>
+
+</body>
+</html>

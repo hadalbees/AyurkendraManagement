@@ -1,0 +1,305 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% include "includes/head.html" %}
+  <style>
+    #patientSuggestions, #therapySuggestions {
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      max-height: 150px;
+      overflow-y: auto;
+      width: 100%;
+      z-index: 1000;
+      display: none;
+    }
+    .suggest-item {
+      padding: 6px 10px;
+      cursor: pointer;
+    }
+    .suggest-item:hover { background:#f1f1f1; }
+  </style>
+</head>
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+<h4>Outpatient Billing</h4>
+
+<form id="billForm" method="POST">
+{% csrf_token %}
+
+<input type="hidden" name="patient_id" id="patientHidden">
+<input type="hidden" name="subtotal" id="subtotalInput">
+<input type="hidden" name="discount" id="discountInput">
+<input type="hidden" name="tax" id="taxInput">
+<input type="hidden" name="total" id="totalInput">
+<input type="hidden" name="registration_fee" id="regFeeInput">
+ <input type="hidden" id="gstPercent"
+             value="{{ settings.consultation_gst|default:0 }}">
+
+<!-- ================= PATIENT ================= -->
+<div class="card mb-4">
+<div class="card-body">
+<div class="row g-3">
+
+<div class="col-md-3">
+<label>Bill No</label>
+<input class="form-control" name="bill_no" value="{{ bill_no }}" readonly>
+</div>
+
+<div class="col-md-3 position-relative">
+<label>Patient</label>
+<input id="patientName" class="form-control" placeholder="Search patient">
+<div id="patientSuggestions"></div>
+</div>
+
+<div class="col-md-3">
+<label>Date</label>
+<input type="date" name="visit_date" class="form-control"
+       value="{{ today|date:'Y-m-d' }}">
+</div>
+
+<div class="col-md-3">
+<label>Doctor</label>
+<input name="doctor_name" class="form-control">
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ================= CONSULTATION ================= -->
+<div class="card mb-4">
+<div class="card-body">
+<div class="row g-3 align-items-end">
+<div class="col-md-4">
+<input class="form-control" value="Consultation Fees" readonly>
+</div>
+<div class="col-md-3">
+<input id="consultFee" type="number" class="form-control" value="300">
+</div>
+<div class="col-md-2">
+<button type="button" class="btn btn-success w-100"
+        onclick="addConsultation()">+ Add</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ================= THERAPY ================= -->
+<div class="card mb-4">
+<div class="card-body">
+<div class="row g-3 align-items-end position-relative">
+
+<div class="col-md-4 position-relative">
+<input id="itemName" class="form-control" placeholder="Therapy / Item">
+<div id="therapySuggestions"></div>
+</div>
+
+<div class="col-md-3">
+<input id="itemRate" type="number" class="form-control" placeholder="Rate">
+</div>
+
+<div class="col-md-3">
+<input id="itemQty" type="number" class="form-control" value="1">
+</div>
+
+<div class="col-md-2">
+<button type="button" class="btn btn-success w-100"
+        onclick="addItem()">+ Add</button>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ================= ITEMS TABLE ================= -->
+<div class="card mb-4">
+<div class="card-body p-0">
+<table class="table mb-0" id="itemTable">
+<thead class="bg-light">
+<tr>
+<th>Item</th><th>Rate</th><th>Qty</th><th>Total</th><th></th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
+</div>
+
+<!-- ================= SUMMARY ================= -->
+<div class="row mb-4">
+<div class="col-md-8"></div>
+<div class="col-md-4">
+<div class="card">
+<div class="card-body">
+<div class="row mt-3">
+    <div class="col-md-12 mb-2">
+      <label class="form-label">Payment Status <span class="required" style="color:red">*</span></label>
+      <select class="form-select" name="payment_status" required>
+        <option value="Pending">Pending</option>
+        <option value="Paid">Paid</option>
+      </select>
+    </div>
+
+    <div class="col-md-12 mb-3">
+      <label class="form-label">Payment Mode <span class="required" style="color:red">*</span></label>
+      <select class="form-select" name="payment_mode" required>
+        <option>Cash</option>
+        <option>Card</option>
+        <option>UPI</option>
+        <option>NetBanking</option>
+        <option>Insurance</option>
+      </select>
+    </div>
+  </div>
+<p>Subtotal: ₹ <span id="subTotal">0</span></p>
+
+<p id="regFeeRow" style="display:none;">
+Registration Fee: ₹ <span id="regFee">50</span>
+</p>
+
+<p>
+Discount (%)
+<input id="discount" type="number" value="0"
+       style="width:60px" oninput="calcTotal()">
+</p>
+
+<p>GST (<span id="gstPercentText">{{ settings.consultation_gst|default:0 }}</span>%): ₹ <span id="tax">0</span></p>
+<h5>Total: ₹ <span id="grandTotal">0</span></h5>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="text-end">
+<button type="button" class="btn btn-success"
+        onclick="submitBill()">Save & Print</button>
+</div>
+
+</form>
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+{% include "includes/script.html" %}
+
+<script>
+/* ================= GLOBAL ================= */
+let items = [];
+let consultAdded = false;
+let registrationFee = 0;
+
+/* ================= PATIENT SEARCH ================= */
+patientName.addEventListener("input", function () {
+  const q = this.value.trim();
+  if (!q) return patientSuggestions.style.display = "none";
+
+  fetch("{% url 'billingmgmt:get_patient_suggestions' %}?q=" + q)
+    .then(r => r.json())
+    .then(data => {
+      patientSuggestions.innerHTML = data.map(p => `
+      <div class="suggest-item"
+           onclick="selectPatient(${p.id},'${p.name}',${p.is_new_patient})">
+        ${p.name} - ${p.phone}
+      </div>`).join("");
+      patientSuggestions.style.display = "block";
+    });
+});
+
+function selectPatient(id, name, isNew) {
+  patientName.value = name;
+  patientHidden.value = id;
+  patientSuggestions.style.display = "none";
+  handleRegistrationFee(isNew);
+}
+
+/* ================= REGISTRATION FEE ================= */
+function handleRegistrationFee(isNew) {
+  registrationFee = (isNew === true || isNew === 1) ? 50 : 0;
+  regFeeRow.style.display = registrationFee ? "block" : "none";
+  regFee.textContent = registrationFee.toFixed(2);
+  calcTotal();
+}
+
+/* ================= ITEMS ================= */
+function addConsultation() {
+  if (consultAdded) return alert("Already added");
+  const fee = +consultFee.value;
+  if (fee <= 0) return;
+  items.push({ n:"Consultation Fees", r:fee, q:1, t:fee });
+  consultAdded = true;
+  renderItems();
+}
+
+function addItem() {
+  const n=itemName.value.trim();
+  const r=+itemRate.value||0;
+  const q=+itemQty.value||1;
+  if(!n||r<=0) return alert("Invalid item");
+  items.push({n,r,q,t:r*q});
+  itemName.value=""; itemRate.value=""; itemQty.value=1;
+  renderItems();
+}
+
+function renderItems() {
+  const tb=itemTable.querySelector("tbody");
+  tb.innerHTML="";
+  let s=0;
+  items.forEach((x,i)=>{
+    s+=x.t;
+    tb.innerHTML+=`
+    <tr>
+      <td>${x.n}<input type="hidden" name="item_name[]" value="${x.n}"></td>
+      <td>${x.r}<input type="hidden" name="item_rate[]" value="${x.r}"></td>
+      <td>${x.q}<input type="hidden" name="item_qty[]" value="${x.q}"></td>
+      <td>${x.t}</td>
+      <td><button class="btn btn-danger btn-sm"
+        onclick="items.splice(${i},1);
+        if('${x.n}'==='Consultation Fees') consultAdded=false;
+        renderItems()">X</button></td>
+    </tr>`;
+  });
+  subTotal.textContent=s.toFixed(2);
+  calcTotal();
+}
+
+/* ================= TOTAL ================= */
+function calcTotal() {
+  const itemSubtotal = parseFloat(subTotal.textContent) || 0;
+  const gross = itemSubtotal + registrationFee;
+
+  const discountPct = parseFloat(discount.value) || 0;
+  const discountAmt = gross * discountPct / 100;
+  const afterDiscount = gross - discountAmt;
+
+  // 🔥 GST FROM SETTINGS
+  const gstPercent = parseFloat(
+    document.getElementById("gstPercent").value
+  ) || 0;
+
+  const taxAmt = (afterDiscount * gstPercent / 100);
+
+  tax.textContent = taxAmt.toFixed(2);
+  grandTotal.textContent = (afterDiscount + taxAmt).toFixed(2);
+}
+
+/* ================= SUBMIT ================= */
+function submitBill() {
+  subtotalInput.value = subTotal.textContent;
+  discountInput.value = discount.value;
+  taxInput.value = tax.textContent;
+  totalInput.value = grandTotal.textContent;
+  regFeeInput.value = registrationFee;
+  billForm.submit();
+}
+</script>
+
+</body>
+</html>

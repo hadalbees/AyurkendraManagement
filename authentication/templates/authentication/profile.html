@@ -1,0 +1,114 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  {% include "includes/head.html" %}
+  <body class="g-sidenav-show bg-gray-100">
+    {% include "includes/sidebar.html" %}
+
+    <main
+      class="main-content position-relative max-height-vh-100 h-100 border-radius-lg"
+    >
+      {% include "includes/header.html" %}
+        <div class="container-fluid py-2">
+          <div class="row">
+            <div class="col-12">
+              <div class="card my-4">
+                <div
+                  class="card-header p-0 position-relative mt-n4 mx-3 z-index-2"
+                >
+                  <div
+                    class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3"
+                  >
+                    <h6 class="text-white text-capitalize ps-3">
+                      Profile
+                    </h6>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <!-- USER DETAILS -->
+                    <div class="row">
+                        <div class="col-md-6">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" value="{{ user.username }}" readonly>
+                        </div>
+
+                        <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" value="{{ user.email }}" readonly>
+                        </div>
+
+                        <div class="col-md-6 mt-3">
+                        <label class="form-label">Gender</label>
+                        <input type="text" class="form-control" value="{{ user.gender }}" readonly>
+                        </div>
+
+                        <div class="col-md-6 mt-3">
+                        <label class="form-label">Mobile Number</label>
+                        <input type="text" class="form-control" value="{{ user.mobile_number }}" readonly>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- PASSWORD UPDATE -->
+                    <h5>Change Password</h5>
+                    <form method="post" onsubmit="return validatePassword()">
+                        {% csrf_token %}
+
+                        <!-- OLD PASSWORD -->
+                        <div class="row">
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Old Password</label>
+                                <input type="password" id="old_password" name="old_password" class="form-control" required>
+                            </div>
+
+                            <!-- NEW PASSWORD -->
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">New Password</label>
+                                <input type="password" id="new_password" name="new_password" class="form-control" required>
+                            </div>
+
+                            <!-- CONFIRM PASSWORD -->
+                            <div class="col-md-6 mt-3">
+                                <label class="form-label">Confirm Password</label>
+                                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn bg-gradient-dark mt-4">Update Password</button>
+                    </form>
+
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+
+       {%include "includes/footer.html"%}
+      </div>
+    </main>
+    {%include "includes/script.html"%}
+    <script>
+        function validatePassword() {
+            let oldPass = document.getElementById("old_password").value;
+            let newPass = document.getElementById("new_password").value;
+            let confirmPass = document.getElementById("confirm_password").value;
+
+            // New password must NOT match old password
+            if (oldPass === newPass) {
+                alert("⚠ New password cannot be the same as old password.");
+                return false; // stop form submit
+            }
+
+            // Check new password and confirm password match
+            if (newPass !== confirmPass) {
+                alert("⚠ New and Confirm passwords do not match.");
+                return false;
+            }
+
+            return true; // allow submit
+        }
+    </script>
+  </body>
+</html>

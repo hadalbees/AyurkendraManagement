@@ -1,0 +1,141 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="mb-1">Reports</h4>
+      <p class="text-sm text-muted mb-0">
+        Recently uploaded patient reports
+      </p>
+    </div>
+
+    <a href="{% url 'reportmgmt:reportlist' %}" class="btn btn-outline-primary">
+      View All Reports
+    </a>
+  </div>
+
+  <!-- FILTER CARD -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+
+      <form method="get">
+        <div class="row g-3 align-items-end">
+
+          <div class="col-md-4">
+            <label class="form-label text-sm">Search</label>
+            <input type="text"
+                   name="search"
+                   value="{{ search }}"
+                   placeholder="Patient / Report Title"
+                   class="form-control">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label text-sm">Report Type</label>
+            <select name="type" class="form-select">
+              <option value="">All</option>
+              <option value="LAB" {% if report_type == "LAB" %}selected{% endif %}>Lab</option>
+              <option value="SCAN" {% if report_type == "SCAN" %}selected{% endif %}>Scan</option>
+              <option value="PRESCRIPTION" {% if report_type == "PRESCRIPTION" %}selected{% endif %}>Prescription</option>
+              <option value="DISCHARGE" {% if report_type == "DISCHARGE" %}selected{% endif %}>Discharge</option>
+            </select>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label text-sm">From</label>
+            <input type="date" name="start" value="{{ start_date }}" class="form-control">
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label text-sm">To</label>
+            <input type="date" name="end" value="{{ end_date }}" class="form-control">
+          </div>
+
+          <div class="col-md-1">
+            <button class="btn btn-dark w-100">Go</button>
+          </div>
+
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- RECENT UPLOADS TABLE -->
+  <div class="card shadow-sm">
+    <div class="card-body p-0">
+
+      {% if recent %}
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th>#</th>
+              <th>Report Title</th>
+              <th>Patient</th>
+              <th>Date</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for r in recent %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+
+              <td>
+                <strong>{{ r.report_title }}</strong>
+              </td>
+
+              <td>{{ r.patient.patient_name }}</td>
+
+              <td>
+                <span class="badge bg-secondary">
+                  {{ r.report_date }}
+                </span>
+              </td>
+
+              <td class="text-center">
+                <a href="{% url 'reportmgmt:viewreport' r.id %}"
+                   class="icon-btn edit"
+                   title="View Report">
+                  <i class="material-symbols-rounded edit-icon-color"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    visibility
+                  </i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+      {% else %}
+        <p class="text-center text-muted py-4 mb-0">
+          No recent uploads found.
+        </p>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

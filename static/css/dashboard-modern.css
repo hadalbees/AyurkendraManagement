@@ -1,0 +1,737 @@
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.dashboard-welcome h4 {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.dashboard-welcome p {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.top-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.top-search {
+  width: 320px;
+}
+
+.top-search input {
+  border-radius: 12px;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  cursor: pointer;
+}
+
+.right-panel {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  height: 100%;
+}
+
+.activity-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.activity-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.section-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+/* Dashboard-style delete icon */
+.delete-icon {
+  width: 36px;
+  height: 36px;
+  background: rgba(229, 57, 53, 0.12); /* soft red bg */
+  border-radius: 10px;               /* NOT circle, modern */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-icon i {
+  font-size: 20px;
+  color: #e53935; /* material red */
+}
+
+/* Hover effect (matches dashboard feel) */
+.delete-icon:hover {
+  background: rgba(229, 57, 53, 0.2);
+  transform: scale(1.08);
+}
+/* ===============================
+   RIGHT RECENT ACTIVITY PANEL
+   =============================== */
+
+.activity-panel {
+  position: relative;
+  padding-left: 8px;
+}
+
+/* Activity item */
+.activity-item {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-bottom: 22px;
+}
+
+/* Vertical line */
+.activity-item::before {
+  content: "";
+  position: absolute;
+  left: 18px;
+  top: 36px;
+  bottom: -22px;
+  width: 2px;
+  background: #e5e7eb;
+}
+
+/* Remove line from last */
+.activity-item:last-child::before {
+  display: none;
+}
+
+/* Icon container */
+.activity-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Icons */
+.activity-icon i {
+  font-size: 20px;
+  color: #fff;
+}
+
+/* Text */
+.activity-text strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c2f38;
+}
+
+.activity-text div {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Background colors */
+.bg-primary {
+  background: linear-gradient(135deg, #1a73e8, #4285f4);
+}
+
+.bg-warning {
+  background: linear-gradient(135deg, #f9a825, #fbc02d);
+}
+
+.bg-success {
+  background: linear-gradient(135deg, #2e7d32, #43a047);
+}
+
+/* ===============================
+   DASHBOARD STATS CARDS
+   =============================== */
+
+.stats-card {
+  border-radius: 18px;
+  border: none;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 35px rgba(0,0,0,0.08);
+}
+
+.stats-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.stats-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+/* Icon box */
+.stats-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stats-icon i {
+  font-size: 24px;
+  color: #fff;
+}
+
+/* Icon gradients */
+.bg-primary {
+  background: linear-gradient(135deg, #1a73e8, #4285f4);
+}
+
+.bg-success {
+  background: linear-gradient(135deg, #2e7d32, #43a047);
+}
+
+.bg-info {
+  background: linear-gradient(135deg, #0288d1, #03a9f4);
+}
+
+.bg-warning {
+  background: linear-gradient(135deg, #f9a825, #fbc02d);
+}
+
+/* ===============================
+   DASHBOARD ICON CARDS (FINAL)
+   =============================== */
+
+.dashboard-card {
+  border-radius: 18px;
+  border: none;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.06);
+  transition: all 0.25s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 38px rgba(0,0,0,0.1);
+}
+
+/* Text */
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 2px;
+}
+
+.card-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+/* Icon box */
+.icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-box i {
+  font-size: 26px;
+}
+
+/* Soft backgrounds (opacity style) */
+.bg-primary-soft { background: rgba(26,115,232,0.15); }
+.bg-success-soft { background: rgba(46,125,50,0.15); }
+.bg-info-soft    { background: rgba(2,136,209,0.15); }
+.bg-danger-soft  { background: rgba(211,47,47,0.15); }
+
+/* Progress bar */
+.card-progress {
+  height: 6px;
+  border-radius: 10px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+
+.card-progress .progress-bar {
+  border-radius: 10px;
+}
+
+/* ===============================
+   DASHBOARD HEADER UI
+   =============================== */
+
+.dashboard-search {
+  max-width: 420px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e5e5e5;
+}
+
+.dashboard-search input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+}
+
+.dashboard-search i {
+  color: #9ca3af;
+  font-size: 20px;
+}
+
+/* Header icons */
+.header-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+.header-icon i {
+  font-size: 22px;
+  color: #6b7280;
+}
+
+/* User dropdown */
+.userbox-menu {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  background: #fff;
+  border-radius: 14px;
+  min-width: 200px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+  display: none;
+  z-index: 999;
+}
+
+.userbox-menu.show-menu {
+  display: block;
+}
+
+.userbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #374151;
+  text-decoration: none;
+}
+
+.userbox-item:hover {
+  background: #f3f4f6;
+  border-radius: 10px;
+}
+
+.userbox-item i {
+  font-size: 20px;
+}
+
+/* ===============================
+   HEADER ICONS (NO BACKGROUND)
+   =============================== */
+
+.header-plain-icon {
+  cursor: pointer;
+}
+
+.header-plain-icon i {
+  font-size: 22px;
+  color: #6b7280;
+}
+
+/* ===============================
+   USER AVATAR
+   =============================== */
+
+.user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+/* ===============================
+   USER DROPDOWN MENU
+   =============================== */
+
+.userbox-menu {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: #ffffff;
+  border-radius: 14px;
+  min-width: 220px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+  display: none;
+  z-index: 999;
+  padding: 6px;
+}
+
+.userbox-menu.show-menu {
+  display: block;
+}
+
+.userbox-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #374151;
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+.userbox-item:hover {
+  background: #f3f4f6;
+}
+
+.userbox-item i {
+  font-size: 20px;
+}
+
+.text-xs {
+  font-size: 12px;
+}
+/* ===== STAFF TABLE ===== */
+.staff-table thead th {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #6b7280;
+  padding: 14px;
+}
+
+.staff-table tbody td {
+  padding: 14px;
+  vertical-align: middle;
+}
+
+/* ===== AVATAR ===== */
+.avatar-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #e0f2fe;
+  color: #0284c7;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== ACTION ICON BUTTONS ===== */
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 3px;
+  text-decoration: none;
+}
+
+.icon-btn.edit {
+  background: #e0ecff;
+  color: #2563eb;
+}
+
+.icon-btn.delete {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.icon-btn i {
+  font-size: 16px;
+}
+.edit-icon-color{
+  color: #1e4786;
+}
+
+/* === SIDEBAR FOOTER FIX === */
+.sidenav {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidenav .navbar-collapse {
+  flex: 1 1 auto; /* allow menu to grow */
+}
+
+.sidebar-footer {
+  margin-top: auto; /* PUSH TO BOTTOM */
+  padding: 12px;
+}
+
+/* Logout button style */
+.sidebar-footer .logout-link {
+  background: #065f46;
+  color: #fff !important;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.sidebar-footer .logout-link i {
+  color: #fff;
+}
+
+.sidebar-footer .logout-link:hover {
+  background: #064e3b;
+  transform: translateY(-2px);
+}
+
+/* Pagination container */
+.pagination-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Record info */
+.record-info {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Pagination UI */
+.pagination {
+  gap: 6px;
+  margin-bottom: 0;
+}
+
+.pagination .page-link {
+  min-width: 44px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0 !important;
+  border: 1px solid #d1fae5;
+  background: #ecfdf5;
+  color: #065f46;
+  font-weight: 500;
+  padding: 0 14px;
+  white-space: nowrap; /* FIX text overflow */
+  width: auto;
+}
+
+.pagination .page-link:hover {
+  background: #065f46;
+  color: #ffffff;
+}
+
+.pagination .page-item.active .page-link {
+  background: #065f46;
+  color: #ffffff;
+  box-shadow: 0 3px 8px rgba(6, 95, 70, 0.3);
+}
+
+.pagination .page-item.disabled .page-link {
+  background: #f1f5f9;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+/* ===== Page UI ===== */
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+}
+.page-subtitle {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* ===== Section Card ===== */
+.form-card {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  padding: 24px;
+}
+
+/* ===== Section Header ===== */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.section-header i {
+  color: #065f46;
+}
+
+/* ===== Inputs ===== */
+.form-label {
+  font-weight: 500;
+  font-size: 14px;
+}
+.form-control, .form-select {
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+/* ===== Permissions ===== */
+.permission-box {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.permission-box:hover {
+  background: #f9fafb;
+}
+
+/* ===== Submit ===== */
+.submit-btn {
+  width: 220px;
+  border-radius: 999px;
+}
+/* Password field wrapper */
+.password-wrapper {
+  position: relative;
+}
+
+/* Eye icon perfectly centered */
+.password-eye {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+}
+
+/* Optional hover */
+.password-eye:hover {
+  color: #065f46;
+}
+
+/* Ensure input text doesn't overlap icon */
+.form-control.pe-5 {
+  padding-right: 48px !important;
+}
+.billing-row {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.billing-card {
+  width: 260px;
+  height: 190px;
+  border-radius: 18px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all .25s ease;
+}
+.billing-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 40px rgba(0,0,0,.15);
+}
+
+.billing-icon {
+  font-size: 44px;
+}
+
+.billing-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.billing-sub {
+  font-size: 13px;
+  opacity: .85;
+}
+
+.billing-count {
+  font-size: 30px;
+  font-weight: 800;
+}
+
+/* GRADIENT THEMES */
+.medical {
+  background: linear-gradient(135deg,#e0f2fe,#bae6fd);
+  color:#075985;
+}
+.therapy {
+  background: linear-gradient(135deg,#ecfeff,#cffafe);
+  color:#0f766e;
+}
+.inpatient {
+  background: linear-gradient(135deg,#fef3c7,#fde68a);
+  color:#92400e;
+}
+.outpatient {
+  background: linear-gradient(135deg,#ede9fe,#ddd6fe);
+  color:#5b21b6;
+}

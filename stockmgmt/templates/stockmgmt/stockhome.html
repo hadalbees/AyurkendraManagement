@@ -1,0 +1,279 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">Stock & Inventory</h4>
+      <p class="text-muted text-sm mb-0">
+        Manage medicine stock, expiry, and availability
+      </p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'stockmgmt:stock_add' %}"
+         class="btn btn-success rounded-pill px-4"
+         style="background:#c1e7d2;color:#065f46;">
+        + Add Stock
+      </a>
+
+      <button class="btn btn-outline-success rounded-pill px-4"
+              data-bs-toggle="modal"
+              data-bs-target="#addMedicineModal">
+        + Add Medicine
+      </button>
+    </div>
+  </div>
+
+  <!-- FILTER CARD -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-center">
+
+        <div class="col-md-3">
+          <input type="text"
+                 name="q"
+                 class="form-control"
+                 placeholder="Search medicine or batch…"
+                 value="{{ q }}">
+        </div>
+
+        <div class="col-md-2">
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   name="low_stock"
+                   id="lowStock"
+                   {% if low_stock %}checked{% endif %}>
+            <label class="form-check-label" for="lowStock">
+              Low stock
+            </label>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="form-check">
+            <input class="form-check-input"
+                   type="checkbox"
+                   name="near_expiry"
+                   id="nearExpiry"
+                   {% if near_expiry %}checked{% endif %}>
+            <label class="form-check-label" for="nearExpiry">
+              Near expiry (30 days)
+            </label>
+          </div>
+        </div>
+
+        <div class="col-md-4 d-flex gap-2">
+          <button type="submit" class="btn bg-gradient-dark w-50">
+            Filter
+          </button>
+          <a href="{% url 'stockmgmt:stock_list' %}"
+             class="btn btn-outline-secondary w-50">
+            Reset
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- STOCK TABLE -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead>
+            <tr>
+              <th>Batch No</th>
+              <th>Medicine</th>
+              <th>Unit</th>
+              <th>Quantity</th>
+              <th>Unit Price</th>
+              <th>Selling Price</th>
+              <th>Expiry</th>
+              <th>Alerts</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for stock in stocks %}
+            <tr>
+
+              <td class="fw-semibold">{{ stock.batch_number }}</td>
+              <td>{{ stock.medicine.name }}</td>
+              <td>{{ stock.unit }}</td>
+
+              <td>
+                {{ stock.quantity }}
+                {% if stock.is_low_stock %}
+                  <span class="badge bg-danger ms-1">Low</span>
+                {% endif %}
+              </td>
+
+              <td>{{ stock.unit_price }}</td>
+              <td>{{ stock.selling_price }}</td>
+
+              <td>
+                {% if stock.expiry_date %}
+                  {{ stock.expiry_date|date:"Y-m-d" }}
+                {% else %}
+                  N/A
+                {% endif %}
+              </td>
+
+              <td>
+                {% if stock.is_low_stock %}
+                  <span class="badge bg-danger">Low Stock</span>
+                {% endif %}
+                {% if stock.is_near_expiry %}
+                  <span class="badge bg-warning text-dark">Near Expiry</span>
+                {% endif %}
+              </td>
+
+              <!-- ACTIONS (MATCH STAFF LIST UI) -->
+              <td class="text-center">
+                <a href="{% url 'stockmgmt:stock_update' stock.pk %}"
+                   class="icon-btn edit"
+                   title="Edit">
+                  <i class="material-symbols-rounded edit-icon-color"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    edit
+                  </i>
+                </a>
+
+                <a href="#"
+                   class="icon-btn delete"
+                   title="Delete">
+                  <i class="material-symbols-rounded text-danger"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    delete
+                  </i>
+                </a>
+              </td>
+
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="9" class="text-center text-muted py-4">
+                No stock records found.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION -->
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+
+        <div class="text-muted text-sm">
+          Showing
+          <strong>{{ page_obj.start_index }}</strong>
+          to
+          <strong>{{ page_obj.end_index }}</strong>
+          of
+          <strong>{{ page_obj.paginator.count }}</strong>
+          records
+        </div>
+
+        <nav>
+          <ul class="pagination mb-0">
+
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page_obj.previous_page_number }}&q={{ q }}{% if low_stock %}&low_stock=on{% endif %}{% if near_expiry %}&near_expiry=on{% endif %}">
+                  Previous
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Previous</span>
+              </li>
+            {% endif %}
+
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page_obj.next_page_number }}&q={{ q }}{% if low_stock %}&low_stock=on{% endif %}{% if near_expiry %}&near_expiry=on{% endif %}">
+                  Next
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Next</span>
+              </li>
+            {% endif %}
+
+          </ul>
+        </nav>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ADD MEDICINE MODAL (UNCHANGED) -->
+<div class="modal fade" id="addMedicineModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{% url 'stockmgmt:add_medicine_ajax' %}">
+        {% csrf_token %}
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title">Add New Medicine</h5>
+          <button type="button" class="btn-close btn-close-white"
+                  data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <input type="text" name="name" class="form-control mb-3"
+                 placeholder="Medicine Name" required>
+
+          <input type="text" name="hsn_code" class="form-control mb-3"
+                 placeholder="HSN Code" required>
+
+          <select name="ayurvedic_type" class="form-select mb-3" required>
+            <option value="">Select Ayurvedic Type</option>
+            {% for t in ayurvedic_forms %}
+              <option value="{{ t.id }}">{{ t.name }}</option>
+            {% endfor %}
+          </select>
+
+          <textarea name="description"
+                    class="form-control"
+                    rows="2"
+                    placeholder="Description"></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success px-4">
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

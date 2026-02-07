@@ -1,0 +1,117 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="mb-1">Edit Report</h4>
+      <p class="text-sm text-muted mb-0">
+        {{ report.report_title }}
+      </p>
+    </div>
+
+    <a href="{% url 'reportmgmt:viewreport' report.id %}"
+       class="btn btn-outline-secondary">
+      ← Back
+    </a>
+  </div>
+
+  <!-- FORM CARD -->
+  <div class="card shadow-sm">
+    <div class="card-body">
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="row">
+
+          <!-- TITLE -->
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Report Title</label>
+            <input type="text"
+                   name="report_title"
+                   value="{{ report.report_title }}"
+                   class="form-control"
+                   required>
+          </div>
+
+          <!-- TYPE -->
+          <div class="col-md-6 mb-3">
+            <label class="form-label">Report Type</label>
+            <select name="report_type" class="form-select" required>
+              {% for value,label in report_types %}
+                <option value="{{ value }}"
+                        {% if value == report.report_type %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- DATE -->
+          <div class="col-md-4 mb-3">
+            <label class="form-label">Report Date</label>
+            <input type="date"
+                   name="report_date"
+                   value="{{ report.report_date }}"
+                   class="form-control"
+                   required>
+          </div>
+
+          <!-- FILE -->
+          <div class="col-md-8 mb-3">
+            <label class="form-label">Replace File (optional)</label>
+            <input type="file"
+                   name="uploaded_file"
+                   class="form-control">
+            <small class="text-muted d-block mt-1">
+              Current file: {{ report.uploaded_file.name }}
+            </small>
+          </div>
+
+          <!-- NOTES -->
+          <div class="col-md-12 mb-4">
+            <label class="form-label">Notes</label>
+            <textarea name="notes"
+                      rows="4"
+                      class="form-control">{{ report.notes }}</textarea>
+          </div>
+
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="d-flex justify-content-end gap-2">
+          <a href="{% url 'reportmgmt:viewreport' report.id %}"
+             class="btn btn-outline-secondary btn-sm">
+            Cancel
+          </a>
+
+          <button type="submit"
+                  class="btn btn-primary btn-sm">
+            Save Changes
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

@@ -1,0 +1,285 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+<!-- ================= PAGE TITLE ================= -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="fw-bold mb-1">Expense Management</h4>
+    <p class="text-muted text-sm mb-0">
+      Track and manage hospital expenses
+    </p>
+  </div>
+
+  <a href="{% url 'accountmgmt:expense_add' %}"
+     class="btn rounded-pill px-4"
+     style="background:#c1e7d2;color:#065f46;">
+    + Add Expense
+  </a>
+</div>
+
+<!-- ================= CHART CARD (FIRST) ================= -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header">
+    <h6 class="mb-0">Monthly Expense Summary</h6>
+  </div>
+
+  <div class="card-body">
+    <canvas id="expenseChart" height="90"></canvas>
+  </div>
+</div>
+
+<!-- ================= FILTER CARD (SECOND) ================= -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header">
+    <h6 class="mb-0">Filter Expenses</h6>
+  </div>
+
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+
+      <div class="col-md-3">
+        <label class="form-label text-sm">From Date</label>
+        <input type="date" name="from_date" class="form-control"
+               value="{{ from_date }}">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label text-sm">To Date</label>
+        <input type="date" name="to_date" class="form-control"
+               value="{{ to_date }}">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label text-sm">Category</label>
+        <select name="category" class="form-select">
+          <option value="">All Categories</option>
+          {% for key,label in category_choices %}
+            <option value="{{ key }}"
+              {% if category == key %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3 d-flex gap-2">
+        <button class="btn bg-gradient-dark">Filter</button>
+
+        <button name="export_pdf" value="1"
+                class="btn btn-danger">
+          Export PDF
+        </button>
+
+        <a href="{% url 'accountmgmt:expense_list' %}"
+           class="btn btn-secondary">
+          Reset
+        </a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- ================= TABLE CARD (THIRD) ================= -->
+<div class="card shadow-sm border-0">
+
+  <!-- SAME HEADER STYLE AS STAFF / STOCK / THERAPY -->
+<div class="card-header">
+    <h6 class="mb-0">Expenses List</h6>
+  </div>
+
+  <div class="card-body pt-3">
+    <div class="table-responsive">
+      <table class="table align-items-center mb-0">
+
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Attachment</th>
+            <th class="text-end">Amount (₹)</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for exp in page_obj %}
+          <tr>
+            <td class="fw-semibold">{{ forloop.counter }}</td>
+
+            <td>{{ exp.expense_date|date:"d M Y" }}</td>
+
+            <td>
+              <span class="badge bg-secondary">
+                {{ exp.category }}
+              </span>
+            </td>
+
+            <td class="text-sm">
+              {{ exp.description|default:"—" }}
+            </td>
+
+           <td>
+  {% if exp.attachment %}
+    <a href="{{ exp.attachment.url }}"
+       target="_blank"
+       class="icon-btn view"
+       title="View Attachment">
+      <i class="material-symbols-rounded text-primary"
+         style="font-variation-settings:'FILL' 1,'wght' 500;">
+        attach_file
+      </i>
+    </a>
+
+    <a href="{{ exp.attachment.url }}"
+       download
+       class="icon-btn download ms-1"
+       title="Download Attachment">
+      <i class="material-symbols-rounded text-success"
+         style="font-variation-settings:'FILL' 1,'wght' 500;">
+        download
+      </i>
+    </a>
+  {% else %}
+    <span class="text-muted text-sm">—</span>
+  {% endif %}
+</td>
+
+
+            <td class="text-end text-danger fw-semibold">
+              ₹ {{ exp.amount }}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              No expenses found
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+
+        <tfoot>
+          <tr class="fw-bold bg-light">
+            <td colspan="5" class="text-end">
+              Total Expense
+            </td>
+            <td class="text-end text-danger">
+              ₹ {{ total_expense }}
+            </td>
+          </tr>
+        </tfoot>
+
+      </table>
+    </div>
+  </div>
+
+  <!-- ================= PAGINATION (STAFF STYLE) ================= -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="d-flex justify-content-between align-items-center p-3 border-top">
+
+    <div class="text-muted text-sm">
+      Showing
+      <strong>{{ page_obj.start_index }}</strong>
+      to
+      <strong>{{ page_obj.end_index }}</strong>
+      of
+      <strong>{{ page_obj.paginator.count }}</strong>
+      expenses
+    </div>
+
+    <nav>
+      <ul class="pagination mb-0">
+
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link"
+             href="?page={{ page_obj.previous_page_number }}">
+            Previous
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">Previous</span>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+          {% if page_obj.number == num %}
+            <li class="page-item active">
+              <span class="page-link bg-success border-success">
+                {{ num }}
+              </span>
+            </li>
+          {% elif num > page_obj.number|add:'-2' and num < page_obj.number|add:'2' %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ num }}">
+                {{ num }}
+              </a>
+            </li>
+          {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link"
+             href="?page={{ page_obj.next_page_number }}">
+            Next
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">Next</span>
+        </li>
+        {% endif %}
+
+      </ul>
+    </nav>
+
+  </div>
+  {% endif %}
+
+</div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+
+<!-- ================= CHART JS ================= -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+new Chart(document.getElementById("expenseChart"), {
+  type: "bar",
+  data: {
+    labels: {{ months|safe }},
+    datasets: [{
+      label: "Expense (₹)",
+      data: {{ monthly_expense|safe }},
+      backgroundColor: "#dc3545",
+      borderRadius: 6
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true } }
+  }
+});
+</script>
+
+</body>
+</html>

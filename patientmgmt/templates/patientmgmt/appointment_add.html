@@ -1,0 +1,255 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER (LIKE THERAPY LIST) -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">Add Appointment</h4>
+      <p class="text-muted text-sm mb-0">
+        Create and schedule a new appointment
+      </p>
+    </div>
+
+    <a href="{% url 'patientmgmt:appointment_list' %}"
+       class="btn btn-outline-secondary rounded-pill px-4">
+      ← Back
+    </a>
+  </div>
+
+  <!-- MAIN CARD -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-4">
+
+      <form method="POST">
+        {% csrf_token %}
+
+        <!-- HIDDEN FIELDS -->
+        <input type="hidden" name="appointment_date" id="appointment_date">
+        <input type="hidden" name="appointment_time" id="appointment_time">
+
+        <!-- ================= PATIENT DETAILS ================= -->
+        <h6 class="fw-semibold mb-3">Patient Details</h6>
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Patient Name</label>
+            <input name="name" class="form-control" required>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Age</label>
+            <input name="age" type="number" class="form-control" required>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Mobile</label>
+            <input name="phone" class="form-control" required>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Place</label>
+            <input name="place" class="form-control">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Gender</label>
+            <select name="gender" class="form-select" required>
+              <option value="">Select</option>
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+              <option value="O">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- ================= APPOINTMENT DETAILS ================= -->
+        <h6 class="fw-semibold mb-3">Appointment Details</h6>
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Appointment Type</label>
+            <select id="apptType" name="appointment_type" class="form-select" required>
+              <option value="">Select</option>
+              <option value="CONSULT">Consultation</option>
+              <option value="THERAPY">Therapy</option>
+              <option value="BOTH">Both</option>
+            </select>
+          </div>
+
+          <div class="col-md-4" id="therapyDiv" style="display:none;">
+            <label class="form-label">Therapy</label>
+            <select name="therapy" class="form-select">
+              <option value="">Select Therapy</option>
+              {% for t in therapies %}
+              <option value="{{ t.id }}">{{ t.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-control"></textarea>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- ================= SLOT DETAILS ================= -->
+        <h6 class="fw-semibold mb-3">Appointment Slot</h6>
+
+        <div class="row g-3" id="selectedSlotRow" style="display:none;">
+          <div class="col-md-4">
+            <label class="form-label">Date</label>
+            <input type="text" id="display_date" class="form-control" readonly>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Time</label>
+            <input type="text" id="display_time" class="form-control" readonly>
+          </div>
+
+          <div class="col-md-4 d-flex align-items-end">
+            <button type="button"
+                    class="btn btn-outline-primary w-100"
+                    onclick="openSlotModal()">
+              Change Slot
+            </button>
+          </div>
+        </div>
+
+        <!-- ================= ACTION BUTTONS ================= -->
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button type="button"
+                  class="btn btn-outline-primary"
+                  onclick="openSlotModal()">
+            📅 Check Slot
+          </button>
+
+          <button type="submit" class="btn btn-success">
+            Save Appointment
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ================= SLOT MODAL (UNCHANGED) ================= -->
+<div class="modal fade" id="slotModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Select Appointment Slot</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <label class="form-label">Select Date</label>
+        <input type="date"
+               id="slotDate"
+               class="form-control mb-3"
+               onchange="loadSlots()">
+
+        <div id="slotsContainer" class="d-flex flex-wrap gap-2"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+
+<!-- ================= YOUR SCRIPT (UNCHANGED) ================= -->
+<script>
+document.getElementById("apptType").addEventListener("change", function () {
+  document.getElementById("therapyDiv").style.display =
+    (this.value === "THERAPY" || this.value === "BOTH") ? "block" : "none";
+});
+
+let bookedSlots = [];
+let selectedDate = "";
+
+function openSlotModal() {
+  new bootstrap.Modal(document.getElementById("slotModal")).show();
+}
+
+function to12Hour(time24) {
+  let [h, m] = time24.split(":");
+  h = parseInt(h);
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${m} ${ampm}`;
+}
+
+function loadSlots() {
+  selectedDate = document.getElementById("slotDate").value;
+  if (!selectedDate) return;
+
+  fetch("{% url 'patientmgmt:booked_slots' %}?date=" + selectedDate)
+    .then(res => res.json())
+    .then(data => {
+      bookedSlots = data.booked || [];
+      renderSlots();
+    });
+}
+
+function renderSlots() {
+  const box = document.getElementById("slotsContainer");
+  box.innerHTML = "";
+
+  for (let hour = 9; hour <= 18; hour++) {
+    const time24 = String(hour).padStart(2, "0") + ":00";
+    const time12 = to12Hour(time24);
+
+    const btn = document.createElement("button");
+
+    if (bookedSlots.includes(time24)) {
+      btn.className = "btn btn-secondary btn-sm";
+      btn.textContent = time12 + " (Booked)";
+      btn.disabled = true;
+    } else {
+      btn.className = "btn btn-outline-success btn-sm";
+      btn.textContent = time12;
+      btn.onclick = () => selectSlot(time24, time12);
+    }
+
+    box.appendChild(btn);
+  }
+}
+
+function selectSlot(time24, time12) {
+  document.getElementById("appointment_date").value = selectedDate;
+  document.getElementById("appointment_time").value = time24;
+
+  document.getElementById("display_date").value = selectedDate;
+  document.getElementById("display_time").value = time12;
+
+  document.getElementById("selectedSlotRow").style.display = "flex";
+
+  bootstrap.Modal.getInstance(
+    document.getElementById("slotModal")
+  ).hide();
+}
+</script>
+
+</body>
+</html>

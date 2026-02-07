@@ -1,0 +1,44 @@
+{% load static %}
+<!doctype html>
+<html>
+{% include "includes/head.html" %}
+<body>
+{% include "includes/sidebar.html" %}
+{% include "includes/header.html" %}
+<div class="container-fluid py-3">
+  <h4>Medicines</h4>
+  <form method="get" class="row g-2 mb-2">
+    <div class="col-md-4"><input name="q" value="{{ request.GET.q }}" class="form-control" placeholder="Search"></div>
+    <div class="col-md-2"><button class="btn btn-primary">Search</button></div>
+    <div class="col-md-6 text-end">
+      <a href="{% url 'medicinemgmt:export_medicines_csv' %}" class="btn btn-outline-secondary btn-sm">Export CSV</a>
+      <a href="{% url 'medicinemgmt:medicine_add' %}" class="btn btn-primary btn-sm">Add Medicine</a>
+    </div>
+  </form>
+
+  <table class="table table-bordered">
+    <thead><tr><th>Code</th><th>Name</th><th>Brand</th><th>MRP</th><th>Sell</th><th>Stock</th><th>Actions</th></tr></thead>
+    <tbody>
+      {% for m in medicines %}
+      <tr>
+        <td>{{ m.code }}</td>
+        <td><a href="{% url 'medicinemgmt:medicine_detail' m.pk %}">{{ m.name }}</a></td>
+        <td>{{ m.brand }}</td>
+        <td>{{ m.mrp }}</td>
+        <td>{{ m.selling_price }}</td>
+        <td>{{ m.total_stock }}</td>
+        <td>
+          <a href="{% url 'medicinemgmt:medicine_edit' m.pk %}" class="btn btn-sm btn-light">Edit</a>
+          <form method="post" action="{% url 'medicinemgmt:medicine_delete' m.pk %}" style="display:inline">{% csrf_token %}
+            <button class="btn btn-sm btn-warning">Deactivate</button>
+          </form>
+        </td>
+      </tr>
+      {% empty %}<tr><td colspan="7">No medicines</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% include "includes/pagination.html" %}
+</div>
+{% include "includes/footer.html" %}
+</body>
+</html>

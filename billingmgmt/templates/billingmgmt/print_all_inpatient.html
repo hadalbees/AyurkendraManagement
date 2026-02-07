@@ -1,0 +1,184 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Combined Inpatient Bill</title>
+
+<style>
+  @page { size: A4; margin: 15mm; }
+
+  body {
+    font-family: "Times New Roman", serif;
+    font-size: 14px;
+    color: #000;
+  }
+
+  .header {
+    text-align: center;
+    border-bottom: 1px solid #000;
+    padding-bottom: 6px;
+  }
+
+  .logo { width: 180px; margin-bottom: 6px; }
+
+  .address { font-size: 12px; line-height: 1.4; }
+
+  .gst { font-size: 12px; font-weight: bold; margin-top: 3px; }
+
+  .doctor-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 12px;
+  }
+
+  .hours {
+    text-align: center;
+    margin: 6px 0;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  .info-table {
+    width: 100%;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
+  .info-table td { padding: 4px; }
+
+  table.bill-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 13px;
+  }
+
+  table.bill-table th,
+  table.bill-table td {
+    border: 1px solid #000;
+    padding: 6px;
+    text-align: center;
+  }
+
+  table.bill-table th { background: #f2f2f2; }
+
+  .totals {
+    width: 40%;
+    float: right;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+
+  .totals td { padding: 5px; }
+
+  .footer {
+    clear: both;
+    margin-top: 60px;
+    font-size: 12px;
+    text-align: center;
+    border-top: 1px solid #000;
+    padding-top: 5px;
+  }
+
+  .no-print { margin-top: 20px; text-align: center; }
+
+  @media print { .no-print { display: none; } }
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <img src="{% static 'img/logos/logohms.png' %}" class="logo">
+  <div class="address">
+    <div>KRISAYU20260040272</div>
+    No.23, Thally Road, Opp. Chenny's Mahal, Hosur – 635109<br>
+    Ph: 91501 12757, 04344 – 220757 | Email: dr.geetha.j@gmail.com
+  </div>
+
+  <div class="gst">
+    GST Reg No : 33AICPJ5295N1ZW
+  </div>
+
+  <div class="doctor-row">
+    <div>
+      <strong>Dr. Geetha. J, B.A.M.S</strong><br>
+      (Reg. No. 17431)
+    </div>
+  </div>
+
+  <div class="hours">
+    Consulting Hours : 10:00 AM – 8:00 PM
+  </div>
+</div>
+
+<!-- PATIENT INFO -->
+<table class="info-table">
+  <tr>
+    <td>
+      <strong>Patient Name:</strong>
+      {% if bill.patient %}
+        {% if bill.patient.prefix and bill.patient.prefix|last == '.' %}
+          {{ bill.patient.prefix }} {{ bill.patient.patient_name }}
+        {% else %}
+          {{ bill.patient.patient_name }}
+        {% endif %}
+      {% else %}
+        Walk-in Customer
+      {% endif %}
+    </td>
+    <td>
+      <strong>Age / Sex:</strong>
+      {% if bill.patient %}
+        {{ bill.patient.age }} / {{ bill.patient.get_gender_display }}
+      {% else %}
+        -
+      {% endif %}
+    </td>
+    <td><strong>Date:</strong> {{ bill.bill_date|date:"d-m-Y" }}</td>
+  </tr>
+  <tr>
+    <td><strong>Included Bills:</strong>
+      {% for b in bills %}{{ b.bill_no }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    </td>
+    <td colspan="2"></td>
+  </tr>
+</table>
+
+<!-- MEDICINES TABLE -->
+<table class="bill-table">
+  <thead>
+    <tr><th>Bill No</th><th>Patient</th><th>Date</th><th>Total</th></tr>
+  </thead>
+  <tbody>
+{% for bill in bills %}
+<tr>
+<td>{{ bill.bill_no }}</td>
+<td>{{ bill.patient.patient_name|default:"Walk-in" }}</td>
+<td>{{ bill.created_at }}</td>
+<td>₹{{ bill.total }}</td>
+</tr>
+{% endfor %}
+  </tbody>
+</table>
+
+<!-- TOTALS -->
+<table class="totals">
+  <tr><td><strong>Total Amount</strong></td><td><strong>₹ {{ total }}</strong></td></tr>
+</table>
+
+<div class="footer">
+  Panchakarma Therapy | Kerala Ayurveda Therapy | Yoga & Naturopathy | Hair & Skin Care<br>
+  Swarna Prashanam (0–14 yrs) | Weight Management | Stress Management | Ano-Rectal Clinic
+</div>
+
+<div class="no-print">
+  <button onclick="window.print()">🖨 Print Combined Bill</button>
+</div>
+
+</body>
+</html>
+

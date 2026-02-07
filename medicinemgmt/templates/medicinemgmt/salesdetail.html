@@ -1,0 +1,36 @@
+{% load static %}
+<!doctype html>
+<html>
+{% include "includes/head.html" %}
+<body>
+{% include "includes/sidebar.html" %}
+{% include "includes/header.html" %}
+<div class="container my-4">
+  <h4>Sale Invoice #{{ sale.pk }}</h4>
+  <p><strong>Date:</strong> {{ sale.sale_date }} &nbsp; <strong>Patient:</strong> {{ sale.patient|default:"Walk-in" }}</p>
+  <table class="table">
+    <thead><tr><th>Medicine</th><th>Batch</th><th>Qty</th><th>Unit</th><th>Line</th></tr></thead>
+    <tbody>
+      {% for it in sale.items.all %}
+      <tr>
+        <td>{{ it.medicine.name }}</td>
+        <td>{{ it.batch.batch_no|default:"(auto)" }}</td>
+        <td>{{ it.quantity }}</td>
+        <td>{{ it.unit_price }}</td>
+        <td>₹{{ it.line_total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p><strong>Total: ₹{{ sale.total_amount }}</strong></p>
+  {% if not sale.is_void %}
+  <form method="post" action="{% url 'medicinemgmt:sale_void' sale.pk %}">{% csrf_token %}
+    <button class="btn btn-danger">Void Invoice</button>
+  </form>
+  {% else %}
+    <div class="alert alert-warning">Invoice voided.</div>
+  {% endif %}
+</div>
+{% include "includes/footer.html" %}
+</body>
+</html>

@@ -1,0 +1,114 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  {% include "includes/head.html" %}
+  <body class="g-sidenav-show bg-gray-100">
+    {% include "includes/sidebar.html" %}
+
+    <main
+      class="main-content position-relative max-height-vh-100 h-100 border-radius-lg"
+    >
+      {% include "includes/header.html" %}
+        <div class="container-fluid py-2">
+          <div class="row">
+            <div class="col-12">
+              <div class="card my-4">
+                <div
+                  class="card-header p-0 position-relative mt-n4 mx-3 z-index-2"
+                >
+                  <div
+                    class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3"
+                  >
+                    <h6 class="text-white text-capitalize ps-3">
+                      Add New Medicine Stock
+                    </h6>
+                  </div>
+                </div>
+                <div class="card-body">
+                   <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row">
+
+                            <div class="col-md-4 my-2">
+                                <div class="input-group input-group-outline my-3">
+                                    <select name="medicine" id="medicineSelect" class="form-control" onchange="fetchStock()" required>
+                                        <option value="">Select Medicine</option>
+                                        {% for m in medicines %}
+                                        <option value="{{ m.id }}">{{ m.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 my-2">
+                                <div class="input-group input-group-outline my-3">
+                                    <input type="text" name="batch" class="form-control" placeholder="Batch Number" id="batchNumber" readonly required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 my-2">
+                                <div class="input-group input-group-outline my-3">
+                                    <input type="number" name="quantity" placeholder="Quantity" step="0.01" class="form-control" id="quantity" required>
+                                </div>
+                            </div>
+
+
+                            <div class="col-md-4 my-2">
+                                <div class="input-group input-group-outline my-3">
+                                    <input type="number" name="selling_price" placeholder="Selling Price" step="0.01" id="sellingPrice" readonly class="form-control" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 my-2">
+                                <div class="input-group input-group-outline my-3">
+                                    <input type="date" name="manufacture_date" placeholder="Manufacture Date" class="form-control" id="manufactureDate" readonly>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 my-2">
+                                <div class="input-group input-group-outline my-3">
+                                    <input type="date" placeholder="Expiry Date" name="expiry_date" class="form-control" id="expiryDate" readonly>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="text-end mt-3">
+                            <button type="submit" class="btn btn-dark">Save Stock</button>
+                        </div>
+
+                    </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+
+       {%include "includes/footer.html"%}
+      </div>
+    </main>
+    {%include "includes/script.html"%}
+    <script>
+function fetchStock() {
+    let medId = document.getElementById("medicineSelect").value;
+    if (!medId) return;
+
+    fetch(`/medicalstock/get-stock/?medicine_id=${medId}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            document.getElementById("batchNumber").value = data.batch_number;
+            document.getElementById("sellingPrice").value = data.selling_price;
+            document.getElementById("manufactureDate").value = data.manufacture_date;
+            document.getElementById("expiryDate").value = data.expiry_date;
+        });
+}
+</script>
+  </body>
+</html>
+

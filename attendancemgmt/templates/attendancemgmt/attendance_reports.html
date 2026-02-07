@@ -1,0 +1,178 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- HEADER -->
+  <div class="mb-4">
+    <h4 class="fw-bold mb-1">Attendance Reports</h4>
+    <p class="text-muted text-sm mb-0">Summary and detailed attendance records</p>
+  </div>
+
+  <!-- FILTER -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+
+        <div class="col-md-3">
+          <label class="form-label">Start Date</label>
+          <input type="date" name="start" value="{{ start|date:'Y-m-d' }}" class="form-control">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">End Date</label>
+          <input type="date" name="end" value="{{ end|date:'Y-m-d' }}" class="form-control">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Employee</label>
+          <select name="employee" class="form-select">
+            <option value="">All</option>
+            {% for e in employees %}
+              <option value="{{ e.id }}" {% if selected_employee == e.id %}selected{% endif %}>
+                {{ e.get_full_name|default:e.username }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-3 d-flex gap-2">
+          <button class="btn bg-gradient-dark">Filter</button>
+          <a class="btn btn-outline-secondary"
+             href="{% url 'attendancemgmt:attendance_export_csv' %}?start={{ start|date:'Y-m-d' }}&end={{ end|date:'Y-m-d' }}{% if selected_employee %}&employee={{ selected_employee }}{% endif %}">
+            Export CSV
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-transparent border-0">
+      <h6 class="fw-semibold mb-0">Summary</h6>
+    </div>
+    <div class="card-body p-0">
+
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th class="text-center">Employee</th>
+              <th class="text-center">Present</th>
+              <th class="text-center">Absent</th>
+              <th class="text-center">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in summary %}
+            <tr>
+              <td>{{ forloop.counter0|add:summary.start_index }}</td>
+              <td class="text-center">{{ s.user__username }}</td>
+              <td class="text-center">{{ s.present_count }}</td>
+              <td class="text-center">{{ s.absent_count }}</td>
+              <td class="text-center">{{ s.total_days }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center text-muted py-4">No data</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- SUMMARY PAGINATION -->
+      <div class="p-3 d-flex justify-content-between border-top">
+        <div class="text-muted text-sm">
+          Showing {{ summary.start_index }}–{{ summary.end_index }} of {{ summary.paginator.count }}
+        </div>
+        <ul class="pagination mb-0">
+          {% if summary.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?summary_page={{ summary.previous_page_number }}&records_page={{ records.number }}">Previous</a>
+            </li>
+          {% endif %}
+          {% if summary.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?summary_page={{ summary.next_page_number }}&records_page={{ records.number }}">Next</a>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RECORDS -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-transparent border-0">
+      <h6 class="fw-semibold mb-0">Records</h6>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th class="text-center">Date</th>
+              <th class="text-center">Employee</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Marked By</th>
+              <th class="text-center">Marked At</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in records %}
+            <tr>
+              <td>{{ forloop.counter0|add:records.start_index }}</td>
+              <td class="text-center">{{ r.date }}</td>
+              <td class="text-center">{{ r.user.get_full_name|default:r.user.username }}</td>
+              <td class="text-center">{{ r.status }}</td>
+              <td class="text-center">{% if r.marked_by %}{{ r.marked_by.username }}{% else %}—{% endif %}</td>
+              <td class="text-center">{{ r.marked_at }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-4">No records</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RECORDS PAGINATION -->
+      <div class="p-3 d-flex justify-content-between border-top">
+        <div class="text-muted text-sm">
+          Showing {{ records.start_index }}–{{ records.end_index }} of {{ records.paginator.count }}
+        </div>
+        <ul class="pagination mb-0">
+          {% if records.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?records_page={{ records.previous_page_number }}&summary_page={{ summary.number }}">Previous</a>
+            </li>
+          {% endif %}
+          {% if records.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?records_page={{ records.next_page_number }}&summary_page={{ summary.number }}">Next</a>
+            </li>
+          {% endif %}
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+{% include "includes/script.html" %}
+</body>
+</html>

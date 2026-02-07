@@ -1,0 +1,575 @@
+/* ===============================
+   GLOBAL HEADER
+================================ */
+.navbar-main {
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  min-height: 64px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+/* ===============================
+   SEARCH BAR
+================================ */
+.header-search {
+  max-width: 520px;
+  position: relative;
+}
+
+.header-search input {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  border-radius: 30px;
+  border: 1px solid #e0e0e0;
+  outline: none;
+  font-size: 14px;
+}
+
+.header-search i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: #777;
+}
+
+/* ===============================
+   ICON BUTTONS
+================================ */
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+}
+
+.icon-btn i {
+  font-size: 22px;
+  color: #555;
+}
+
+/* ===============================
+   USER AVATAR
+================================ */
+.user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* ===============================
+   USER DROPDOWN
+================================ */
+.userbox-menu {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  min-width: 200px;
+  display: none;
+  z-index: 2000;
+}
+
+.userbox-menu.show-menu {
+  display: block;
+}
+
+.userbox-item {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #333;
+  text-decoration: none;
+}
+
+.userbox-item:hover {
+  background: #f5f5f5;
+}
+
+/* ===============================
+   MAIN CONTENT
+================================ */
+.main-content {
+  margin-left: 260px;
+  transition: margin 0.3s ease;
+}
+
+/* ===============================
+   SIDEBAR
+================================ */
+#sidenav-main {
+  width: 260px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1040;
+  background: #fff;
+  transition: transform 0.3s ease;
+}
+
+/* ===============================
+   MOBILE SIDEBAR
+================================ */
+@media (max-width: 1199px) {
+
+  #sidenav-main {
+    transform: translateX(-100%);
+    box-shadow: 0 0 25px rgba(0,0,0,0.2);
+  }
+
+  #sidenav-main.mobile-show {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+  }
+
+  .header-search {
+    display: none;
+  }
+}
+
+/* ===============================
+   SIDEBAR OVERLAY
+================================ */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1035;
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.3s;
+}
+
+.sidebar-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ===============================
+   CLOSE ICON
+================================ */
+.sidebar-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: none;
+  background: transparent;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 1050;
+}
+
+@media (min-width: 1200px) {
+  .sidebar-close {
+    display: none;
+  }
+}
+/* ===============================
+   GLOBAL DASHBOARD
+================================ */
+.dashboard-welcome h4 {
+  font-weight: 600;
+}
+
+.dashboard-welcome p {
+  font-size: 14px;
+}
+
+/* ===============================
+   DASHBOARD CARDS
+================================ */
+.dashboard-card {
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+}
+
+.dashboard-card .card-title {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+
+.dashboard-card .card-value {
+  font-weight: 700;
+}
+
+.icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-primary-soft { background: #e8f0fe; }
+.bg-success-soft { background: #e7f7ee; }
+.bg-info-soft    { background: #e6f6ff; }
+.bg-danger-soft  { background: #fdeaea; }
+
+.card-progress {
+  height: 6px;
+  border-radius: 6px;
+}
+
+/* ===============================
+   MAIN CONTENT LAYOUT
+================================ */
+.dashboard-main {
+  margin-top: 10px;
+}
+
+/* ===============================
+   MEDICINE ALLOCATION
+================================ */
+.med-row {
+  background: #fafafa;
+  padding: 10px;
+  border-radius: 12px;
+}
+
+.delete-icon {
+  background: #fdeaea;
+  color: #dc3545;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.delete-icon:hover {
+  background: #f8d7da;
+}
+
+/* ===============================
+   ACTIVITY PANEL
+================================ */
+.activity-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.activity-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.activity-text strong {
+  font-size: 14px;
+}
+
+/* ===============================
+   MOBILE RESPONSIVE
+================================ */
+@media (max-width: 767px) {
+
+  .dashboard-welcome h4 {
+    font-size: 18px;
+  }
+
+  .dashboard-card {
+    margin-bottom: 12px;
+  }
+
+  /* Medicine rows stack */
+  .med-row > div {
+    margin-bottom: 6px;
+  }
+
+  .med-row {
+    padding: 12px;
+  }
+
+  /* Make inputs full width */
+  .med-row .form-control,
+  .med-row select {
+    font-size: 14px;
+  }
+
+  /* Activity panel spacing */
+  .activity-panel {
+    gap: 10px;
+  }
+
+  /* Reduce card padding */
+  .card-body {
+    padding: 14px;
+  }
+}
+
+/* ===============================
+   TABLET
+================================ */
+@media (min-width: 768px) and (max-width: 991px) {
+
+  .dashboard-card .card-value {
+    font-size: 20px;
+  }
+}
+/* =========================================
+   LIST PAGES RESPONSIVE FIX
+   (SAFE – DOES NOT TOUCH HEADER)
+========================================= */
+
+/* ===============================
+   PAGE HEADER (LIST ONLY)
+================================ */
+.list-page > .d-flex {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.list-page > .d-flex .btn {
+  white-space: nowrap;
+}
+
+/* ===============================
+   TABLE
+================================ */
+.list-page .table-responsive {
+  overflow-x: auto;
+}
+
+.list-page .table {
+  margin-bottom: 0;
+}
+
+.list-page .table thead th {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.list-page .table tbody td {
+  font-size: 14px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* ===============================
+   STATUS BADGES
+================================ */
+.list-page .status-cell span {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.list-page .present {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.list-page .absent {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ===============================
+   ACTION BUTTONS
+================================ */
+.list-page .action-cell {
+  white-space: nowrap;
+}
+
+.list-page .action-cell .btn {
+  margin: 2px;
+}
+
+/* ===============================
+   PAGINATION
+================================ */
+.list-page .pagination {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.list-page .pagination .page-link {
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+.list-page .text-muted.text-sm {
+  font-size: 13px;
+}
+
+/* ===============================
+   CARD
+================================ */
+.list-page .card {
+  border-radius: 14px;
+}
+
+/* ===============================
+   MOBILE
+================================ */
+@media (max-width: 767px) {
+
+  .list-page > .d-flex {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .list-page h4.fw-bold {
+    font-size: 18px;
+  }
+
+  .list-page .action-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .list-page .action-cell .btn {
+    width: 100%;
+    font-size: 12px;
+    padding: 6px;
+  }
+
+  .list-page .pagination {
+    justify-content: center;
+  }
+
+  .list-page .text-muted.text-sm {
+    text-align: center;
+    width: 100%;
+  }
+}
+/* =========================================
+   ADD / EDIT FORM RESPONSIVE STYLES
+   (SAFE – scoped to .form-page)
+========================================= */
+
+/* ===============================
+   PAGE HEADER
+================================ */
+.form-page > .d-flex {
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.form-page h4 {
+  font-size: 22px;
+}
+
+/* ===============================
+   FORM CARD
+================================ */
+.form-page .card {
+  border-radius: 14px;
+}
+
+.form-page .card-body {
+  padding: 28px;
+}
+
+/* ===============================
+   FORM ELEMENTS
+================================ */
+.form-page .form-label {
+  font-size: 14px;
+}
+
+.form-page .form-control,
+.form-page textarea {
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+/* Switch */
+.form-page .form-switch {
+  padding-left: 2.5rem;
+}
+
+.form-page .form-switch .form-check-input {
+  cursor: pointer;
+}
+
+/* ===============================
+   ACTION BUTTONS
+================================ */
+.form-page .btn {
+  white-space: nowrap;
+}
+
+/* ===============================
+   MOBILE VIEW
+================================ */
+@media (max-width: 767px) {
+
+  /* Header stack */
+  .form-page > .d-flex {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .form-page h4 {
+    font-size: 18px;
+  }
+
+  .form-page p.text-muted {
+    font-size: 13px;
+  }
+
+  /* Card padding */
+  .form-page .card-body {
+    padding: 18px;
+  }
+
+  /* Inputs full width */
+  .form-page .row > div {
+    width: 100%;
+  }
+
+  /* Buttons stack */
+  .form-page .d-flex.justify-content-end {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .form-page .btn {
+    width: 100%;
+  }
+}
+
+/* ===============================
+   TABLET VIEW
+================================ */
+@media (min-width: 768px) and (max-width: 991px) {
+
+  .form-page .card-body {
+    padding: 22px;
+  }
+
+  .form-page h4 {
+    font-size: 20px;
+  }
+}

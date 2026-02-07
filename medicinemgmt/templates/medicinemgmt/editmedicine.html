@@ -1,0 +1,93 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+{% include "includes/head.html" %}
+
+<body>
+{% include "includes/sidebar.html" %}
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+    <h4 class="mb-4">Edit Medicine</h4>
+
+    <div class="card p-4">
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="row">
+                <!-- Code -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Medicine Code</label>
+                    <input type="text" name="code" class="form-control"
+                           value="{{ medicine.code }}">
+                </div>
+
+                <!-- Name -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Medicine Name</label>
+                    <input type="text" name="name" class="form-control"
+                           value="{{ medicine.name }}" required>
+                </div>
+
+                <!-- Brand -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Brand</label>
+                    <input type="text" name="brand" class="form-control"
+                           value="{{ medicine.brand }}">
+                </div>
+
+                <!-- Unit -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Unit (Tablet/ML/GM)</label>
+                    <input type="text" name="unit" class="form-control"
+                           value="{{ medicine.unit }}">
+                </div>
+
+                <!-- MRP -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">MRP (₹)</label>
+                    <input type="number" step="0.01" name="mrp" class="form-control"
+                           value="{{ medicine.mrp }}">
+                </div>
+
+                <!-- Selling Price -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Selling Price (₹)</label>
+                    <input type="number" step="0.01" name="selling_price" class="form-control"
+                           value="{{ medicine.selling_price }}">
+                </div>
+
+                <!-- Purchase Price -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Purchase Price (₹)</label>
+                    <input type="number" step="0.01" name="purchase_price" class="form-control"
+                           value="{{ medicine.purchase_price }}">
+                </div>
+
+                <!-- GST -->
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">GST (%)</label>
+                    <input type="number" step="0.01" name="gst" class="form-control"
+                           value="{{ medicine.gst_percent }}">
+                </div>
+
+            </div>
+
+            <div class="mt-3">
+                <button class="btn btn-primary" type="submit">Update Medicine</button>
+                <a href="{% url 'medicinemgmt:medicine_detail' medicine.pk %}" class="btn btn-secondary">
+                    Cancel
+                </a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+{% include "includes/script.html" %}
+</body>
+</html>

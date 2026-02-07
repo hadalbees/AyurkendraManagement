@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+
+    {% include "includes/header.html" %}
+
+    <div class="container-fluid py-3">
+
+        <div class="card my-4">
+            <div class="card-header bg-gradient-dark text-white py-3 d-flex justify-content-between">
+                <h5 class="mb-0">All Billing Invoices</h5>
+            </div>
+
+            <div class="card-body px-0">
+                <div class="table-responsive p-3">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Invoice ID</th>
+                                <th>Patient</th>
+                                <th>Date</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th width="180">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in invoices %}
+                            <tr>
+                                <td>{{ b.pk }}</td>
+                                <td>{{ b.patient.patient_name }}</td>
+                                <td>{{ b.invoice_date }}</td>
+                                <td>₹{{ b.total_amount }}</td>
+                                <td>
+                                    {% if b.is_void %}
+                                        <span class="badge bg-danger">Voided</span>
+                                    {% else %}
+                                        {{ b.payment_status }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'patientmgmt:patient_detail' b.patient.pk %}" class="btn btn-sm btn-primary">
+                                        View
+                                    </a>
+
+                                    {% if not b.is_void %}
+                                    <a class="btn btn-sm btn-light"
+                                        href="{% url 'patientmgmt:billing_edit' b.patient.pk b.pk %}">Edit</a>
+
+                                    <form method="post"
+                                        action="{% url 'patientmgmt:billing_void' b.patient.pk b.pk %}"
+                                        style="display:inline;">
+                                        {% csrf_token %}
+                                        <button class="btn btn-sm btn-danger">Void</button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="6" class="text-center">No invoices found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {% include "includes/footer.html" %}
+
+</main>
+
+{% include "includes/script.html" %}
+
+</body>
+</html>

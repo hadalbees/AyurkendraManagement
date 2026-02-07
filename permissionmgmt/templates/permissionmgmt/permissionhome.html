@@ -1,0 +1,232 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+{% include "includes/breadcrumb.html" %}
+
+
+
+<div class="container-fluid py-4 list-page">
+
+  <!-- PAGE TITLE -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">Staff Management</h4>
+      <p class="text-muted text-sm mb-0">
+        Manage access rights and module visibility for hospital staff members.
+      </p>
+    </div>
+
+    <a href="{% url 'staffaddform' %}"
+       class="btn btn-success rounded-pill px-4"
+       style="color:#065f46;background:#c1e7d2;">
+      + Add Staff
+    </a>
+  </div>
+
+  <!-- STAFF TABLE -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0 staff-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Staff</th>
+              <th>Email</th>
+              <th>Mobile</th>
+              <th>Role</th>
+              <th>Gender</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+          {% for s in staffs %}
+            <tr>
+              <!-- SERIAL NUMBER (CONTINUOUS) -->
+              <td class="fw-semibold">
+                {{ forloop.counter0|add:staffs.start_index }}
+              </td>
+
+              <!-- STAFF -->
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="avatar-circle">
+                    {{ s.username|slice:":1"|upper }}
+                  </div>
+                  <div>
+                    <div class="fw-semibold text-sm">{{ s.username }}</div>
+                    <div class="text-muted text-xs">{{ s.staff_id }}</div>
+                  </div>
+                </div>
+              </td>
+
+              <td class="text-sm text-muted">{{ s.email }}</td>
+              <td class="text-sm">{{ s.mobile_number }}</td>
+
+              <td>
+                {% if s.role %}
+                  <span class="badge bg-light text-dark px-3 py-1">
+                    {{ s.role.role_name }}
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary">No Role</span>
+                {% endif %}
+              </td>
+
+              <td class="text-sm">{{ s.gender }}</td>
+
+              <!-- STATUS -->
+              <td class="text-center">
+                <label class="status-switch">
+                  <input type="checkbox"
+                         class="status-toggle"
+                         data-role-id="{{ s.id }}"
+                         {% if s.is_active %}checked{% endif %}>
+                  <span class="status-slider round"></span>
+                </label>
+              </td>
+
+              <!-- ACTION ICONS (UNCHANGED UI) -->
+              <td class="text-center">
+                <a href="{% url 'staffeditform' s.id %}" class="icon-btn edit">
+                  <i class="material-symbols-rounded edit-icon-color"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    edit
+                  </i>
+                </a>
+                <a href="{% url 'staff_delete' s.id %}" class="icon-btn delete">
+                  <i class="material-symbols-rounded text-danger"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    delete
+                  </i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-4">
+                No staff found.
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+
+      <!-- PAGINATION + RECORD INFO -->
+      <div class="pagination-wrapper">
+
+        <!-- LEFT: RECORD INFO -->
+        <div class="record-info">
+          Showing
+          <strong>{{ staffs.start_index }}</strong>
+          to
+          <strong>{{ staffs.end_index }}</strong>
+          of
+          <strong>{{ staffs.paginator.count }}</strong>
+          records
+        </div>
+
+        <!-- RIGHT: PAGINATION -->
+        <nav>
+          <ul class="pagination">
+
+            {% if staffs.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ staffs.previous_page_number }}">
+                  Previous
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Previous</span>
+              </li>
+            {% endif %}
+
+            {% for num in staffs.paginator.page_range %}
+              {% if staffs.number == num %}
+                <li class="page-item active">
+                  <span class="page-link">{{ num }}</span>
+                </li>
+              {% elif num > staffs.number|add:"-2" and num < staffs.number|add:"2" %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+              {% endif %}
+            {% endfor %}
+
+            {% if staffs.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ staffs.next_page_number }}">
+                  Next
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Next</span>
+              </li>
+            {% endif %}
+
+          </ul>
+        </nav>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+
+<!-- STATUS TOGGLE SCRIPT (UNCHANGED) -->
+<script>
+document.querySelectorAll('.status-toggle').forEach(toggle => {
+  toggle.addEventListener('change', e => {
+    const roleId = e.target.dataset.roleId;
+    const slider = e.target.nextElementSibling;
+
+    fetch(`/permission/toggle-status/${roleId}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        slider.classList.toggle('active', data.status);
+        slider.classList.toggle('inactive', !data.status);
+      }
+    });
+  });
+});
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    document.cookie.split(';').forEach(cookie => {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+      }
+    });
+  }
+  return cookieValue;
+}
+</script>
+
+</body>
+</html>

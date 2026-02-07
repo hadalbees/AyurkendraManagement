@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER -->
+  <div class="mb-4">
+    <h4 class="fw-bold mb-1">Add New Role</h4>
+    <p class="text-muted text-sm mb-0">
+      Create a new role to manage staff permissions and access.
+    </p>
+  </div>
+
+  <!-- ROLE ADD CARD -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+
+      <form role="form" method="post">
+        {% csrf_token %}
+
+        <!-- ROLE NAME -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">
+              Role Name <span class="text-danger">*</span>
+            </label>
+            <input type="text"
+                   name="role_name"
+                   class="form-control"
+                   placeholder="Enter role name"
+                   required>
+          </div>
+        </div>
+
+        <!-- SUBMIT -->
+        <div class="mt-4">
+          <button type="submit"
+                  class="btn bg-gradient-dark px-5">
+            Save Role
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+
+</body>
+</html>

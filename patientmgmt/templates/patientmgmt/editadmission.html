@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="container my-4">
+  <h3>Edit Admission</h3>
+  <form method="post">
+    {% csrf_token %}
+    <div class="mb-2">
+      <label>Room Number</label>
+      <input name="room_number" class="form-control" value="{{ admission.room_number }}">
+    </div>
+    <div class="mb-2">
+      <label>Bed ID</label>
+      <input name="bed_id" class="form-control" value="{{ admission.bed_id }}">
+    </div>
+    <div class="mb-2">
+      <label>Admission Date</label>
+      <input name="admission_date" class="form-control" type="datetime-local" value="{{ admission.admission_date|date:'Y-m-d\\TH:i' }}">
+    </div>
+    <div class="mt-3">
+      <button class="btn btn-primary" type="submit">Save</button>
+      <a href="{% url 'patientmgmt:patient_detail' admission.patient.pk %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

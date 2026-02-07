@@ -1,0 +1,104 @@
+{% load static %}
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Create Invoice</title>
+  <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+</head>
+<body>
+<div class="container my-4">
+  <h4>Create Invoice for {{ patient.patient_name }}</h4>
+
+  <form method="post" id="invoiceForm">
+    {% csrf_token %}
+    <input type="hidden" name="items_count" id="items_count" value="0">
+    <div class="mb-3">
+      <label class="form-label">Invoice Date</label>
+      <input type="date" name="invoice_date" class="form-control" value="{{ today|default:'' }}">
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Payment Status</label>
+      <select name="payment_status" class="form-select">
+        <option value="PENDING">Pending</option>
+        <option value="PAID">Paid</option>
+        <option value="PARTIAL">Partial</option>
+      </select>
+    </div>
+
+    <hr>
+    <h6>Items</h6>
+    <table class="table table-sm" id="items_table">
+      <thead>
+        <tr>
+          <th>Description</th><th style="width:120px">Qty</th><th style="width:150px">Unit Price</th><th style="width:120px">Line Total</th><th style="width:80px"></th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="mb-3 text-end">
+      <strong>Total: ₹ <span id="invoice_total">0.00</span></strong>
+    </div>
+
+    <div class="mb-3">
+      <button type="button" id="add_row" class="btn btn-sm btn-outline-primary">Add item</button>
+    </div>
+
+    <div class="mt-3">
+      <button type="submit" class="btn btn-primary">Create Invoice</button>
+      <a href="{% url 'patientmgmt:patient_detail' patient.pk %}" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  let count = 0;
+  const itemsCountInput = document.getElementById('items_count');
+  const tbody = document.querySelector('#items_table tbody');
+  const totalEl = document.getElementById('invoice_total');
+
+  function recalc() {
+    let total = 0;
+    tbody.querySelectorAll('tr').forEach(tr => {
+      const qty = parseFloat(tr.querySelector('.row-qty').value || '0');
+      const unit = parseFloat(tr.querySelector('.row-unit').value || '0');
+      const lt = (qty * unit) || 0;
+      tr.querySelector('.row-line').textContent = lt.toFixed(2);
+      total += lt;
+    });
+    totalEl.textContent = total.toFixed(2);
+  }
+
+  function addRow(desc='', qty='1', unit='0') {
+    const idx = count++;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input name="item_desc_${idx}" class="form-control form-control-sm" value="${desc}"></td>
+      <td><input name="item_qty_${idx}" class="form-control form-control-sm row-qty" value="${qty}" type="number" min="0" step="0.01"></td>
+      <td><input name="item_unit_${idx}" class="form-control form-control-sm row-unit" value="${unit}" type="number" min="0" step="0.01"></td>
+      <td class="row-line text-end">0.00</td>
+      <td><button type="button" class="btn btn-sm btn-danger remove-row">x</button></td>
+    `;
+    tbody.appendChild(tr);
+    itemsCountInput.value = count;
+    tr.querySelectorAll('.row-qty, .row-unit').forEach(el => el.addEventListener('input', recalc));
+    tr.querySelector('.remove-row').addEventListener('click', ()=>{
+      tr.remove();
+      count = tbody.querySelectorAll('tr').length;
+      itemsCountInput.value = count;
+      recalc();
+    });
+    recalc();
+  }
+
+  document.getElementById('add_row').addEventListener('click', function(){ addRow(); });
+  addRow();
+  document.getElementById('invoiceForm').addEventListener('submit', function(e){
+    itemsCountInput.value = tbody.querySelectorAll('tr').length;
+  });
+})();
+</script>
+</body>
+</html>

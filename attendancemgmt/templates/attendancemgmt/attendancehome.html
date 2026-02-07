@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  {% include "includes/head.html" %}
+  <body class="g-sidenav-show bg-gray-100">
+    {% include "includes/sidebar.html" %}
+
+    <main
+      class="main-content position-relative max-height-vh-100 h-100 border-radius-lg"
+    >
+      {% include "includes/header.html" %}
+        <div class="container-fluid py-2">
+          <div class="row">
+            <div class="col-12">
+              <div class="card my-4">
+                <div
+                  class="card-header p-0 position-relative mt-n4 mx-3 z-index-2"
+                >
+                  <div
+                    class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3"
+                  >
+                    <h6 class="text-white text-capitalize ps-3">
+                      Today's Attendance
+                    </h6>
+                    <a href="" class="addbtn">Report</a>
+                  </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                  <div class="table-responsive p-0">
+                    <table class="table align-items-center mb-0">
+                      <thead>
+                        <tr>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                            S no
+                          </th>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                            Employee ID
+                          </th>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                            Name
+                          </th>
+                            </th>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                            Department
+                          </th>
+                           <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                            Check-in Time
+                          </th>
+                           <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                            Status
+                          </th>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                            Mark Attendance
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>
+                            <div class="d-flex px-2 py-1">
+                              <div
+                                class="d-flex flex-column justify-content-center"
+                              >
+                                <h6 class="mb-0 text-sm">1</h6>
+                              </div>
+                            </div>
+                          </td>
+                          <td >
+                            <p class="text-xs font-weight-bold mb-0">EMP0001</p>
+                          </td>
+                           <td >
+                            <p class="text-xs font-weight-bold mb-0">Ravi</p>
+                          </td>
+                           <td >
+                            <p class="text-xs font-weight-bold mb-0">HR</p>
+                          </td>
+                           <td >
+                            <p class="text-xs font-weight-bold mb-0">09:15 AM</p>
+                          </td>
+                          <td class="align-middle text-sm">
+                            <span class="badge badge-sm bg-gradient-success"
+                              >Present</span
+                            >
+                          </td>
+                          <td class="align-middle">
+                            <label class="switchtog">
+                              <input type="checkbox" checked>
+                              <span class="slidertog"></span>
+                            </label>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+
+       {%include "includes/footer.html"%}
+      </div>
+    </main>
+    {%include "includes/script.html"%}
+  </body>
+</html>

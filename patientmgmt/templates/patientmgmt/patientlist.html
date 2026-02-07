@@ -1,0 +1,349 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<style>
+/* ================= DASHBOARD CARDS ================= */
+.stat-card {
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+}
+.stat-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(135deg,#065f46,#10b981);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 22px;
+}
+
+/* ================= LIST PAGE ================= */
+.page-title {
+  font-weight: 700;
+}
+.page-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Avatar */
+.avatar-circle {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #d1fae5;
+  color: #065f46;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Action icons */
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .2s ease;
+}
+.icon-btn.view {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+.icon-btn.edit {
+  background: #ecfdf5;
+  color: #065f46;
+}
+.icon-btn.delete {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.icon-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,.15);
+}
+
+/* Pagination */
+.pagination .page-link {
+  border-radius: 10px;
+  padding: 6px 14px;
+  margin: 0 2px;
+  color: #065f46;
+}
+.pagination .active .page-link {
+  background: #065f46;
+  border-color: #065f46;
+  color: #fff;
+}
+</style>
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+  <!-- ================= TOP DASHBOARD CARDS ================= -->
+  <h4 class="page-title mb-3">Patient Management Dashboard</h4>
+
+  <div class="row g-3 mb-4">
+
+    <div class="col-xl-3 col-sm-6">
+      <div class="card stat-card">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Today Patients</p>
+            <h4 class="fw-bold">{{ total_patients }}</h4>
+          </div>
+          <div class="stat-icon">
+            <i class="material-symbols-rounded">person</i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+      <div class="card stat-card">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Inpatients</p>
+            <h4 class="fw-bold">{{ inpatients }}</h4>
+          </div>
+          <div class="stat-icon">
+            <i class="material-symbols-rounded">local_hospital</i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+      <div class="card stat-card">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Outpatients</p>
+            <h4 class="fw-bold">{{ outpatients }}</h4>
+          </div>
+          <div class="stat-icon">
+            <i class="material-symbols-rounded">groups</i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-sm-6">
+      <div class="card stat-card">
+        <div class="card-body d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted mb-1">Discharged</p>
+            <h4 class="fw-bold">{{ discharged }}</h4>
+          </div>
+          <div class="stat-icon">
+            <i class="material-symbols-rounded">logout</i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= PAGE HEADER ================= -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="page-title mb-1">All Patients</h4>
+      <p class="page-subtitle">Manage and track registered patients</p>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="{% url 'patientmgmt:patient_register' %}"
+         class="btn btn-success rounded-pill px-4">
+        + Add Patient
+      </a>
+      <button class="btn btn-outline-success rounded-pill px-4"
+              data-bs-toggle="modal"
+              data-bs-target="#whatsappModal">
+        Send Reminder
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= PATIENT TABLE ================= -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Patient</th>
+              <th>Gender</th>
+              <th>Type</th>
+              <th>Phone</th>
+              <th>Referred By</th>   
+              <th>Registered</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for p in patients %}
+            <tr>
+              <td class="fw-semibold">{{ forloop.counter }}</td>
+
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="avatar-circle">
+                    {{ p.patient_name|slice:":1"|upper }}
+                  </div>
+                  <div>
+                    <div class="fw-semibold text-sm">{{ p.patient_name }}</div>
+                    <div class="text-muted text-xs">{{ p.patient_unique_id }}</div>
+                  </div>
+                </div>
+              </td>
+
+              <td>{{ p.get_gender_display }}</td>
+
+              <td>
+                <span class="badge bg-secondary">
+                  {{ p.get_patient_type_display }}
+                </span>
+              </td>
+
+              <td>{{ p.phone }}</td>
+              <td>
+              {% if p.refered_by %}
+                <div class="fw-semibold text-sm">{{ p.refered_by.patient_name }}</div>
+                <div class="text-muted text-xs">{{ p.refered_by.patient_unique_id }}</div>
+              {% else %}
+                <span class="text-muted text-xs">—</span>
+              {% endif %}
+            </td>
+
+              <td>{{ p.created_at|date:"d M Y" }}</td>
+
+              <!-- ACTION ICONS -->
+              <td class="text-center">
+                <a href="{% url 'patientmgmt:patient_detail' p.pk %}"
+                   class="icon-btn view" title="View">
+                  <i class="material-symbols-rounded"
+                     style="font-variation-settings:'FILL' 1">
+                    visibility
+                  </i>
+                </a>
+
+                <a href="{% url 'patientmgmt:patient_edit' p.pk %}"
+                   class="icon-btn edit" title="Edit">
+                  <i class="material-symbols-rounded"
+                     style="font-variation-settings:'FILL' 1">
+                    edit
+                  </i>
+                </a>
+
+                <form action="{% url 'patientmgmt:patient_deactivate' p.pk %}"
+                      method="post" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="icon-btn delete"
+                          title="Deactivate"
+                          onclick="return confirm('Deactivate this patient?')">
+                    <i class="material-symbols-rounded"
+                       style="font-variation-settings:'FILL' 1">
+                      delete_forever
+                    </i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-4">
+                No patients found
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ================= PAGINATION ================= -->
+      <div class="d-flex justify-content-between align-items-center p-3">
+        <small class="text-muted">
+          Showing {{ page_obj.start_index }} – {{ page_obj.end_index }}
+          of {{ page_obj.paginator.count }}
+        </small>
+
+        <nav>
+          <ul class="pagination mb-0">
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                  Previous
+                </a>
+              </li>
+            {% endif %}
+
+            {% for i in page_obj.paginator.page_range %}
+              {% if i >= page_obj.number|add:-2 and i <= page_obj.number|add:2 %}
+                <li class="page-item {% if page_obj.number == i %}active{% endif %}">
+                  <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                </li>
+              {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                  Next
+                </a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+
+<!-- ================= WHATSAPP MODAL ================= -->
+<div class="modal fade" id="whatsappModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form method="POST" action="{% url 'patientmgmt:send_tomorrow_whatsapp' %}">
+        {% csrf_token %}
+        <div class="modal-header">
+          <h5 class="modal-title">Send Tomorrow Visit Reminder</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <textarea name="message" class="form-control" rows="5">
+Dear Patient, this is a reminder for your appointment scheduled tomorrow.
+          </textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button class="btn btn-success">Send Reminder</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

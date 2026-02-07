@@ -1,0 +1,133 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">
+        {% if form.instance.pk %}Edit Stock{% else %}Add Stock{% endif %}
+      </h4>
+      <p class="text-muted text-sm mb-0">
+        Manage medicine stock, batch, pricing and expiry details
+      </p>
+    </div>
+
+    <a href="{% url 'stockmgmt:stock_list' %}"
+       class="btn btn-outline-secondary rounded-pill px-4">
+      ← Back
+    </a>
+  </div>
+
+  <!-- FORM CARD -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body px-4 py-4">
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="row g-4">
+
+          {% for field in form %}
+          <div class="col-md-6">
+
+            <label class="form-label fw-semibold mb-1">
+              {{ field.label }}
+              {% if field.field.required %}
+                <span class="text-danger">*</span>
+              {% endif %}
+            </label>
+
+            {% if field.name == "manufacture_date" or field.name == "expiry_date" %}
+              <input type="date"
+                     name="{{ field.name }}"
+                     value="{{ field.value|default:'' }}"
+                     class="form-control">
+
+            {% elif field.name == "unit" %}
+              <select name="unit" class="form-control" required>
+                <option value="">Select Unit</option>
+                {% for code, label in field.field.choices %}
+                  <option value="{{ code }}"
+                    {% if field.value == code %}selected{% endif %}>
+                    {{ label }}
+                  </option>
+                {% endfor %}
+              </select>
+
+            {% else %}
+              {{ field }}
+              <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                  const el = document.querySelector('[name="{{ field.name }}"]');
+                  if (el) {
+                    el.classList.add("form-control");
+                    el.setAttribute("placeholder", "{{ field.label }}");
+                  }
+                });
+              </script>
+            {% endif %}
+
+            {% if field.help_text %}
+              <small class="text-muted">{{ field.help_text }}</small>
+            {% endif %}
+
+            {% for error in field.errors %}
+              <div class="text-danger small">{{ error }}</div>
+            {% endfor %}
+
+          </div>
+          {% endfor %}
+
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a href="{% url 'stockmgmt:stock_list' %}"
+             class="btn btn-outline-secondary px-4">
+            Cancel
+          </a>
+
+          <button type="submit" class="btn bg-gradient-dark px-4">
+            {% if form.instance.pk %}Update Stock{% else %}Save Stock{% endif %}
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+
+<!-- EXISTING DATE VALIDATION (UNCHANGED) -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  let mfg = document.querySelector('[name="manufacture_date"]');
+  let exp = document.querySelector('[name="expiry_date"]');
+
+  if (mfg && exp) {
+    mfg.addEventListener("change", () => {
+      exp.min = mfg.value;
+    });
+  }
+});
+</script>
+
+</body>
+</html>

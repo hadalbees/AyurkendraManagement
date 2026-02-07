@@ -1,0 +1,390 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  {% include "includes/head.html" %}
+  <body class="g-sidenav-show bg-gray-100">
+    {% include "includes/sidebar.html" %}
+
+    <main
+      class="main-content position-relative max-height-vh-100 h-100 border-radius-lg"
+    >
+      {% include "includes/header.html" %}
+      <div class="container-fluid py-2">
+        <div class="row">
+          <div class="ms-3">
+            <h3 class="mb-3 h4 font-weight-bolder">
+              Patient Management Dashboard
+            </h3>
+          </div>
+          <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+              <div class="card-header p-2 ps-3">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <p class="text-sm mb-0 text-capitalize">Today Patients</p>
+                    <h4 class="mb-0">{{ total_patients }}</h4>
+                  </div>
+                  <div
+                    class="icon icon-md icon-shape bg-gradient-dark shadow-dark shadow text-center border-radius-lg"
+                  >
+                    <i class="material-symbols-rounded opacity-10">person</i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+              <div class="card-header p-2 ps-3">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <p class="text-sm mb-0 text-capitalize">Inpatients</p>
+                    <h4 class="mb-0">{{ inpatients }}</h4>
+                  </div>
+                  <div
+                    class="icon icon-md icon-shape bg-gradient-dark shadow-dark shadow text-center border-radius-lg"
+                  >
+                    <i class="material-symbols-rounded opacity-10">person</i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-sm-6 mb-xl-0 mb-4">
+            <div class="card">
+              <div class="card-header p-2 ps-3">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <p class="text-sm mb-0 text-capitalize">Outpatients</p>
+                    <h4 class="mb-0">{{outpatients}}</h4>
+                  </div>
+                  <div
+                    class="icon icon-md icon-shape bg-gradient-dark shadow-dark shadow text-center border-radius-lg"
+                  >
+                    <i class="material-symbols-rounded opacity-10">person</i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-3 col-sm-6">
+            <div class="card">
+              <div class="card-header p-2 ps-3">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <p class="text-sm mb-0 text-capitalize">Discharged</p>
+                    <h4 class="mb-0">{{discharged}}</h4>
+                  </div>
+                  <div
+                    class="icon icon-md icon-shape bg-gradient-dark shadow-dark shadow text-center border-radius-lg"
+                  >
+                    <i class="material-symbols-rounded opacity-10">person</i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="container-fluid py-2">
+          <div class="row">
+            <div class="col-12">
+              <div class="card my-4">
+                <div
+                  class="card-header p-0 position-relative mt-n4 mx-3 z-index-2"
+                >
+                  <div
+                    class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3"
+                  >
+                    <h6 class="text-white text-capitalize ps-3">
+                      Recent Patients
+                    </h6>
+                     <a href="{% url 'patientmgmt:patient_register' %}" class="addbtn">+ Add Patient</a>
+                  </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                  <div class="table-responsive p-0">
+                    <table class="table align-items-center mb-0">
+                      <thead>
+                        <tr>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                          >
+                            Name
+                          </th>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                            Gender
+                          </th>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                            Phone
+                          </th>
+                          <th
+                            class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                          >
+                            Type
+                          </th>
+                          <th
+                            class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                          >
+                            Action
+                          </th>
+                          <th class="text-secondary opacity-7"></th>
+                        </tr>
+                      </thead>
+                      <tbody> 
+                        {% if patients %} {% for p in patients %}
+                        <tr>
+                          <td>
+                            <div class="d-flex px-2 py-1">
+                              <div>
+                                <img
+                                  src="../assets/img/team-2.jpg"
+                                  class="avatar avatar-sm me-3 border-radius-lg"
+                                  alt="user1"
+                                />
+                              </div>
+                              <div
+                                class="d-flex flex-column justify-content-center"
+                              >
+                                <h6 class="mb-0 text-sm">{{ p.name }}</h6>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <p class="text-xs font-weight-bold mb-0">
+                              {{ p.gender }}
+                            </p>
+                          </td>
+                          <td>
+                            <p class="text-xs font-weight-bold mb-0">
+                              {{ p.phone }}
+                            </p>
+                          </td>
+                          <td>
+                            <p class="text-xs font-weight-bold mb-0">
+                              {{ p.get_patient_type_display }}
+                            </p>
+                          </td>
+                          <td class="align-middle text-center">
+                            <a
+                              href="javascript:;"
+                              class="text-secondary font-weight-bold text-xs"
+                              data-toggle="tooltip"
+                              data-original-title="Edit user"
+                            >
+                              View
+                            </a>
+                          </td>
+                        </tr>
+                        {% endfor %} {% else %}
+                        <tr>
+                          <td colspan="5" class="text-center py-3 text-muted">
+                            No patients yet.
+                          </td>
+                        </tr>
+                        {% endif %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+ <div class="container-fluid py-2">
+          <div class="row">
+            <div class="col-12">
+              <div class="card my-4">
+                <div
+                  class="card-header p-0 position-relative mt-n4 mx-3 z-index-2"
+                >
+                  <div
+                    class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3"
+                  >
+                    <h6 class="text-white text-capitalize ps-3">
+                      Recent Billing
+                    </h6>
+                  </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                  <div class="table-responsive p-0">
+                    <table class="table align-items-center mb-0">
+                      <thead>
+                        <tr>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                          >
+                            Invoice ID
+                          </th>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                            Patient
+                          </th>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                            Total Amount
+                          </th>
+                          <th
+                            class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                          >
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% if billings %} {% for b in billings %}
+                        <tr>
+                          <td>
+                            <div class="d-flex px-2 py-1">
+                              <div>
+                                <img
+                                  src="../assets/img/team-2.jpg"
+                                  class="avatar avatar-sm me-3 border-radius-lg"
+                                  alt="user1"
+                                />
+                              </div>
+                              <div
+                                class="d-flex flex-column justify-content-center"
+                              >
+                                <h6 class="mb-0 text-sm">{{ b.invoice_no }}</h6>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <p class="text-xs font-weight-bold mb-0">
+                              {{ b.patient.name }}
+                            </p>
+                          </td>
+                          <td>
+                            <p class="text-xs font-weight-bold mb-0">
+                              {{  b.total_amount }}
+                            </p>
+                          </td>
+                           <td class="align-middle text-center text-sm">
+                            <span class="badge badge-sm bg-gradient-success"
+                              >{% if b.status == 'paid' %} Paid {% else %} Pending {% endif %}</span
+                            >
+                          </td>
+                        </tr>
+                        {% endfor %} {% else %}
+                        <tr>
+                          <td colspan="5" class="text-center py-3 text-muted">
+                            No Billing yet.
+                          </td>
+                        </tr>
+                        {% endif %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {%include "includes/footer.html"%}
+      </div>
+
+      <div class="row">
+        <div class="col-xl-3 col-sm-6 mb-4">
+          <div class="card">
+            <div class="card-body p-3">
+              <p class="text-sm mb-0">Total Patients</p>
+              <h4 id="counter_total_patients">{{ total_patients }}</h4>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6 mb-4">
+          <div class="card">
+            <div class="card-body p-3">
+              <p class="text-sm mb-0">Inpatients</p>
+              <h4 id="counter_inpatients">{{ inpatients }}</h4>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6 mb-4">
+          <div class="card">
+            <div class="card-body p-3">
+              <p class="text-sm mb-0">Outpatients</p>
+              <h4 id="counter_outpatients">{{ outpatients }}</h4>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-xl-3 col-sm-6 mb-4">
+          <div class="card">
+            <div class="card-body p-3">
+              <p class="text-sm mb-0">Pending Invoices</p>
+              <h4 id="counter_pending_invoices">{{ pending_invoices }}</h4>
+              <p class="text-xs">Total: ₹ <span id="counter_invoices_amount">{{ total_invoices_amount }}</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent patients & billing -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card my-4">
+            <div class="card-header bg-gradient-dark text-white py-3 d-flex justify-content-between align-items-center">
+              <h6 class="mb-0 text-white">Recent Patients</h6>
+              <a href="{% url 'patientmgmt:patient_list' %}" class="btn btn-sm btn-light">View All</a>
+            </div>
+            <div class="card-body p-3">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr><th>Name</th><th>Phone</th><th>Type</th><th>Registered</th></tr>
+                  </thead>
+                  <tbody>
+                    {% for p in patients %}
+                    <tr>
+                      <td>{{ p.patient_name }}</td>
+                      <td>{{ p.phone }}</td>
+                      <td>{{ p.get_patient_type_display }}</td>
+                      <td>{{ p.created_at|date:"d M Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">No patients yet.</td></tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    {% include "includes/footer.html" %}
+</div>
+  </main>
+  {% include "includes/script.html" %}
+  <script>
+  async function fetchLiveCounts(){
+    try{
+      const res = await fetch("{% url 'patientmgmt:live_counts' %}");
+      if(!res.ok) return;
+      const data = await res.json();
+      document.getElementById('counter_total_patients').textContent = data.total_patients;
+      document.getElementById('counter_inpatients').textContent = data.inpatients;
+      document.getElementById('counter_outpatients').textContent = data.outpatients;
+      document.getElementById('counter_pending_invoices').textContent = data.pending_invoices;
+      document.getElementById('counter_invoices_amount').textContent = data.total_invoices_amount.toFixed(2);
+    }catch(e){
+      console.warn("Live counts failed", e);
+    }
+  }
+  fetchLiveCounts();
+  setInterval(fetchLiveCounts, 30000);
+
+  </script>
+</body>
+</html>

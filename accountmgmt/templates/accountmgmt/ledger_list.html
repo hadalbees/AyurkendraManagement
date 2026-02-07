@@ -1,0 +1,153 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+  <!-- ================= PAGE HEADER ================= -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">Ledger</h4>
+      <p class="text-muted text-sm mb-0">
+        Complete debit and credit transaction summary
+      </p>
+    </div>
+  </div>
+
+  <!-- ================= FILTER CARD ================= -->
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+
+        <div class="col-md-3">
+          <label class="form-label text-sm">From Date</label>
+          <input type="date"
+                 name="from_date"
+                 value="{{ from_date }}"
+                 class="form-control">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label text-sm">To Date</label>
+          <input type="date"
+                 name="to_date"
+                 value="{{ to_date }}"
+                 class="form-control">
+        </div>
+
+        <div class="col-md-6 d-flex gap-2">
+          <button class="btn bg-gradient-dark">
+            🔍 Filter
+          </button>
+
+          <button name="export_pdf"
+                  value="1"
+                  class="btn btn-danger">
+            📄 Export PDF
+          </button>
+
+          <a href="{% url 'accountmgmt:ledger_list' %}"
+             class="btn btn-secondary">
+            ⟳ Reset
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= LEDGER TABLE ================= -->
+  <div class="card shadow-sm border-0">
+
+    <!-- TABLE HEADER (STAFF LIST STYLE) -->
+<div class="card-header">
+    <h6 class="mb-0">Ledger Records</h6>
+  </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-items-center mb-0">
+
+          <thead class="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Particulars</th>
+              <th class="text-end">Debit (₹)</th>
+              <th class="text-end">Credit (₹)</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for row in ledger %}
+            <tr>
+              <td>
+                {{ row.date|date:"d M Y" }}
+              </td>
+
+              <td class="fw-semibold text-sm">
+                {{ row.particulars }}
+              </td>
+
+             <td class="text-end text-danger fw-semibold">
+                {% if row.debit %}
+                  ₹ {{ row.debit }} <span class="text-muted text-sm">({{ row.payment_mode }})</span>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <td class="text-end text-success fw-semibold">
+                {% if row.credit %}
+                  ₹ {{ row.credit }} <span class="text-muted text-sm">({{ row.payment_mode }})</span>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4"
+                  class="text-center text-muted py-4">
+                No ledger records found
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+
+          <!-- ================= CLOSING BALANCE ================= -->
+          <tfoot>
+            <tr class="fw-bold bg-light">
+              <td colspan="3" class="text-end">
+                Closing Balance
+              </td>
+              <td class="text-end">
+                <span class="{% if closing_balance_type == 'Credit' %}text-success{% else %}text-danger{% endif %}">
+                  {{ closing_balance_type }} : ₹ {{ closing_balance_value }}
+                </span>
+              </td>
+            </tr>
+          </tfoot>
+
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

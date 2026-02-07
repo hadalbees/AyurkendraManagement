@@ -1,0 +1,120 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Inpatient Bill - {{ bill.bill_no }}</title>
+
+<style>
+@page { size:A4; margin:15mm; }
+body { font-family:"Times New Roman", serif; font-size:14px; }
+.header { text-align:center; border-bottom:1px solid #000; padding-bottom:6px; }
+.logo { width:180px; margin-bottom:5px; }
+.address { font-size:12px; }
+.gst { font-size:12px; font-weight:bold; margin-top:4px; }
+table { width:100%; border-collapse:collapse; margin-top:12px; }
+th, td { border:1px solid #000; padding:6px; text-align:center; }
+th { background:#f2f2f2; }
+.right { text-align:right; }
+.no-print { margin-top:20px; text-align:center; }
+@media print { .no-print{display:none;} }
+</style>
+</head>
+
+<body>
+
+<!-- ================= HEADER ================= -->
+<div class="header">
+  {% if settings.hospital_logo %}
+    <img src="{{ settings.hospital_logo.url }}" class="logo">
+  {% endif %}
+
+  <strong>{{ settings.hospital_name }}</strong><br>
+
+  <div class="address">
+    {{ settings.address|linebreaksbr }}<br>
+    Ph: {{ settings.phone }}{% if settings.email %} | {{ settings.email }}{% endif %}
+  </div>
+
+  <div class="gst">
+    GST No: {{ settings.gst_number }} <br>
+    Reg No: {{ settings.registration_number }}
+  </div>
+
+  <h3>INPATIENT BILL</h3>
+</div>
+
+<!-- ================= PATIENT INFO ================= -->
+<p>
+<strong>Bill No:</strong> {{ bill.bill_no }} |
+<strong>Date:</strong> {{ bill.created_at|date:"d-m-Y" }}<br>
+
+<strong>Patient:</strong> {{ bill.patient.patient_name }} |
+<strong>Age/Sex:</strong> {{ bill.patient.age }} / {{ bill.patient.get_gender_display }}<br>
+
+<strong>Doctor:</strong> {{ bill.doctor_name }}<br>
+<strong>Admit:</strong> {{ bill.admit_date }} |
+<strong>Discharge:</strong> {{ bill.discharge_date }}
+</p>
+
+<!-- ================= ROOM CHARGES ================= -->
+<h4>Room Charges</h4>
+<table>
+<thead>
+<tr><th>Description</th><th>Rate</th><th>Days</th><th>Amount</th></tr>
+</thead>
+<tbody>
+{% for r in room_items %}
+<tr>
+<td>{{ r.item_name }}</td>
+<td>{{ r.unit_price }}</td>
+<td>{{ r.quantity }}</td>
+<td>{{ r.subtotal }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="4">No Room Charges</td></tr>
+{% endfor %}
+</tbody>
+</table>
+
+<!-- ================= OTHER CHARGES ================= -->
+<h4>Other Charges</h4>
+<table>
+<thead>
+<tr><th>Description</th><th>Type</th><th>Rate</th><th>Qty</th><th>Amount</th></tr>
+</thead>
+<tbody>
+{% for it in other_items %}
+<tr>
+<td>{{ it.item_name }}</td>
+<td>{{ it.get_item_type_display }}</td>
+<td>{{ it.unit_price }}</td>
+<td>{{ it.quantity }}</td>
+<td>{{ it.subtotal }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<!-- ================= TOTALS ================= -->
+<p class="right">Subtotal: ₹ {{ subtotal }}</p>
+
+<p class="right">
+  CGST ({{ cgst_percent }}%): ₹ {{ cgst }}
+</p>
+
+<p class="right">
+  SGST ({{ sgst_percent }}%): ₹ {{ sgst }}
+</p>
+
+
+<h3 class="right">Grand Total: ₹ {{ grand_total }}</h3>
+
+<!-- ================= FOOTER ================= -->
+<div class="no-print">
+  <button onclick="window.print()">🖨 Print</button>
+  <a href="{% url 'billingmgmt:inpatientbilling' %}">⬅ Back</a>
+</div>
+
+</body>
+</html>

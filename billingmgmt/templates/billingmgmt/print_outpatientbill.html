@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Outpatient Bill - {{ bill.bill_no }}</title>
+
+<style>
+@page { size:A4; margin:15mm; }
+body { font-family:"Times New Roman"; font-size:14px; }
+
+.header { text-align:center; border-bottom:1px solid #000; padding-bottom:6px; }
+.logo { width:180px; }
+
+.address { font-size:12px; }
+.gst { font-weight:bold; font-size:12px; margin-top:3px; }
+
+table { width:100%; border-collapse:collapse; margin-top:15px; }
+th, td { border:1px solid #000; padding:6px; text-align:center; }
+th { background:#f2f2f2; }
+
+.right { text-align:right; }
+
+.no-print { margin-top:20px; text-align:center; }
+@media print { .no-print{display:none;} }
+</style>
+</head>
+
+<body>
+
+<!-- ================= HEADER ================= -->
+<div class="header">
+  {% if settings.hospital_logo %}
+    <img src="{{ settings.hospital_logo.url }}" class="logo">
+  {% else %}
+    <img src="{% static 'img/logos/logohms.png' %}" class="logo">
+  {% endif %}
+
+  <div class="address">
+    {% if settings.registration_number %}
+      <div>{{ settings.registration_number }}</div>
+    {% endif %}
+    {{ settings.address }}<br>
+    Ph: {{ settings.phone }}
+  </div>
+
+  {% if settings.gst_number %}
+  <div class="gst">
+    GST Reg No : {{ settings.gst_number }}
+  </div>
+  {% endif %}
+
+  <strong>OUTPATIENT BILL</strong>
+</div>
+
+<!-- ================= PATIENT INFO ================= -->
+<p>
+<strong>Bill No:</strong> {{ bill.bill_no }} |
+<strong>Patient:</strong>
+{% if bill.patient %}
+  {% if bill.patient.prefix and bill.patient.prefix|last == '.' %}
+    {{ bill.patient.prefix }} {{ bill.patient.patient_name }}
+  {% else %}
+    {{ bill.patient.patient_name }}
+  {% endif %}
+{% else %}
+  Walk-in Customer
+{% endif %}
+|
+<strong>Date:</strong> {{ bill.visit_date|date:"d-m-Y" }}
+</p>
+
+<!-- ================= ITEMS ================= -->
+<table>
+<thead>
+<tr>
+  <th>Description</th>
+  <th>Rate</th>
+  <th>Qty</th>
+  <th>Total</th>
+</tr>
+</thead>
+<tbody>
+{% for x in items %}
+<tr>
+  <td>{{ x.item_name }}</td>
+  <td>{{ x.unit_price }}</td>
+  <td>{{ x.quantity }}</td>
+  <td>{{ x.subtotal }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<!-- ================= TOTALS ================= -->
+<p class="right">Subtotal: ₹ {{ bill.subtotal }}</p>
+
+{% if bill.discount > 0 %}
+<p class="right">Discount: ₹ {{ bill.discount }}</p>
+{% endif %}
+
+{% if gst_percent > 0 %}
+<p class="right">
+  CGST ({{ cgst_percent }}%): ₹ {{ cgst }}
+</p>
+
+<p class="right">
+  SGST ({{ sgst_percent }}%): ₹ {{ sgst }}
+</p>
+{% endif %}
+
+<h3 class="right">Total: ₹ {{ grand_total }}</h3>
+
+<!-- ================= ACTION ================= -->
+<div class="no-print">
+  <button onclick="window.print()">🖨 Print</button>
+  <a href="{% url 'billingmgmt:outpatientbilling' %}">⬅ Back</a>
+</div>
+
+</body>
+</html>

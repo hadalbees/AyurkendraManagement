@@ -1,0 +1,46 @@
+
+<!doctype html>
+<html>
+{% include "includes/head.html" %}
+<body>
+{% include "includes/sidebar.html" %}
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-3">
+  <h4>Medicine Dashboard</h4>
+  <div class="row mb-3">
+    <div class="col-md-3 card p-3">Total medicines: <h3>{{ total_medicines }}</h3></div>
+    <div class="col-md-3 card p-3">Low stock (<5): <h3>{{ low_stock_count }}</h3></div>
+    <div class="col-md-3 card p-3">Stock value: <h3>₹{{ total_stock_value }}</h3></div>
+  </div>
+
+  <div class="mb-4">
+    <a class="btn btn-primary" href="{% url 'medicinemgmt:medicine_add' %}">Add medicine</a>
+    <a class="btn btn-success" href="{% url 'medicinemgmt:purchase_add' %}">Record purchase</a>
+    <a class="btn btn-warning" href="{% url 'medicinemgmt:sale_add' %}">Create sale</a>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <h5>Recent purchases</h5>
+      <ul>
+        {% for p in recent_purchases %}
+          <li>{{ p.purchase_date }} — ₹{{ p.total_amount }} ({{ p.supplier }})</li>
+        {% empty %}<li>No purchases</li>{% endfor %}
+      </ul>
+    </div>
+    <div class="col-md-6">
+      <h5>Recent sales</h5>
+      <ul>
+        {% for s in recent_sales %}
+          <li>{{ s.sale_date }} — ₹{{ s.total_amount }} {% if s.patient %} ({{ s.patient }}) {% endif %}</li>
+        {% empty %}<li>No sales</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% include "includes/footer.html" %}
+{% include "includes/script.html" %}
+</body>
+</html>

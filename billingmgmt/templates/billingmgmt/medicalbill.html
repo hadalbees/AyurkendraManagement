@@ -1,0 +1,463 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER -->
+  <div class="mb-4">
+    <h4 class="mb-1">Medical Billing</h4>
+    <p class="text-sm text-muted mb-0">
+      Create and manage patient bills
+    </p>
+  </div>
+
+  <form method="post" action="{% url 'billingmgmt:medicalbilling' %}">
+    {% csrf_token %}
+
+    <!-- ================= PATIENT & BILLING DETAILS ================= -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+
+        <h6 class="mb-3">Patient & Billing Details</h6>
+
+        <div class="row g-3">
+
+          <div class="col-md-3">
+            <label class="form-label">Bill No</label>
+            <input class="form-control" name="bill_no" value="{{ bill_no }}" readonly>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Customer Type</label>
+            <select name="customer_type" id="customerType" class="form-select">
+              <option value="patient">Registered Patient</option>
+              <option value="walkin">Walk-in Customer</option>
+            </select>
+          </div>
+
+          <div class="col-md-4" id="patientBox">
+            <label class="form-label">Patient (ID or Name)</label>
+            <div class="position-relative">
+              <input type="text"
+                     id="patientInput"
+                     class="form-control"
+                     placeholder="Search ID or name"
+                     oninput="filterDropdown()"
+                     onclick="showDropdown()"
+                     onblur="hideDropdownDelayed()">
+
+              <ul id="patientDropdown"
+                  class="autocomplete-list med-list"
+                  style="display:none;">
+                {% for p in patients %}
+                <li class="med-li"
+                    onclick="selectPatient('{{ p.patient_unique_id }}','{{ p.patient_name }}')">
+                  {{ p.patient_unique_id }} - {{ p.patient_name }}
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+            <input type="hidden" name="patient_id" id="patientHidden">
+          </div>
+          <div class="col-md-4 d-none" id="walkinBox">
+            <label class="form-label">Customer Name</label>
+            <input type="text"
+                  name="walkin_name"
+                  class="form-control"
+                  placeholder="Enter customer name">
+          </div>
+
+
+          <div class="col-md-2">
+            <label class="form-label">Age</label>
+            <input class="form-control" id="patientAge">
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Gender</label>
+            <input class="form-control" id="patientGender">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Doctor Name</label>
+            <input class="form-control" id="doctorName" name="doctor_name">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Billing Date</label>
+            <input type="date"
+                   class="form-control"
+                   name="bill_date"
+                   value="{{ today|date:'Y-m-d' }}">
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= MEDICINES + SUMMARY ================= -->
+    <div class="row">
+
+      <!-- LEFT : ADD MEDICINES -->
+      <div class="col-lg-8">
+
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0">Add Medicines</h6>
+              <button type="button"
+                      class="btn btn-sm btn-success"
+                      onclick="renderManualBlankRow()">
+                + Add Medicine
+              </button>
+            </div>
+
+            <!-- Prescription / Manual Rows -->
+            <div id="prescriptionItemsContainer"></div>
+
+            <div class="table-responsive mt-3">
+              <table class="table align-items-center" id="itemsTable">
+                <thead class="bg-light">
+                  <tr>
+                    <th>Medicine</th>
+                    <th>Unit</th>
+                    <th>Unit Price</th>
+                    <th>Quantity</th>
+                    <th>Subtotal</th>
+                    <th class="text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT : BILLING SUMMARY -->
+   <div class="col-lg-4">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+
+      <h6 class="mb-3">Billing Summary Panel</h6>
+
+      <div class="row mt-3">
+        <div class="col-md-12 mb-2">
+          <label class="form-label">
+            Payment Status <span style="color:red">*</span>
+          </label>
+          <select class="form-select" name="payment_status" required>
+            <option value="Pending">Pending</option>
+            <option value="Paid">Paid</option>
+          </select>
+        </div>
+
+        <div class="col-md-12 mb-3">
+          <label class="form-label">
+            Payment Mode <span style="color:red">*</span>
+          </label>
+          <select class="form-select" name="payment_mode" required>
+            <option>Cash</option>
+            <option>Card</option>
+            <option>UPI</option>
+            <option>NetBanking</option>
+            <option>Insurance</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between mb-2">
+        <span>Subtotal</span>
+        <strong>₹ <span id="subtotalText">0.00</span></strong>
+      </div>
+
+      <div class="d-flex justify-content-between mb-2">
+        <span>
+          GST (<span id="gstPercentText">{{ settings.consultation_gst|default:0 }}</span>%)
+        </span>
+        <strong>₹ <span id="taxText">0.00</span></strong>
+      </div>
+
+      <hr>
+
+      <div class="d-flex justify-content-between fs-5">
+        <strong>Total Amount</strong>
+        <strong>₹ <span id="totalText">0.00</span></strong>
+      </div>
+
+      <!-- Hidden values -->
+      <input type="hidden" name="subtotal" id="subtotalVal">
+      <input type="hidden" name="tax" id="taxVal">
+      <input type="hidden" name="total" id="totalVal">
+
+      <!-- GST % from settings -->
+      <input type="hidden" id="gstPercent"
+             value="{{ settings.consultation_gst|default:0 }}">
+
+    </div>
+  </div>
+</div>
+
+
+    </div>
+
+    <!-- ================= ACTION BUTTONS ================= -->
+    <div class="d-flex justify-content-end gap-2 mt-3">
+      <a href="javascript:location.reload()"
+         class="btn btn-outline-secondary">
+        Cancel / Reset
+      </a>
+
+      <button class="btn btn-success px-4">
+        Save Bill
+      </button>
+    </div>
+
+  </form>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+
+<!-- ====================== SCRIPT (UNCHANGED) ====================== -->
+<script>
+/* ---------- Prepare Medicines from Django ---------- */
+const allMedicines = [
+  {% for m in medicines %}
+  {
+    id: "{{ m.id }}",
+    name: "{{ m.medicine.name|escapejs }}",
+    unit: "{{ m.unit|escapejs }}",
+    quantity: "{{ m.quantity }}",
+    selling_price: "{{ m.selling_price }}",
+    price_per_single: "{{ m.price_per_single }}"
+  }{% if not forloop.last %},{% endif %}
+  {% endfor %}
+];
+
+let items = [];
+function num(v){ return parseFloat(v) || 0; }
+
+/* ---------- Patient Dropdown ---------- */
+function filterDropdown(){
+  const input = document.getElementById("patientInput").value.toLowerCase();
+  const li = document.querySelectorAll("#patientDropdown li");
+  document.getElementById("patientDropdown").style.display = "block";
+  li.forEach(el => el.style.display = el.innerText.toLowerCase().includes(input) ? "block" : "none");
+}
+function showDropdown(){ document.getElementById("patientDropdown").style.display = "block"; }
+function hideDropdownDelayed(){ setTimeout(()=>{ document.getElementById("patientDropdown").style.display="none"; },200); }
+
+/* ---------- Patient Select ---------- */
+function selectPatient(id,name){
+  document.getElementById("patientInput").value = `${id} - ${name}`;
+  document.getElementById("patientHidden").value = id;
+  document.getElementById("patientDropdown").style.display="none";
+
+  fetch(`/billing/get-patient/?patient_id=${id}`)
+    .then(res=>res.json())
+    .then(d=>{
+      if(!d.error){
+        document.getElementById("patientAge").value = d.age;
+        document.getElementById("patientGender").value = d.gender;
+        loadPrescriptionItems(id);
+      }
+    });
+}
+
+/* ---------- Load Prescription ---------- */
+function loadPrescriptionItems(pid){
+  fetch(`/billing/get-prescription/?patient_id=${pid}`)
+    .then(res=>res.json())
+    .then(d=>{
+      document.getElementById("prescriptionItemsContainer").innerHTML = "";
+      if(d.items && d.items.length){
+        d.items.forEach(r => renderManualBlankRow(r.medicine_name, r.quantity));
+      }
+    });
+}
+
+/* ---------- Render Manual Row ---------- */
+function renderManualBlankRow(selectedName = "", qtyValue = ""){
+  const c = document.getElementById("prescriptionItemsContainer");
+
+  let options = `<option value="">-- Select --</option>`;
+  allMedicines.forEach(m=>{
+    options += `
+      <option value="${m.id}"
+              data-unit="${m.unit}"
+              data-price="${m.selling_price}"
+              data-single="${m.price_per_single}"
+              ${m.name === selectedName ? "selected" : ""}>
+        ${m.name} (${m.unit}) - Stock: ${m.quantity}
+      </option>`;
+  });
+
+  const div = document.createElement("div");
+  div.className = "row g-2 align-items-end mb-2";
+
+  div.innerHTML = `
+    <div class="col-md-3">
+      <label>Medicine</label>
+      <select class="form-control medSelect">${options}</select>
+    </div>
+    <div class="col-md-2">
+      <label>Unit</label>
+      <input class="form-control unitField" readonly>
+    </div>
+    <div class="col-md-2">
+      <label>Unit Price</label>
+      <input class="form-control priceField" readonly>
+    </div>
+    <div class="col-md-2">
+      <label>Qty</label>
+      <input class="form-control qtyField" type="number" min="1" value="${qtyValue}">
+    </div>
+    <div class="col-md-2">
+      <label>Subtotal</label>
+      <input class="form-control subField" readonly>
+    </div>
+    <div class="col-md-1">
+      <button type="button" class="btn btn-dark w-100 addBtn">+</button>
+    </div>
+  `;
+
+  c.appendChild(div);
+  const select = div.querySelector(".medSelect");
+  const qty = div.querySelector(".qtyField");
+
+  select.onchange = () => updateRow(div);
+  qty.oninput = () => updateRow(div);
+  div.querySelector(".addBtn").onclick = () => addRowToTable(div);
+  updateRow(div);
+}
+
+/* ---------- Update Row ---------- */
+function updateRow(div){
+  const opt = div.querySelector(".medSelect").selectedOptions[0];
+  if(!opt) return;
+  const qty = num(div.querySelector(".qtyField").value);
+  const single = num(opt.dataset.single);
+
+  div.querySelector(".unitField").value = opt.dataset.unit || "";
+  div.querySelector(".priceField").value = num(opt.dataset.price).toFixed(2);
+  div.querySelector(".subField").value = (qty * single).toFixed(2);
+}
+
+/* ---------- Add Row ---------- */
+function addRowToTable(div){
+  const opt = div.querySelector(".medSelect").selectedOptions[0];
+  if(!opt) return alert("Select a medicine");
+  const qty = num(div.querySelector(".qtyField").value);
+  if(qty <= 0) return alert("Invalid quantity");
+
+  items.push({
+    id: opt.value,
+    name: opt.textContent.split("(")[0].trim(),
+    unit: opt.dataset.unit,
+    qty: qty,
+    selling_price: num(opt.dataset.price),
+    subtotal: qty * num(opt.dataset.single)
+  });
+
+  renderItems();
+}
+
+/* ---------- Render Items ---------- */
+function renderItems(){
+  const tb = document.querySelector("#itemsTable tbody");
+  tb.innerHTML = "";
+  let subtotal = 0;
+
+  items.forEach((it,i)=>{
+    subtotal += it.subtotal;
+    tb.innerHTML += `
+      <tr>
+        <td>
+          ${it.name}
+          <input type="hidden" name="stock_id[]" value="${it.id}">
+          <input type="hidden" name="unit[]" value="${it.unit}">
+          <input type="hidden" name="quantity[]" value="${it.qty}">
+          <input type="hidden" name="subtotal[]" value="${it.subtotal}">
+        </td>
+        <td>${it.unit}</td>
+        <td>₹${it.selling_price.toFixed(2)}</td>
+        <td>${it.qty}</td>
+        <td>₹${it.subtotal.toFixed(2)}</td>
+        <td class="text-center">
+          <button type="button"
+                  class="btn btn-danger btn-sm"
+                  onclick="removeItem(${i})">X</button>
+        </td>
+      </tr>`;
+  });
+
+  /* ================== DYNAMIC GST ================== */
+  const gstPercent = parseFloat(
+    document.getElementById("gstPercent").value || 0
+  );
+
+  const tax = (subtotal * gstPercent) / 100;
+  const total = subtotal + tax;
+
+  /* ================== UI UPDATE ================== */
+  document.getElementById("subtotalText").innerText = subtotal.toFixed(2);
+  document.getElementById("taxText").innerText = tax.toFixed(2);
+  document.getElementById("totalText").innerText = total.toFixed(2);
+
+  /* ================== FORM VALUES ================== */
+  document.getElementById("subtotalVal").value = subtotal.toFixed(2);
+  document.getElementById("taxVal").value = tax.toFixed(2);
+  document.getElementById("totalVal").value = total.toFixed(2);
+}
+
+
+function removeItem(i){
+  items.splice(i,1);
+  renderItems();
+}
+
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  const customerType = document.getElementById("customerType");
+  const patientBox = document.getElementById("patientBox");
+  const walkinBox = document.getElementById("walkinBox");
+
+  if (!customerType || !patientBox || !walkinBox) {
+    console.error("Billing toggle elements missing");
+    return;
+  }
+
+  customerType.addEventListener("change", function () {
+    const isPatient = this.value === "patient";
+
+    patientBox.classList.toggle("d-none", !isPatient);
+    walkinBox.classList.toggle("d-none", isPatient);
+
+    if (!isPatient) {
+      document.getElementById("patientHidden").value = "";
+      document.getElementById("patientInput").value = "";
+      document.getElementById("patientAge").value = "";
+      document.getElementById("patientGender").value = "";
+    }
+  });
+
+});
+</script>
+
+</body>
+</html>

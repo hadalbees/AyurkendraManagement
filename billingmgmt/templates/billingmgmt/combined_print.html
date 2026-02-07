@@ -1,0 +1,110 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Patient Combined Bill</title>
+
+<style>
+@page { size: A4; margin: 15mm; }
+body { font-family: "Times New Roman", serif; font-size: 14px; }
+.header { text-align:center; border-bottom:1px solid #000; padding-bottom:6px; }
+.logo { width:180px; }
+.address { font-size:12px; }
+.gst { font-size:12px; font-weight:bold; margin-top:3px; }
+.doctor-row { display:flex; justify-content:space-between; font-size:12px; margin-top:6px; }
+.hours { font-size:12px; font-weight:bold; margin:6px 0; text-align:center; }
+
+.info-table { width:100%; margin-top:10px; }
+.info-table td { padding:4px; }
+
+.bill-table { width:100%; border-collapse:collapse; margin-top:15px; }
+.bill-table th, .bill-table td {
+  border:1px solid #000;
+  padding:6px;
+  text-align:center;
+}
+.bill-table th { background:#f2f2f2; }
+
+.totals { width:40%; float:right; margin-top:10px; }
+.totals td { padding:5px; }
+
+.footer { clear:both; margin-top:50px; font-size:12px; text-align:center; border-top:1px solid #000; padding-top:5px; }
+.no-print { margin-top:20px; text-align:center; }
+@media print { .no-print { display:none; } }
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <img src="{% static 'img/logos/logohms.png' %}" class="logo">
+  <div class="address">
+    <div>KRISAYU20260040272</div>
+    No.23, Thally Road, Opp. Chenny's Mahal, Hosur – 635109<br>
+    Ph: 91501 12757, 04344 – 220757
+  </div>
+  <div class="gst">GST Reg No : 33AICPJ5295N1ZW</div>
+
+  <div class="doctor-row">
+    <div><strong>Dr. Geetha. J</strong><br>(Reg. No. 17431)</div>
+  </div>
+
+  <div class="hours">Consulting Hours : 10:00 AM – 8:00 PM</div>
+</div>
+
+<table class="info-table">
+<tr>
+  <td><strong>Patient:</strong>
+    {% if patient %}
+      {{ patient.patient_name }}
+    {% else %}
+      -
+    {% endif %}
+  </td>
+  <td><strong>Period:</strong> {{ start }} to {{ end }}</td>
+</tr>
+</table>
+
+<table class="bill-table">
+<thead>
+<tr>
+  <th>#</th>
+  <th>Date</th>
+  <th>Bill No</th>
+  <th>Type</th>
+  <th>Amount (₹)</th>
+</tr>
+</thead>
+<tbody>
+{% for r in rows %}
+<tr>
+  <td>{{ forloop.counter }}</td>
+  <td>{{ r.date|date:"d-m-Y" }}</td>
+  <td>{{ r.bill_no }}</td>
+  <td>{{ r.type }}</td>
+  <td>{{ r.amount }}</td>
+</tr>
+{% empty %}
+<tr><td colspan="5">No data</td></tr>
+{% endfor %}
+</tbody>
+</table>
+
+<table class="totals">
+<tr><td>Subtotal</td><td>₹ {{ subtotal }}</td></tr>
+<tr><td>Discount</td><td>₹ {{ discount }}</td></tr>
+<tr><td>GST</td><td>₹ {{ tax }}</td></tr>
+<tr><td><strong>Total</strong></td><td><strong>₹ {{ total }}</strong></td></tr>
+</table>
+
+<div class="footer">
+  Panchakarma Therapy | Kerala Ayurveda | Yoga & Naturopathy
+</div>
+
+<div class="no-print">
+  <button onclick="window.print()">🖨 Print</button>
+</div>
+
+</body>
+</html>

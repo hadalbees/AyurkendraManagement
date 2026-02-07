@@ -1,0 +1,267 @@
+{% load static %}
+{% load dict_extras %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">Attendance</h4>
+      <p class="text-muted text-sm mb-0">
+        Attendance for {{ today }}
+      </p>
+    </div>
+
+    <a href="{% url 'attendancemgmt:attendance_reports' %}"
+       class="btn btn-success rounded-pill px-4"
+       style="background:#c1e7d2;color:#065f46;">
+      View Reports
+    </a>
+  </div>
+
+  <!-- ATTENDANCE TABLE -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead>
+            <tr>
+              <th style="width:80px;">#</th>
+              <th>Employee</th>
+              <th>Username</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for emp in employees %}
+            <tr id="row-{{ emp.id }}">
+
+              <!-- SERIAL (CONTINUOUS) -->
+              <td class="fw-semibold">
+                {{ forloop.counter0|add:employees.start_index }}
+              </td>
+
+              <!-- EMPLOYEE -->
+              <td>{{ emp.get_full_name|default:emp.username }}</td>
+
+              <!-- USERNAME -->
+              <td>{{ emp.username }}</td>
+
+              <!-- STATUS (OLD LOGIC KEPT) -->
+             <td class="status-cell text-center">
+              {% if emp.id in todays_map %}
+                <span class="{{ todays_map|dict_get:emp.id|lower }}">
+                  {{ todays_map|dict_get:emp.id }}
+                </span>
+              {% else %}
+                <span class="text-muted">Not marked</span>
+              {% endif %}
+            </td>
+
+              <!-- ACTION (OLD LOGIC KEPT) -->
+              <td class="text-center action-cell">
+              {% if emp.id in todays_map %}
+                <button class="btn btn-secondary btn-sm" disabled>
+                  Marked
+                </button>
+              {% else %}
+                <button class="btn btn-success btn-sm"
+                        onclick="adminMark({{ emp.id }}, 'Present')">
+                  Present
+                </button>
+                <button class="btn btn-danger btn-sm"
+                        onclick="adminMark({{ emp.id }}, 'Absent')">
+                  Absent
+                </button>
+              {% endif %}
+            </td>
+
+
+
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-4">
+                No employees found.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION + RECORD INFO -->
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+
+        <!-- LEFT: RECORD INFO -->
+        <div class="text-muted text-sm">
+          Showing
+          <strong>{{ employees.start_index }}</strong>
+          to
+          <strong>{{ employees.end_index }}</strong>
+          of
+          <strong>{{ employees.paginator.count }}</strong>
+          employees
+        </div>
+
+        <!-- RIGHT: PAGINATION -->
+        <nav>
+          <ul class="pagination mb-0">
+
+            {% if employees.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ employees.previous_page_number }}">
+                  Previous
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Previous</span>
+              </li>
+            {% endif %}
+
+            {% for num in employees.paginator.page_range %}
+              {% if employees.number == num %}
+                <li class="page-item active">
+                  <span class="page-link">{{ num }}</span>
+                </li>
+              {% elif num > employees.number|add:"-2" and num < employees.number|add:"2" %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+              {% endif %}
+            {% endfor %}
+
+            {% if employees.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ employees.next_page_number }}">
+                  Next
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Next</span>
+              </li>
+            {% endif %}
+
+          </ul>
+        </nav>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+
+<!-- EXISTING JS (UNCHANGED) -->
+<script>
+function adminMark(user_id, status) {
+  if (!confirm(`Mark ${status} for this employee?`)) return;
+
+  const url = "{% url 'attendancemgmt:admin_mark_user' 0 %}".replace("0", user_id);
+
+  fetch(url, {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": getCookie("csrftoken"),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      status: status,
+      date: "{{ today|date:'Y-m-d' }}"
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.ok) {
+      showToast(data.error || "Action failed", "error");
+      return;
+    }
+
+    const row = document.getElementById(`row-${user_id}`);
+    if (!row) return;
+
+    /* ✅ UPDATE STATUS CELL */
+    const statusCell = row.querySelector(".status-cell");
+    statusCell.innerHTML =
+      `<span class="${status.toLowerCase()}">${status}</span>`;
+
+    /* ✅ UPDATE ACTION CELL */
+    const actionCell = row.querySelector(".action-cell");
+    actionCell.innerHTML = `
+      <button class="btn btn-secondary btn-sm" disabled>
+        Marked
+      </button>
+    `;
+
+    showToast(`Attendance marked as ${status}`);
+  })
+  .catch(() => {
+    showToast("Network error. Try again.", "error");
+  });
+}
+
+/* ===== CSRF ===== */
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== "") {
+    for (let cookie of document.cookie.split(";")) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + "=")) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+function showToast(message, type = "success") {
+  let bg = "bg-success";
+  if (type === "error") bg = "bg-danger";
+  if (type === "warning") bg = "bg-warning text-dark";
+
+  let container = document.querySelector(".toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "toast-container position-fixed top-0 end-0 p-3";
+    container.style.zIndex = 9999;
+    document.body.appendChild(container);
+  }
+
+  const toastHTML = `
+    <div class="toast text-white ${bg} border-0 mb-2" data-bs-delay="3000">
+      <div class="d-flex">
+        <div class="toast-body">${message}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  `;
+  container.insertAdjacentHTML("beforeend", toastHTML);
+  new bootstrap.Toast(container.lastElementChild).show();
+}
+
+</script>
+
+</body>
+</html>

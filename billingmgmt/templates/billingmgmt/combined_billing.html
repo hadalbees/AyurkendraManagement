@@ -1,0 +1,170 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+<h4 class="fw-bold mb-3">Patient Combined Billing</h4>
+
+<div class="card p-3 mb-3">
+  <div class="row g-3">
+
+    <div class="col-md-3">
+         <!-- Patient Search -->
+      <label class="form-label">Patient</label>
+      <input type="text"
+             id="patientSearch"
+             class="form-control"
+             placeholder="Search ID or name">
+      <input type="hidden" id="patientId">
+      <div id="patientSuggestions" class="list-group position-absolute w-100" style="width:auto;z-index:11111;"></div>
+    </div>
+
+    <div class="col-md-2">
+      <label>From</label>
+      <input type="date" id="startDate" class="form-control">
+    </div>
+
+    <div class="col-md-2">
+      <label>To</label>
+      <input type="date" id="endDate" class="form-control">
+    </div>
+
+    <div class="col-md-2">
+      <label>Status</label>
+      <select id="paymentStatus" class="form-select">
+        <option value="">All</option>
+        <option>Paid</option>
+        <option>Pending</option>
+      </select>
+    </div>
+
+    <div class="col-md-2">
+      <label>Mode</label>
+      <select id="paymentMode" class="form-select">
+        <option value="">All</option>
+        <option>Cash</option>
+        <option>Card</option>
+        <option>UPI</option>
+        <option>NetBanking</option>
+        <option>Insurance</option>
+      </select>
+    </div>
+
+    <div class="col-md-12">
+      <label>Bill Types</label><br>
+      <label><input type="checkbox" value="medical" checked> Medical</label>
+      <label class="ms-3"><input type="checkbox" value="therapy" checked> Therapy</label>
+      <label class="ms-3"><input type="checkbox" value="inpatient" checked> Inpatient</label>
+      <label class="ms-3"><input type="checkbox" value="outpatient" checked> Outpatient</label>
+    </div>
+
+    <div class="col-md-12 text-end">
+      <button class="btn btn-primary" onclick="loadCombined()">Filter</button>
+      <button class="btn btn-success d-none" id="printBtn" onclick="printCombined()">Print</button>
+    </div>
+
+  </div>
+</div>
+
+<table class="table">
+<thead>
+<tr>
+<th>#</th><th>Date</th><th>Bill No</th><th>Type</th><th>Total</th>
+</tr>
+</thead>
+<tbody id="combinedBody"></tbody>
+</table>
+
+</div>
+
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+<script>
+const COMBINED_FILTER_URL = "{% url 'billingmgmt:combined_billing_filter_ajax' %}";
+const COMBINED_PRINT_URL  = "{% url 'billingmgmt:combined_billing_print' %}";
+function loadCombined() {
+  const types = [...document.querySelectorAll("input[type=checkbox]:checked")]
+                .map(c => c.value);
+
+fetch(COMBINED_FILTER_URL + "?" +
+  `patient_id=${patientId.value}` +
+  `&start_date=${startDate.value}` +
+  `&end_date=${endDate.value}` +
+  `&payment_status=${paymentStatus.value}` +
+  `&payment_mode=${paymentMode.value}` +
+  types.map(t => `&bill_types[]=${t}`).join("")
+)
+
+  .then(res => res.json())
+  .then(d => {
+    combinedBody.innerHTML = d.html;
+    printBtn.classList.toggle("d-none", d.html.includes("No data"));
+  });
+}
+
+function printCombined() {
+  const params = new URLSearchParams({
+    patient_id: patientId.value,
+    start_date: startDate.value,
+    end_date: endDate.value,
+    payment_status: paymentStatus.value,
+    payment_mode: paymentMode.value
+  });
+
+  // add bill types
+  document
+    .querySelectorAll("input[name='bill_types[]']:checked")
+    .forEach(cb => params.append("bill_types[]", cb.value));
+
+  window.open(`${COMBINED_PRINT_URL}?${params.toString()}`, "_blank");
+}
+
+
+
+
+
+// ---- Patient Suggestion ----
+document.getElementById("patientSearch").addEventListener("input", function () {
+  const q = this.value.trim();
+  if (q.length < 2) return;
+
+  fetch(`/billing/get_patient_suggestions/?q=${q}`)
+    .then(res => res.json())
+    .then(data => {
+      const box = document.getElementById("patientSuggestions");
+      box.innerHTML = "";
+
+      data.forEach(p => {
+        box.innerHTML += `
+          <a href="#"
+             class="list-group-item list-group-item-action"
+             onclick="selectPatient('${p.patient_unique_id}','${p.name}')">
+            ${p.patient_unique_id} - ${p.name}
+          </a>
+        `;
+      });
+    });
+});
+
+function selectPatient(id, name) {
+  document.getElementById("patientSearch").value = `${id} - ${name}`;
+  document.getElementById("patientId").value = id;
+  document.getElementById("patientSuggestions").innerHTML = "";
+}
+
+</script>
+</body>
+</html>
+
+

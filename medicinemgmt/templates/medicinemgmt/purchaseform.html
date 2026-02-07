@@ -1,0 +1,77 @@
+{% load static %}
+<!doctype html>
+<html>
+{% include "includes/head.html" %}
+<body>
+{% include "includes/header.html" %}
+<div class="container my-4">
+  <h3>Record Purchase</h3>
+  <form method="post" id="purchaseForm">{% csrf_token %}
+    <div class="row mb-3">
+      <div class="col-md-4"><label>Supplier</label>
+        <select name="supplier" class="form-select"><option value="">--</option>{% for s in suppliers %}<option value="{{ s.pk }}">{{ s.name }}</option>{% endfor %}</select>
+      </div>
+      <div class="col-md-4"><label>Invoice no</label><input name="invoice_no" class="form-control"></div>
+      <div class="col-md-4"><label>Purchase date</label><input name="purchase_date" type="date" class="form-control" value="{{ today|default:'' }}"></div>
+    </div>
+
+    <table class="table" id="items_table">
+      <thead><tr><th>Medicine</th><th>Batch</th><th>Expiry</th><th>Qty</th><th>Unit price</th><th>Line</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <input type="hidden" id="items_count" name="items_count" value="0">
+    <div class="text-end mb-3"><strong>Total: ₹<span id="total">0.00</span></strong></div>
+    <button class="btn btn-success" type="submit">Save Purchase</button>
+  </form>
+</div>
+
+<script>
+(function(){
+  let count=0;
+  const tbody=document.querySelector('#items_table tbody');
+  const totalEl=document.getElementById('total');
+  const itemsCount=document.getElementById('items_count');
+  const meds = [{% for m in medicines %}{id:{{ m.pk }}, name:"{{ m.name|escapejs }}", sell:"{{ m.selling_price }}", purch:"{{ m.purchase_price }}"}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+  function recalc(){
+    let t=0;
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const qty=parseFloat(tr.querySelector('.row-qty').value||'0');
+      const up=parseFloat(tr.querySelector('.row-unit').value||'0');
+      const lt=(qty*up)||0;
+      tr.querySelector('.row-line').textContent = lt.toFixed(2);
+      t+=lt;
+    });
+    totalEl.textContent = t.toFixed(2);
+  }
+
+  function addRow(){
+    const idx=count++;
+    const tr=document.createElement('tr');
+    let medicOptions = '<option value="">--Select--</option>';
+    meds.forEach(m=> medicOptions += `<option value="${m.id}">${m.name}</option>`);
+    tr.innerHTML = `<td><select name="item_med_${idx}" class="form-select">${medicOptions}</select></td>
+      <td><input name="item_batch_${idx}" class="form-control" /></td>
+      <td><input name="item_expiry_${idx}" type="date" class="form-control" /></td>
+      <td><input name="item_qty_${idx}" class="form-control row-qty" value="1" type="number" step="0.01"></td>
+      <td><input name="item_unit_${idx}" class="form-control row-unit" value="0" type="number" step="0.01"></td>
+      <td class="row-line text-end">0.00</td>
+      <td><button type="button" class="btn btn-sm btn-danger remove">x</button></td>`;
+    tbody.appendChild(tr);
+    itemsCount.value = count;
+    tr.querySelectorAll('.row-qty,.row-unit').forEach(el=>el.addEventListener('input', recalc));
+    tr.querySelector('.remove').addEventListener('click', ()=>{ tr.remove(); count = tbody.querySelectorAll('tr').length; itemsCount.value = count; recalc(); });
+    recalc();
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){ addRow(); });
+  document.getElementById('purchaseForm').addEventListener('submit', function(){ itemsCount.value = tbody.querySelectorAll('tr').length; });
+  document.getElementById('items_table').addEventListener('click', function(e){
+    if(e.target && e.target.classList.contains('addrow')) addRow();
+  });
+})();
+</script>
+
+{% include "includes/footer.html" %}
+</body>
+</html>

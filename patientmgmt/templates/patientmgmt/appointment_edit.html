@@ -1,0 +1,281 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">Edit Appointment</h4>
+      <p class="text-muted text-sm mb-0">
+        Update appointment details and slot
+      </p>
+    </div>
+
+    <a href="{% url 'patientmgmt:appointment_list' %}"
+       class="btn btn-outline-secondary rounded-pill px-4">
+      ← Back
+    </a>
+  </div>
+
+  <!-- MAIN CARD -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-4">
+
+      <form method="POST">
+        {% csrf_token %}
+
+        <input type="hidden" name="patient_id" value="{{ appt.patient.id }}">
+
+        <!-- ================= PATIENT INFO ================= -->
+        <h6 class="fw-semibold mb-3">Patient Information</h6>
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Patient Name</label>
+            <input class="form-control" value="{{ appt.patient.patient_name }}" disabled>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Age</label>
+            <input class="form-control" value="{{ appt.patient.age }}" disabled>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Phone</label>
+            <input class="form-control" value="{{ appt.patient.phone }}" disabled>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Place</label>
+            <input class="form-control" value="{{ appt.patient.address }}" disabled>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- ================= APPOINTMENT DETAILS ================= -->
+        <h6 class="fw-semibold mb-3">Appointment Details</h6>
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Appointment Type</label>
+            <select class="form-select" name="appointment_type" id="apptType">
+              <option value="CONSULT" {% if appt.appointment_type == "CONSULT" %}selected{% endif %}>Consultation</option>
+              <option value="THERAPY" {% if appt.appointment_type == "THERAPY" %}selected{% endif %}>Therapy</option>
+              <option value="BOTH" {% if appt.appointment_type == "BOTH" %}selected{% endif %}>Both</option>
+            </select>
+          </div>
+
+          <div class="col-md-4" id="therapyDiv" style="display:none;">
+            <label class="form-label">Therapy</label>
+            <select name="therapy" class="form-select">
+              <option value="">Select Therapy</option>
+              {% for t in therapies %}
+              <option value="{{ t.id }}"
+                {% if appt.therapy and appt.therapy.id == t.id %}selected{% endif %}>
+                {{ t.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-select">
+              <option value="PENDING" {% if appt.status == "PENDING" %}selected{% endif %}>Pending</option>
+              <option value="COMPLETED" {% if appt.status == "COMPLETED" %}selected{% endif %}>Completed</option>
+              <option value="CANCELLED" {% if appt.status == "CANCELLED" %}selected{% endif %}>Cancelled</option>
+            </select>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- ================= SLOT DETAILS ================= -->
+        <h6 class="fw-semibold mb-3">Appointment Slot</h6>
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Date</label>
+            <input id="appointment_date_display"
+                   type="date"
+                   class="form-control"
+                   value="{{ appt.appointment_date|date:'Y-m-d' }}"
+                   disabled>
+            <input type="hidden"
+                   name="appointment_date"
+                   id="appointment_date"
+                   value="{{ appt.appointment_date|date:'Y-m-d' }}">
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Time</label>
+            <input id="appointment_time_display"
+                   type="time"
+                   class="form-control"
+                   value="{{ appt.appointment_time|time:'H:i' }}"
+                   disabled>
+            <input type="hidden"
+                   name="appointment_time"
+                   id="appointment_time"
+                   value="{{ appt.appointment_time|time:'H:i' }}">
+          </div>
+
+          <div class="col-md-4 d-flex align-items-end">
+            <button type="button"
+                    class="btn btn-outline-primary w-100"
+                    onclick="openSlotModal()">
+              📅 Change Slot
+            </button>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- ================= NOTES ================= -->
+        <h6 class="fw-semibold mb-3">Notes</h6>
+
+        <div class="row">
+          <div class="col-12">
+            <textarea name="notes"
+                      class="form-control"
+                      rows="3">{{ appt.notes }}</textarea>
+          </div>
+        </div>
+
+        <!-- ================= ACTIONS ================= -->
+        <div class="d-flex justify-content-end mt-4">
+          <button type="submit" class="btn btn-success px-4">
+            Update Appointment
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ================= SLOT MODAL (UNCHANGED) ================= -->
+<div class="modal fade" id="slotModal" tabindex="-1">
+<div class="modal-dialog modal-lg modal-dialog-centered">
+<div class="modal-content">
+
+<div class="modal-header">
+  <h5 class="modal-title">Select Available Slot</h5>
+  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+  <label class="form-label">Select Date</label>
+  <input type="date"
+         id="slotDate"
+         class="form-control mb-3"
+         onchange="loadSlots()">
+
+  <div id="slotsContainer" class="d-flex flex-wrap gap-2"></div>
+</div>
+
+</div>
+</div>
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+{% include "includes/script.html" %}
+
+<!-- ================= YOUR SCRIPT (UNCHANGED) ================= -->
+<script>
+document.getElementById("apptType").addEventListener("change", function(){
+  document.getElementById("therapyDiv").style.display =
+    (this.value === "THERAPY" || this.value === "BOTH") ? "block" : "none";
+});
+window.onload = () =>
+  document.getElementById("apptType").dispatchEvent(new Event("change"));
+
+let bookedSlots = [];
+let selectedDate = "";
+
+function openSlotModal(){
+  selectedDate = document.getElementById("appointment_date").value;
+  document.getElementById("slotDate").value = selectedDate;
+  loadSlots();
+  new bootstrap.Modal(document.getElementById("slotModal")).show();
+}
+
+function to12Hour(time){
+  let [h,m] = time.split(":");
+  h = parseInt(h);
+  const ap = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  return `${h}:${m} ${ap}`;
+}
+
+function loadSlots(){
+  selectedDate = document.getElementById("slotDate").value;
+  if(!selectedDate) return;
+
+  fetch("{% url 'patientmgmt:booked_slots' %}?date=" + selectedDate)
+    .then(r => r.json())
+    .then(d => {
+      bookedSlots = d.booked || [];
+      renderSlots();
+    });
+}
+
+function renderSlots(){
+  const box = document.getElementById("slotsContainer");
+  box.innerHTML = "";
+
+  const currentDate = "{{ appt.appointment_date|date:'Y-m-d' }}";
+  const currentTime = "{{ appt.appointment_time|time:'H:i' }}";
+
+  for(let h=9; h<=18; h++){
+    const t24 = String(h).padStart(2,"0")+":00";
+    const t12 = to12Hour(t24);
+
+    const isBooked =
+      bookedSlots.includes(t24) &&
+      !(selectedDate === currentDate && t24 === currentTime);
+
+    const btn = document.createElement("button");
+
+    if(isBooked){
+      btn.className = "btn btn-secondary btn-sm";
+      btn.textContent = t12 + " (Booked)";
+      btn.disabled = true;
+    }else{
+      btn.className = "btn btn-outline-success btn-sm";
+      btn.textContent = t12;
+      btn.onclick = () => selectSlot(t24);
+    }
+
+    box.appendChild(btn);
+  }
+}
+
+function selectSlot(time24){
+  document.getElementById("appointment_date").value = selectedDate;
+  document.getElementById("appointment_time").value = time24;
+
+  document.getElementById("appointment_date_display").value = selectedDate;
+  document.getElementById("appointment_time_display").value = time24;
+
+  bootstrap.Modal.getInstance(
+    document.getElementById("slotModal")
+  ).hide();
+}
+</script>
+
+</body>
+</html>

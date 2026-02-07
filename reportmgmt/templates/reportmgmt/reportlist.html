@@ -1,0 +1,187 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">Patient Reports</h4>
+      <p class="text-muted text-sm mb-0">
+        Manage uploaded medical reports for patients
+      </p>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label">Search</label>
+          <input type="text"
+                 name="q"
+                 value="{{ q }}"
+                 class="form-control"
+                 placeholder="Patient name / phone">
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label">Patient Type</label>
+          <select name="type" class="form-select">
+            <option value="">All</option>
+            <option value="OP" {% if type == "OP" %}selected{% endif %}>Outpatient</option>
+            <option value="IP" {% if type == "IP" %}selected{% endif %}>Inpatient</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100">Filter</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- REPORT TABLE -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead>
+            <tr>
+              <th>Patient</th>
+              <th>Phone</th>
+              <th>Type</th>
+              <th>Reports</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for patient in patients %}
+            <tr>
+              <td class="fw-semibold">
+                {{ patient.patient_name }}
+              </td>
+
+              <td>{{ patient.phone }}</td>
+
+              <td>
+                <span class="badge bg-secondary">
+                  {{ patient.get_patient_type_display }}
+                </span>
+              </td>
+
+              <td>
+                {% if patient.reports.count %}
+                  <span class="badge bg-success">
+                    {{ patient.reports.count }} Uploaded
+                  </span>
+                {% else %}
+                  <span class="badge bg-danger">
+                    No Reports
+                  </span>
+                {% endif %}
+              </td>
+
+              <!-- ACTIONS (STAFF / THERAPY STYLE) -->
+              <td class="text-center">
+                <a href="{% url 'reportmgmt:addreport' patient.id %}"
+                   class="icon-btn edit"
+                   title="Add Report">
+                  <i class="material-symbols-rounded edit-icon-color"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    add
+                  </i>
+                </a>
+
+                <a href="{% url 'reportmgmt:patientreports' patient.id %}"
+                   class="icon-btn view"
+                   title="View Reports">
+                  <i class="material-symbols-rounded text-info"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    folder
+                  </i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-4">
+                No patient records found
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION -->
+      {% if is_paginated %}
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+
+        <div class="text-muted text-sm">
+          Showing
+          <strong>{{ page_obj.start_index }}</strong>
+          to
+          <strong>{{ page_obj.end_index }}</strong>
+          of
+          <strong>{{ page_obj.paginator.count }}</strong>
+          patients
+        </div>
+
+        <nav>
+          <ul class="pagination mb-0">
+
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="?q={{ q }}&type={{ type }}&page={{ page_obj.previous_page_number }}">
+                Previous
+              </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">Previous</span>
+            </li>
+            {% endif %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="?q={{ q }}&type={{ type }}&page={{ page_obj.next_page_number }}">
+                Next
+              </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">Next</span>
+            </li>
+            {% endif %}
+
+          </ul>
+        </nav>
+
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

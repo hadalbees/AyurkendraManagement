@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg
+*.egg-info/
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+env/
+henv/
+.venv/
+
+# Django stuff
+db.sqlite3
+/staticfiles/
+media/
+*.log
+
+# VSCode / IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node / front-end build files
+node_modules/
+dist/
+build/
+
+# Environment variables
+.env
+*.env
+
+# Backup files
+*.bak
+*.swp
+*.tmp
+"db.sqlite3" 
+db.sqlite3 

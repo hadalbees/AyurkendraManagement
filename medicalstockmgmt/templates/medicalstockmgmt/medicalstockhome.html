@@ -1,0 +1,172 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  {% include "includes/head.html" %}
+  <body class="g-sidenav-show bg-gray-100">
+    {% include "includes/sidebar.html" %}
+
+    <main
+      class="main-content position-relative max-height-vh-100 h-100 border-radius-lg"
+    >
+      {% include "includes/header.html" %}
+        <div class="container-fluid py-2">
+          <div class="row">
+            <div class="col-12">
+              <div class="card my-4">
+                <div
+                  class="card-header p-0 position-relative mt-n4 mx-3 z-index-2"
+                >
+                  <div
+                    class="bg-gradient-dark shadow-dark border-radius-lg pt-4 pb-3"
+                  >
+                    <h6 class="text-white text-capitalize ps-3">
+                      Medical Stock
+                    </h6>
+                    <a href="{% url 'medicalstockmgmt:addstock' %}" class="addbtn">Add Medical Stock</a>
+                  </div>
+                </div>
+                <div class="card-body px-0 pb-2">
+                  <div class="table-responsive p-0">
+                    <table class="table align-items-center mb-0">
+                      <thead>
+                        <tr>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                          >
+                            S no
+                          </th>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                           Batch Number
+                          </th>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                           medicine Name
+                          </th>
+                          <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                           Quantity
+                          </th>
+                           <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                           Expiry Date
+                          </th>
+                           <th
+                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2"
+                          >
+                           Manufacture Date
+                          </th>
+                          <th
+                            class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                          >
+                            Status
+                          </th>
+                          <th
+                            class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7"
+                          >
+                            Action
+                          </th>
+                          <th class="text-secondary opacity-7"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% if stocks %}
+                          {% for s in stocks %}
+                          <tr>
+                            <!-- S No -->
+                            <td class="align-middle">
+                              {{ forloop.counter }}
+                            </td>
+
+                            <!-- Batch Number -->
+                            <td>
+                              <p class="text-xs font-weight-bold mb-0">{{ s.batch_number }}</p>
+                            </td>
+
+                            <!-- Medicine Name -->
+                            <td>
+                              <p class="text-xs font-weight-bold mb-0">{{ s.medicine.name }}</p>
+                            </td>
+
+                            <!-- Quantity -->
+                            <td>
+                              <p class="text-xs font-weight-bold mb-0">{{ s.quantity }}</p>
+                            </td>
+
+                            <!-- Expiry Date -->
+                            <td>
+                              <p class="text-xs font-weight-bold mb-0">
+                                {% if s.expiry_date %}
+                                  {{ s.expiry_date }}
+                                {% else %}
+                                  -
+                                {% endif %}
+                              </p>
+                            </td>
+
+                            <!-- Manufacture Date -->
+                            <td>
+                              <p class="text-xs font-weight-bold mb-0">
+                                {% if s.manufacture_date %}
+                                  {{ s.manufacture_date }}
+                                {% else %}
+                                  -
+                                {% endif %}
+                              </p>
+                            </td>
+
+                            <!-- Status -->
+                            <td class="text-center">
+                              {% if s.expiry_date and s.expiry_date < today %}
+                                <span class="badge bg-danger">Expired</span>
+                              {% elif s.quantity|floatformat:0 <= s.medicine.reorder_level %}
+                                <span class="badge bg-warning">Low Stock</span>
+                              {% else %}
+                                <span class="badge bg-success">Available</span>
+                              {% endif %}
+                            </td>
+
+                            <!-- Action -->
+                            <td class="align-middle text-center">
+                              <a href="{% url 'medicalstockmgmt:editstock' s.id %}"
+                                class="text-secondary font-weight-bold text-xs" title="Edit">
+                                  <i class="material-symbols-rounded opacity-5">edit</i>
+                              </a>
+
+                              <a href="{% url 'medicalstockmgmt:deletestock' s.id %}"
+                                class="text-secondary font-weight-bold text-xs ms-3"
+                                onclick="return confirm('Are you sure?')" title="Delete">
+                                  <i class="material-symbols-rounded opacity-5">delete</i>
+                              </a>
+                            </td>
+                          </tr>
+                          {% endfor %}
+
+                        {% else %}
+                          <tr>
+                            <td colspan="8" class="text-center py-3 text-muted">
+                              No Stocks yet.
+                            </td>
+                          </tr>
+                        {% endif %}
+                      </tbody>
+
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div>
+
+       {%include "includes/footer.html"%}
+      </div>
+    </main>
+    {%include "includes/script.html"%}
+  </body>
+</html>

@@ -1,0 +1,211 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">Role Management</h4>
+      <p class="text-muted text-sm mb-0">
+        Manage staff roles and their availability status.
+      </p>
+    </div>
+
+    <a href="{% url 'roleaddform' %}"
+       class="btn btn-success rounded-pill px-4"
+       style="background:#c1e7d2;color:#065f46;">
+      + Add Role
+    </a>
+  </div>
+
+  <!-- ROLE TABLE -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead>
+            <tr>
+              <th style="width:80px;">#</th>
+              <th>Role Name</th>
+              <th class="text-center">Status</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% if roles %}
+            {% for r in roles %}
+            <tr>
+              <!-- SERIAL NUMBER (CONTINUOUS) -->
+              <td class="fw-semibold">
+                {{ forloop.counter0|add:roles.start_index }}
+              </td>
+
+              <!-- ROLE NAME -->
+              <td>{{ r.role_name }}</td>
+
+              <!-- STATUS -->
+              <td class="text-center">
+                <label class="status-switch">
+                  <input type="checkbox"
+                         class="status-toggle"
+                         data-role-id="{{ r.id }}"
+                         {% if r.status %}checked{% endif %}>
+                  <span class="status-slider round"></span>
+                </label>
+              </td>
+
+              <!-- ACTION ICONS -->
+              <td class="text-center">
+                <a href="{% url 'roleeditform' r.id %}"
+                   class="icon-btn edit"
+                   title="Edit">
+                  <i class="material-symbols-rounded"
+                     style="font-variation-settings:'FILL' 1;">
+                    edit
+                  </i>
+                </a>
+
+                <a href="{% url 'roledelete' r.id %}"
+                   class="icon-btn delete"
+                   title="Delete">
+                  <i class="material-symbols-rounded text-danger"
+                     style="font-variation-settings:'FILL' 1;">
+                    delete
+                  </i>
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+              <td colspan="4" class="text-center text-muted py-4">
+                No roles found.
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION + RECORD INFO -->
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+
+        <!-- LEFT: RECORD INFO -->
+        <div class="text-muted text-sm">
+          Showing
+          <strong>{{ roles.start_index }}</strong>
+          to
+          <strong>{{ roles.end_index }}</strong>
+          of
+          <strong>{{ roles.paginator.count }}</strong>
+          roles
+        </div>
+
+        <!-- RIGHT: PAGINATION -->
+        <nav>
+          <ul class="pagination mb-0">
+
+            {% if roles.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ roles.previous_page_number }}">
+                  Previous
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Previous</span>
+              </li>
+            {% endif %}
+
+            {% for num in roles.paginator.page_range %}
+              {% if roles.number == num %}
+                <li class="page-item active">
+                  <span class="page-link">{{ num }}</span>
+                </li>
+              {% elif num > roles.number|add:"-2" and num < roles.number|add:"2" %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+              {% endif %}
+            {% endfor %}
+
+            {% if roles.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ roles.next_page_number }}">
+                  Next
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Next</span>
+              </li>
+            {% endif %}
+
+          </ul>
+        </nav>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+{% include "includes/footer.html" %}
+</main>
+
+{% include "includes/script.html" %}
+
+<!-- STATUS TOGGLE SCRIPT (UNCHANGED) -->
+<script>
+document.querySelectorAll('.status-toggle').forEach(toggle => {
+  toggle.addEventListener('change', e => {
+    const roleId = e.target.dataset.roleId;
+    const slider = e.target.nextElementSibling;
+
+    fetch(`/role/toggle-status/${roleId}/`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCookie('csrftoken') },
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        if (data.status) {
+          slider.classList.add('active');
+          slider.classList.remove('inactive');
+        } else {
+          slider.classList.add('inactive');
+          slider.classList.remove('active');
+        }
+      }
+    });
+  });
+});
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    document.cookie.split(';').forEach(cookie => {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+      }
+    });
+  }
+  return cookieValue;
+}
+</script>
+
+</body>
+</html>

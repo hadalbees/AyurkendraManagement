@@ -1,0 +1,172 @@
+{% load static %}
+
+<!-- ================= CORE JS ================= -->
+
+<!-- Popper (Required) -->
+<script src="{% static 'js/core/popper.min.js' %}"></script>
+
+<!-- Bootstrap Bundle (ONLY ONE BOOTSTRAP FILE) -->
+<script src="{% static 'js/core/bootstrap.bundle.min.js' %}"></script>
+
+<!-- Perfect Scrollbar -->
+<script src="{% static 'js/plugins/perfect-scrollbar.min.js' %}"></script>
+
+<!-- Smooth Scrollbar -->
+<script src="{% static 'js/plugins/smooth-scrollbar.min.js' %}"></script>
+
+<!-- ChartJS -->
+<script src="{% static 'js/plugins/chartjs.min.js' %}"></script>
+
+<!-- Material Dashboard (KEEP THIS LAST) -->
+<script src="{% static 'js/material-dashboard.min.js' %}"></script>
+
+<!-- ================= CUSTOM SCRIPTS ================= -->
+
+<script>
+
+
+/* ---------- TOAST AUTO SHOW ---------- */
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll('.toast').forEach((toastEl) => {
+    new bootstrap.Toast(toastEl).show();
+  });
+});
+</script>
+
+<script>
+/* ---------- PERFECT SCROLLBAR ---------- */
+var win = navigator.platform.indexOf("Win") > -1;
+if (win && document.querySelector("#sidenav-main")) {
+  Scrollbar.init(document.querySelector("#sidenav-main"), {
+    damping: "0.5",
+  });
+}
+</script>
+
+<script>
+/* ---------- CHARTS (SAFE) ---------- */
+function initChart(id, config) {
+  const el = document.getElementById(id);
+  if (el) {
+    new Chart(el.getContext("2d"), config);
+  }
+}
+
+/* Bar Chart */
+initChart("chart-bars", {
+  type: "bar",
+  data: {
+    labels: ["M","T","W","T","F","S","S"],
+    datasets: [{
+      data: [50,45,22,28,50,60,76],
+      backgroundColor: "#43A047",
+      borderRadius: 4
+    }]
+  },
+  options: { responsive: true, plugins:{ legend:{ display:false } } }
+});
+
+/* Line Chart */
+initChart("chart-line", {
+  type: "line",
+  data: {
+    labels: ["J","F","M","A","M","J","J","A","S","O","N","D"],
+    datasets: [{
+      data: [120,230,130,440,250,360,270,180,90,300,310,220],
+      borderColor: "#43A047",
+      tension: 0
+    }]
+  },
+  options: { responsive:true, plugins:{ legend:{ display:false } } }
+});
+</script>
+
+<script>
+/* ---------- MARK ATTENDANCE ---------- */
+const markBtn = document.getElementById("mark-attendance");
+
+if (markBtn) {
+  markBtn.addEventListener("click", function (e) {
+    e.preventDefault();
+
+    fetch("{% url 'attendancemgmt:employee_mark' %}", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": "{{ csrf_token }}",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "status=Present"
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert(data.ok ? `Attendance marked for ${data.date}` : data.error);
+    });
+  });
+}
+
+
+document.addEventListener("DOMContentLoaded", function () {
+
+      const avatar = document.getElementById("userboxAvatar");
+  const menu = document.getElementById("userboxMenu");
+
+  avatar.addEventListener("click", function (e) {
+    e.stopPropagation();
+    menu.classList.toggle("show-menu");
+  });
+
+  document.addEventListener("click", function () {
+    menu.classList.remove("show-menu");
+  });
+
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  const sidebar = document.getElementById("sidenav-main");
+  const toggleBtn = document.getElementById("sidebarToggle");
+  const closeBtn = document.getElementById("sidebarClose");
+  const overlay = document.getElementById("sidebarOverlay");
+
+  function openSidebar() {
+    sidebar.classList.add("mobile-show");
+    overlay.classList.add("show");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove("mobile-show");
+    overlay.classList.remove("show");
+    document.body.style.overflow = "";
+  }
+
+  // Toggle button
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      sidebar.classList.contains("mobile-show") ? closeSidebar() : openSidebar();
+    });
+  }
+
+  // Close icon
+  if (closeBtn) {
+    closeBtn.addEventListener("click", closeSidebar);
+  }
+
+  // Overlay click
+  if (overlay) {
+    overlay.addEventListener("click", closeSidebar);
+  }
+
+  // ESC key
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      closeSidebar();
+    }
+  });
+
+});
+</script>
+
+<!-- Github buttons -->
+<script async defer src="https://buttons.github.io/buttons.js"></script>
