@@ -77,12 +77,12 @@
 
           <div class="col-md-2">
             <label class="form-label">Age</label>
-            <input class="form-control" id="patientAge">
+            <input class="form-control" id="patientAge" readonly>
           </div>
 
           <div class="col-md-2">
             <label class="form-label">Gender</label>
-            <input class="form-control" id="patientGender">
+            <input class="form-control" id="patientGender" readonly>
           </div>
 
           <div class="col-md-4">
@@ -145,69 +145,57 @@
       </div>
 
       <!-- RIGHT : BILLING SUMMARY -->
-   <div class="col-lg-4">
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
+      <div class="col-lg-4">
 
-      <h6 class="mb-3">Billing Summary Panel</h6>
+        <div class="card shadow-sm mb-4">
+          <div class="card-body">
 
-      <div class="row mt-3">
-        <div class="col-md-12 mb-2">
-          <label class="form-label">
-            Payment Status <span style="color:red">*</span>
-          </label>
-          <select class="form-select" name="payment_status" required>
-            <option value="Pending">Pending</option>
-            <option value="Paid">Paid</option>
-          </select>
+            <h6 class="mb-3">Billing Summary Panel</h6>
+            <div class="row mt-3">
+              <div class="col-md-12 mb-2">
+                <label class="form-label">Payment Status <span class="required" style="color:red">*</span></label>
+                <select class="form-select" name="payment_status" required>
+                  <option value="Pending">Pending</option>
+                  <option value="Paid">Paid</option>
+                </select>
+              </div>
+
+              <div class="col-md-12 mb-3">
+                <label class="form-label">Payment Mode <span class="required" style="color:red">*</span></label>
+                <select class="form-select" name="payment_mode" required>
+                  <option>Cash</option>
+                  <option>Card</option>
+                  <option>UPI</option>
+                  <option>NetBanking</option>
+                  <option>Insurance</option>
+                </select>
+              </div>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal</span>
+              <strong>₹ <span id="subtotalText">0</span></strong>
+            </div>
+
+            <div class="d-flex justify-content-between mb-2">
+              <span>GST (5%)</span>
+              <strong>₹ <span id="taxText">0</span></strong>
+            </div>
+
+            <hr>
+
+            <div class="d-flex justify-content-between fs-5">
+              <strong>Total Amount</strong>
+              <strong>₹ <span id="totalText">0</span></strong>
+            </div>
+
+            <input type="hidden" name="subtotal" id="subtotalVal">
+            <input type="hidden" name="tax" id="taxVal">
+            <input type="hidden" name="total" id="totalVal">
+
+          </div>
         </div>
 
-        <div class="col-md-12 mb-3">
-          <label class="form-label">
-            Payment Mode <span style="color:red">*</span>
-          </label>
-          <select class="form-select" name="payment_mode" required>
-            <option>Cash</option>
-            <option>Card</option>
-            <option>UPI</option>
-            <option>NetBanking</option>
-            <option>Insurance</option>
-          </select>
-        </div>
       </div>
-
-      <div class="d-flex justify-content-between mb-2">
-        <span>Subtotal</span>
-        <strong>₹ <span id="subtotalText">0.00</span></strong>
-      </div>
-
-      <div class="d-flex justify-content-between mb-2">
-        <span>
-          GST (<span id="gstPercentText">{{ settings.consultation_gst|default:0 }}</span>%)
-        </span>
-        <strong>₹ <span id="taxText">0.00</span></strong>
-      </div>
-
-      <hr>
-
-      <div class="d-flex justify-content-between fs-5">
-        <strong>Total Amount</strong>
-        <strong>₹ <span id="totalText">0.00</span></strong>
-      </div>
-
-      <!-- Hidden values -->
-      <input type="hidden" name="subtotal" id="subtotalVal">
-      <input type="hidden" name="tax" id="taxVal">
-      <input type="hidden" name="total" id="totalVal">
-
-      <!-- GST % from settings -->
-      <input type="hidden" id="gstPercent"
-             value="{{ settings.consultation_gst|default:0 }}">
-
-    </div>
-  </div>
-</div>
-
 
     </div>
 
@@ -405,25 +393,17 @@ function renderItems(){
       </tr>`;
   });
 
-  /* ================== DYNAMIC GST ================== */
-  const gstPercent = parseFloat(
-    document.getElementById("gstPercent").value || 0
-  );
-
-  const tax = (subtotal * gstPercent) / 100;
+  const tax = subtotal * 0.05;
   const total = subtotal + tax;
 
-  /* ================== UI UPDATE ================== */
-  document.getElementById("subtotalText").innerText = subtotal.toFixed(2);
-  document.getElementById("taxText").innerText = tax.toFixed(2);
-  document.getElementById("totalText").innerText = total.toFixed(2);
+  subtotalText.innerText = subtotal.toFixed(2);
+  taxText.innerText = tax.toFixed(2);
+  totalText.innerText = total.toFixed(2);
 
-  /* ================== FORM VALUES ================== */
-  document.getElementById("subtotalVal").value = subtotal.toFixed(2);
-  document.getElementById("taxVal").value = tax.toFixed(2);
-  document.getElementById("totalVal").value = total.toFixed(2);
+  subtotalVal.value = subtotal.toFixed(2);
+  taxVal.value = tax.toFixed(2);
+  totalVal.value = total.toFixed(2);
 }
-
 
 function removeItem(i){
   items.splice(i,1);

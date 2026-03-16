@@ -53,8 +53,6 @@ urlpatterns = [
     path("billing/combined/filter/",views.combined_billing_filter_ajax,name="combined_billing_filter_ajax"),
 
     path("billing/combined/print/",views.combined_billing_print,name="combined_billing_print"),
-    
-    path('settings/', views.hospital_settings, name='hospital_settings'),
 
 
 ]

@@ -302,8 +302,7 @@ def ledger_list(request):
             "date": b.bill_date,
             "particulars": f"Medical Bill - {b.bill_no}",
             "debit": 0,
-            "credit": b.total,
-            "payment_mode": b.payment_mode or "—",
+            "credit": int(b.total),
         })
 
     # ---------- THERAPY BILL (CREDIT) ----------
@@ -316,8 +315,7 @@ def ledger_list(request):
             "date": b.bill_date,
             "particulars": f"Therapy Bill - {b.bill_no}",
             "debit": 0,
-            "credit": b.total,
-            "payment_mode": b.payment_mode or "—",
+            "credit": int(b.total),
         })
 
     # ---------- INPATIENT BILL (CREDIT) ----------
@@ -330,8 +328,7 @@ def ledger_list(request):
             "date": b.admit_date,
             "particulars": f"Inpatient Bill - {b.bill_no}",
             "debit": 0,
-            "credit": b.total,
-            "payment_mode": b.payment_mode or "—",
+            "credit": int(b.total),
         })
 
     # ---------- OUTPATIENT BILL (CREDIT) ----------
@@ -344,8 +341,7 @@ def ledger_list(request):
             "date": b.visit_date,
             "particulars": f"Outpatient Bill - {b.bill_no}",
             "debit": 0,
-            "credit": b.total,
-            "payment_mode": b.payment_mode or "—",
+            "credit": int(b.total),
         })
 
     # ---------- EXPENSE (DEBIT) ----------
@@ -357,9 +353,8 @@ def ledger_list(request):
         ledger.append({
             "date": e.expense_date,
             "particulars": f"Expense - {e.description}",
-            "debit": e.amount,
+            "debit": int(e.amount),
             "credit": 0,
-            "payment_mode": e.payment_mode or "—",
         })
 
     # ---------- SORT ----------
@@ -391,7 +386,6 @@ def ledger_list(request):
         "closing_balance_type": closing_balance_type,
         "closing_balance_value": closing_balance_value,
     })
-
 
 
 # ================= PDF =================

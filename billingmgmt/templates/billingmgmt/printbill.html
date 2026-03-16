@@ -6,97 +6,160 @@
 <title>Medical Bill - {{ bill.bill_no }}</title>
 
 <style>
-@page { size: A4; margin: 15mm; }
-body { font-family: "Times New Roman", serif; font-size: 14px; color: #000; }
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
 
-.header { text-align: center; border-bottom: 1px solid #000; padding-bottom: 6px; }
-.logo { width: 180px; margin-bottom: 6px; }
-.address { font-size: 12px; line-height: 1.4; }
-.gst { font-size: 12px; font-weight: bold; margin-top: 3px; }
+  body {
+    font-family: "Times New Roman", serif;
+    font-size: 14px;
+    color: #000;
+  }
 
-.info-table { width: 100%; margin-top: 10px; font-size: 13px; }
-.info-table td { padding: 4px; }
+  .header {
+    text-align: center;
+    border-bottom: 1px solid #000;
+    padding-bottom: 6px;
+  }
 
-table.bill-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-  font-size: 13px;
-}
-table.bill-table th,
-table.bill-table td {
-  border: 1px solid #000;
-  padding: 6px;
-  text-align: center;
-}
-table.bill-table th { background: #f2f2f2; }
+  /* LOGO BIGGER */
+  .logo {
+    width: 180px;
+    margin-bottom: 6px;
+  }
 
-.totals {
-  width: 45%;
-  float: right;
-  margin-top: 10px;
-  font-size: 14px;
-}
-.totals td { padding: 5px; }
+  .address {
+    font-size: 12px;
+    line-height: 1.4;
+  }
 
-.footer {
-  clear: both;
-  margin-top: 60px;
-  font-size: 12px;
-  text-align: center;
-  border-top: 1px solid #000;
-  padding-top: 5px;
-}
+  .gst {
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 3px;
+  }
 
-@media print { .no-print { display: none; } }
+  .doctor-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 12px;
+  }
+
+  .hours {
+    text-align: center;
+    margin: 6px 0;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  .info-table {
+    width: 100%;
+    margin-top: 10px;
+    font-size: 13px;
+  }
+
+  .info-table td {
+    padding: 4px;
+  }
+
+  table.bill-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 13px;
+  }
+
+  table.bill-table th,
+  table.bill-table td {
+    border: 1px solid #000;
+    padding: 6px;
+    text-align: center;
+  }
+
+  table.bill-table th {
+    background: #f2f2f2;
+  }
+
+  .totals {
+    width: 40%;
+    float: right;
+    margin-top: 10px;
+    font-size: 14px;
+  }
+
+  .totals td {
+    padding: 5px;
+  }
+
+  .footer {
+    clear: both;
+    margin-top: 60px;
+    font-size: 12px;
+    text-align: center;
+    border-top: 1px solid #000;
+    padding-top: 5px;
+  }
+
+  .no-print {
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  @media print {
+    .no-print { display: none; }
+  }
 </style>
 </head>
 
 <body>
 
-<!-- ================= HEADER ================= -->
+<!-- HEADER -->
 <div class="header">
-  {% if settings.hospital_logo %}
-    <img src="{{ settings.hospital_logo.url }}" class="logo">
-  {% endif %}
-
-  {% comment %} <strong>{{ settings.hospital_name }}</strong> {% endcomment %}
+  <img src="{% static 'img/logos/logohms.png' %}" class="logo">
 
   <div class="address">
-    {{ settings.address }}<br>
-    Ph: {{ settings.phone }} | Email: {{ settings.email }}
+    No.23, Thally Road, Opp. Chenny's Mahal, Hosur – 635109<br>
+    Ph: 91501 12757, 04344 – 220757 | Email: dr.geetha.j@gmail.com
   </div>
 
-  {% if settings.gst_number %}
+  <!-- GST AFTER ADDRESS -->
   <div class="gst">
-    GST Reg No : {{ settings.gst_number }}
+    GST Reg No : 33AICPJ5295N1ZW
   </div>
-  {% endif %}
 
-  {% if settings.registration_number %}
-    <div style="font-size:12px;">
-      Registration No : {{ settings.registration_number }}
+  <div class="doctor-row">
+    <div>
+      <strong>Dr. Geetha. J, B.A.M.S</strong><br>
+      (Reg. No. 17431)
     </div>
-  {% endif %}
+    <div>
+      <strong>Dr. Avanthika B.N.Y.S</strong><br>
+      (Reg. No. 20771)
+    </div>
+  </div>
+
+  <div class="hours">
+    Consulting Hours : 10:00 AM – 8:00 PM
+  </div>
 </div>
 
-<!-- ================= PATIENT INFO ================= -->
+<!-- PATIENT INFO -->
 <table class="info-table">
   <tr>
-    <td>
-      <strong>Patient Name:</strong>
+    <td><strong>Patient Name:</strong>
       {% if bill.patient %}
-        {{ bill.patient.patient_name }}
+        {% if bill.patient.prefix and bill.patient.prefix|last == '.' %}
+            {{ bill.patient.prefix }} {{ bill.patient.patient_name }}
+        {% else %}
+            {{ bill.patient.patient_name }}
+        {% endif %}
       {% else %}
         Walk-in Customer
-      {% endif %}
-    </td>
-    <td>
-      <strong>Age / Sex:</strong>
-      {% if bill.patient %}
-        {{ bill.patient.age }} / {{ bill.patient.get_gender_display }}
-      {% endif %}
-    </td>
+      {% endif %}  
+  </td>
+    <td><strong>Age / Sex:</strong> {{ bill.patient.age }} / {{ bill.patient.get_gender_display }}</td>
     <td><strong>Date:</strong> {{ bill.bill_date|date:"d-m-Y" }}</td>
   </tr>
   <tr>
@@ -105,7 +168,7 @@ table.bill-table th { background: #f2f2f2; }
   </tr>
 </table>
 
-<!-- ================= MEDICINE TABLE ================= -->
+<!-- MEDICINE TABLE -->
 <table class="bill-table">
   <thead>
     <tr>
@@ -129,59 +192,50 @@ table.bill-table th { background: #f2f2f2; }
   </tbody>
 </table>
 
-<!-- ================= TOTALS (CGST + SGST) ================= -->
-{% with gst=settings.consultation_gst|default:0 %}
-{% with cgst=gst|floatformat:2 %}
-{% with sgst=gst|floatformat:2 %}
+<!-- TOTALS -->
 <table class="totals">
   <tr>
     <td>Subtotal</td>
-    <td>₹ {{ bill.subtotal }}</td>
+    <td class="right">₹ {{ bill.subtotal }}</td>
   </tr>
-
-  {% if bill.discount %}
   <tr>
     <td>Discount</td>
-    <td>₹ {{ bill.discount }}</td>
+    <td class="right">₹ {{ bill.discount }}</td>
   </tr>
-  {% endif %}
-
-  {% if gst|floatformat != "0.00" %}
-<tr>
-    <td>CGST ({{ half_gst_percent }}%)</td>
-    <td class="right">₹ {{ cgst }}</td>
-  </tr>
-
   <tr>
-    <td>SGST ({{ half_gst_percent }}%)</td>
-    <td class="right">₹ {{ sgst }}</td>
+    <td>GST (5%)</td>
+    <td class="right">₹ {{ bill.tax }}</td>
   </tr>
-
-  {% endif %}
-
   <tr>
     <td><strong>Grand Total</strong></td>
-    <td><strong>₹ {{ bill.total }}</strong></td>
+    <td class="right"><strong>₹ {{ bill.total }}</strong></td>
   </tr>
 </table>
-{% endwith %}
-{% endwith %}
-{% endwith %}
 
-<!-- ================= FOOTER ================= -->
+<!-- FOOTER -->
 <div class="footer">
-  Thank you for visiting {{ settings.hospital_name }}<br>
-  Get Well Soon 🙏
+  Panchakarma Therapy | Kerala Ayurveda Therapy | Yoga & Naturopathy | Hair & Skin Care<br>
+  Swarna Prashanam (0–14 yrs) | Weight Management | Stress Management | Ano-Rectal Clinic
 </div>
 
-<!-- ================= PRINT ================= -->
+<!-- PRINT -->
 <div class="no-print" style="text-align:center; margin-top:20px;">
-  <button onclick="window.print()">🖨 Print</button>
+  <button onclick="window.print()" style="margin-right:10px;">
+    🖨 Print
+  </button>
+
   <a href="{% url 'billingmgmt:medicalbilling' %}"
-     style="padding:6px 12px;border:1px solid #000;text-decoration:none;color:#000;">
-     ⬅ Back
+     style="
+       padding:6px 12px;
+       border:1px solid #000;
+       text-decoration:none;
+       color:#000;
+       background:#f5f5f5;
+     ">
+     ⬅ Back to Medical Billing
   </a>
 </div>
+
 
 </body>
 </html>

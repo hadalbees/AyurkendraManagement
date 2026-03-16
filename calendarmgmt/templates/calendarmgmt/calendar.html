@@ -1,0 +1,377 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+<div>
+<h4 class="fw-bold mb-1">Hospital Calendar</h4>
+<p class="text-muted text-sm mb-0">
+Assign doctor duties, staff tasks and hospital schedules.
+</p>
+</div>
+</div>
+
+<div class="card shadow-sm border-0">
+<div class="card-body">
+<div id="calendar"></div>
+</div>
+</div>
+
+</div>
+
+</main>
+
+{% include "includes/script.html" %}
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+
+<!-- EVENT MODAL -->
+
+<div class="modal fade" id="eventModal" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+
+<div class="modal-header">
+<h5 class="modal-title">Create / Edit Event</h5>
+<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+</div>
+
+<div class="modal-body">
+
+<input type="hidden" id="eventId">
+
+<div class="mb-3">
+<label class="form-label">Event Title</label>
+<input type="text" id="eventTitle" class="form-control">
+</div>
+
+<div class="mb-3">
+<label class="form-label">Assign To</label>
+
+<select id="assignedUser" class="form-control">
+
+<option value="">Select Staff</option>
+
+{% for u in users %}
+<option value="{{ u.id }}">
+{{ u.get_full_name|default:u.username }}
+{% if u.role %}
+({{ u.role.role_name }})
+{% endif %}
+</option>
+{% endfor %}
+
+</select>
+
+</div>
+
+<div class="mb-3">
+<label class="form-label">Event Type</label>
+
+<select id="eventColor" class="form-control">
+
+<option value="#3b82f6">Doctor OPD</option>
+<option value="#ef4444">Surgery</option>
+<option value="#10b981">Meeting</option>
+<option value="#f59e0b">Staff Task</option>
+
+</select>
+
+</div>
+
+</div>
+
+<div class="modal-footer">
+
+<button class="btn btn-danger" onclick="deleteEvent()">
+Delete
+</button>
+
+<button class="btn btn-secondary" data-bs-dismiss="modal">
+Cancel
+</button>
+
+<button class="btn btn-primary" onclick="saveEvent()">
+Save Event
+</button>
+
+</div>
+
+</div>
+</div>
+</div>
+
+<script>
+
+let calendar
+let selectedStart
+let selectedEnd
+
+document.addEventListener('DOMContentLoaded', function () {
+
+const calendarEl = document.getElementById('calendar')
+
+calendar = new FullCalendar.Calendar(calendarEl, {
+
+initialView: 'dayGridMonth',
+
+height: 650,
+
+selectable: true,
+
+editable: true,
+
+headerToolbar:{
+left:'prev,next today',
+center:'title',
+right:'dayGridMonth,timeGridWeek,timeGridDay'
+},
+
+events:"{% url 'calendarmgmt:calendar_events' %}",
+
+
+/* CUSTOM EVENT DISPLAY */
+
+eventContent:function(arg){
+
+let container=document.createElement("div")
+
+container.innerHTML=`
+
+<div style="font-size:12px;font-weight:600;">
+${arg.event.title}
+</div>
+
+<div style="font-size:11px;color:#2563eb;">
+👨‍⚕️ ${arg.event.extendedProps.assigned_name}
+</div>
+
+<div style="font-size:11px;color:#059669;">
+${arg.event.extendedProps.event_type}
+</div>
+
+`
+
+return {domNodes:[container]}
+
+},
+
+
+/* TOOLTIP */
+
+eventDidMount:function(info){
+
+info.el.setAttribute(
+"title",
+info.event.title+" - "+info.event.extendedProps.assigned_name
+)
+
+},
+
+
+/* CREATE EVENT */
+
+select:function(info){
+
+selectedStart=info.startStr
+selectedEnd=info.endStr
+
+document.getElementById("eventId").value=""
+document.getElementById("eventTitle").value=""
+document.getElementById("assignedUser").value=""
+
+const modal=new bootstrap.Modal(
+document.getElementById("eventModal")
+)
+
+modal.show()
+
+},
+
+
+/* EDIT EVENT */
+
+eventClick:function(info){
+
+let event=info.event
+
+document.getElementById("eventId").value=event.id
+document.getElementById("eventTitle").value=event.title
+
+if(event.extendedProps.assigned_to){
+document.getElementById("assignedUser").value=
+event.extendedProps.assigned_to
+}
+
+document.getElementById("eventColor").value=
+event.backgroundColor
+
+selectedStart=event.start
+selectedEnd=event.end
+
+const modal=new bootstrap.Modal(
+document.getElementById("eventModal")
+)
+
+modal.show()
+
+},
+
+
+/* DRAG */
+
+eventDrop:function(info){
+updateEvent(info.event)
+},
+
+/* RESIZE */
+
+eventResize:function(info){
+updateEvent(info.event)
+}
+
+})
+
+calendar.render()
+
+})
+
+
+
+function saveEvent(){
+
+const id=document.getElementById("eventId").value
+const title=document.getElementById("eventTitle").value
+const user=document.getElementById("assignedUser").value
+const color=document.getElementById("eventColor").value
+
+const url=id
+? "{% url 'calendarmgmt:update_event' %}"
+: "{% url 'calendarmgmt:create_event' %}"
+
+fetch(url,{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+"X-CSRFToken":getCookie("csrftoken")
+},
+
+body:JSON.stringify({
+
+id:id,
+title:title,
+assigned_to:user,
+color:color,
+start:selectedStart,
+end:selectedEnd
+
+})
+
+})
+.then(res=>res.json())
+.then(()=>location.reload())
+
+}
+
+
+function deleteEvent(){
+
+const id=document.getElementById("eventId").value
+
+if(!id) return
+
+if(!confirm("Delete this event?")) return
+
+fetch("{% url 'calendarmgmt:delete_event' %}",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+"X-CSRFToken":getCookie("csrftoken")
+},
+
+body:JSON.stringify({id:id})
+
+})
+.then(res=>res.json())
+.then(()=>location.reload())
+
+}
+
+
+
+function updateEvent(event){
+
+fetch("{% url 'calendarmgmt:update_event' %}",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+"X-CSRFToken":getCookie("csrftoken")
+},
+
+body:JSON.stringify({
+
+id:event.id,
+start:event.start,
+end:event.end
+
+})
+
+})
+
+}
+
+
+
+function getCookie(name){
+
+let cookieValue=null
+
+if(document.cookie && document.cookie!==''){
+
+const cookies=document.cookie.split(';')
+
+for(let i=0;i<cookies.length;i++){
+
+const cookie=cookies[i].trim()
+
+if(cookie.substring(0,name.length+1)===(name+'=')){
+
+cookieValue=decodeURIComponent(
+cookie.substring(name.length+1)
+)
+
+break
+
+}
+
+}
+
+}
+
+return cookieValue
+
+}
+
+</script>
+
+</body>
+</html>

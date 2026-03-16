@@ -1,66 +1,103 @@
-<nav class="navbar navbar-main navbar-expand-lg px-3"
-     id="navbarBlur"
-     data-scroll="true">
-
-  <div class="container-fluid d-flex align-items-center">
-
-    <!-- LEFT : MOBILE SIDEBAR TOGGLE -->
-    <button class="btn btn-link d-xl-none me-2 p-0"
-            id="sidebarToggle"
-            aria-label="Toggle sidebar" style="margin-top: 15px;">
-      <i class="material-symbols-rounded fs-2">menu</i>
-    </button>
-
-    <!-- CENTER : SEARCH BAR -->
-    <div class="header-search flex-grow-1 mx-3 d-none d-md-flex">
-      <i class="material-symbols-rounded">search</i>
-      <input type="text"
-             placeholder="Search patients, staff, or medicine...">
+{% if messages %}
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index:9999;">
+  {% for message in messages %}
+  <div class="toast align-items-center text-white
+      {% if message.tags == 'success' %}bg-success
+      {% elif message.tags == 'error' %}bg-danger
+      {% elif message.tags == 'warning' %}bg-warning text-dark
+      {% else %}bg-info{% endif %}
+      border-0 mb-2"
+      role="alert"
+      aria-live="assertive"
+      aria-atomic="true"
+      data-bs-delay="4000">
+    <div class="d-flex">
+      <div class="toast-body">{{ message }}</div>
+      <button type="button"
+              class="btn-close btn-close-white me-2 m-auto"
+              data-bs-dismiss="toast"></button>
     </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 
-    <!-- RIGHT : ICONS + USER -->
-    <div class="header-right d-flex align-items-center gap-3">
+<nav class="navbar navbar-main navbar-expand-lg px-0 mx-3 border-radius-xl"
+     id="navbarBlur" data-scroll="true" style="background: #fff;margin: 0 !important;border-radius: 0;">
+  <div class="container-fluid py-2 px-3 d-flex align-items-center">
 
-      <button class="icon-btn">
-        <i class="material-symbols-rounded">notifications</i>
-      </button>
-
-      <button class="icon-btn">
-        <i class="material-symbols-rounded">chat</i>
-      </button>
-
-      <!-- USER -->
-      <div class="userbox-wrapper position-relative d-flex align-items-center gap-2">
-
-        <div class="text-end d-none d-lg-block">
-          <div class="fw-semibold text-sm">
-            {{ request.user.get_full_name|default:request.user.username }}
-          </div>
-          <div class="text-muted text-xs">
-            {% if request.user.is_superuser %}Administrator{% else %}Staff{% endif %}
-          </div>
-        </div>
-
-        <img
-          src="https://ui-avatars.com/api/?name={{ request.user.get_full_name|default:request.user.username }}&background=4f46e5&color=ffffff&size=128"
-          class="user-avatar"
-          id="userboxAvatar"
-          alt="User Avatar">
-
-        <div class="userbox-menu" id="userboxMenu">
-          <a href="javascript:void(0);" id="mark-attendance" class="userbox-item">
-            <i class="material-symbols-rounded">fingerprint</i> Mark Attendance
-          </a>
-          <a href="{% url 'profile' %}" class="userbox-item">
-            <i class="material-symbols-rounded">person</i> Profile
-          </a>
-          <a href="{% url 'logout' %}" class="userbox-item text-danger">
-            <i class="material-symbols-rounded">logout</i> Logout
-          </a>
-        </div>
-
+    <!-- ===== CENTER : SEARCH BAR ===== -->
+    <div class="ms-4 flex-grow-1">
+      <div class="dashboard-search">
+        <i class="material-symbols-rounded">search</i>
+        <input type="text"
+               placeholder="Search patients, staff, or medicine...">
       </div>
     </div>
 
+    <!-- ===== RIGHT : ICONS + USER ===== -->
+<div class="d-flex align-items-center gap-3">
+
+  <!-- Notifications -->
+  <div class="header-plain-icon">
+    <i class="material-symbols-rounded">notifications</i>
+  </div>
+
+  <!-- Messages -->
+  <div class="header-plain-icon">
+    <i class="material-symbols-rounded">chat</i>
+  </div>
+
+  <!-- USER MENU -->
+  <div class="userbox-wrapper position-relative d-flex align-items-center gap-2">
+
+    <!-- Username + Role -->
+    <div class="text-end d-none d-md-block">
+      <div class="fw-semibold text-sm">
+        {{ request.user.get_full_name|default:request.user.username }}
+      </div>
+      <div class="text-muted text-xs">
+        {% if request.user.is_superuser %}
+          Administrator
+        {% else %}
+          Staff
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Avatar (ONLINE IMAGE URL) -->
+    <img
+      src="https://ui-avatars.com/api/?name={{ request.user.get_full_name|default:request.user.username }}&background=4f46e5&color=ffffff&size=128"
+      class="user-avatar"
+      id="userboxAvatar"
+      alt="User Avatar"
+    />
+
+    <!-- Dropdown Menu -->
+    <div class="userbox-menu" id="userboxMenu">
+
+      <a href="javascript:void(0);" id="mark-attendance" class="userbox-item">
+        <i class="material-symbols-rounded">fingerprint</i>
+        <span>Mark Attendance</span>
+      </a>
+
+      <a href="{% url 'profile' %}" class="userbox-item">
+        <i class="material-symbols-rounded">person</i>
+        <span>Profile</span>
+      </a>
+
+      <a href="{% url 'logout' %}" class="userbox-item text-danger">
+        <i class="material-symbols-rounded">logout</i>
+        <span>Logout</span>
+      </a>
+
+    </div>
+  </div>
+
+</div>
+
+
+
+    </div>
   </div>
 </nav>

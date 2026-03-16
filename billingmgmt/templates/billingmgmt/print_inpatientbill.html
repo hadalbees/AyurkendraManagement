@@ -8,14 +8,19 @@
 <style>
 @page { size:A4; margin:15mm; }
 body { font-family:"Times New Roman", serif; font-size:14px; }
+
 .header { text-align:center; border-bottom:1px solid #000; padding-bottom:6px; }
-.logo { width:180px; margin-bottom:5px; }
+.logo { width:180px; }
+
 .address { font-size:12px; }
-.gst { font-size:12px; font-weight:bold; margin-top:4px; }
+.gst { font-weight:bold; margin-top:3px; font-size:12px; }
+
 table { width:100%; border-collapse:collapse; margin-top:12px; }
 th, td { border:1px solid #000; padding:6px; text-align:center; }
 th { background:#f2f2f2; }
+
 .right { text-align:right; }
+
 .no-print { margin-top:20px; text-align:center; }
 @media print { .no-print{display:none;} }
 </style>
@@ -23,45 +28,32 @@ th { background:#f2f2f2; }
 
 <body>
 
-<!-- ================= HEADER ================= -->
 <div class="header">
-  {% if settings.hospital_logo %}
-    <img src="{{ settings.hospital_logo.url }}" class="logo">
-  {% endif %}
-
-  <strong>{{ settings.hospital_name }}</strong><br>
-
+  <img src="{% static 'img/logos/logohms.png' %}" class="logo">
   <div class="address">
-    {{ settings.address|linebreaksbr }}<br>
-    Ph: {{ settings.phone }}{% if settings.email %} | {{ settings.email }}{% endif %}
+    No.23, Thally Road, Opp. Chenny's Mahal, Hosur – 635109<br>
+    Ph: 91501 12757, 04344 – 220757
   </div>
-
-  <div class="gst">
-    GST No: {{ settings.gst_number }} <br>
-    Reg No: {{ settings.registration_number }}
-  </div>
-
-  <h3>INPATIENT BILL</h3>
+  <div class="gst">GST Reg No : 33AICPJ5295N1ZW</div>
+  <div><strong>INPATIENT BILL</strong></div>
 </div>
 
-<!-- ================= PATIENT INFO ================= -->
 <p>
 <strong>Bill No:</strong> {{ bill.bill_no }} |
-<strong>Date:</strong> {{ bill.created_at|date:"d-m-Y" }}<br>
-
-<strong>Patient:</strong> {{ bill.patient.patient_name }} |
-<strong>Age/Sex:</strong> {{ bill.patient.age }} / {{ bill.patient.get_gender_display }}<br>
-
+<strong>Patient:</strong> {% if bill.patient.prefix and bill.patient.prefix|last == '.' %}
+        {{ bill.patient.prefix }} {{ bill.patient.patient_name }}
+    {% else %}
+        {{ bill.patient.patient_name }}
+    {% endif %} |
 <strong>Doctor:</strong> {{ bill.doctor_name }}<br>
 <strong>Admit:</strong> {{ bill.admit_date }} |
 <strong>Discharge:</strong> {{ bill.discharge_date }}
 </p>
 
-<!-- ================= ROOM CHARGES ================= -->
 <h4>Room Charges</h4>
 <table>
 <thead>
-<tr><th>Description</th><th>Rate</th><th>Days</th><th>Amount</th></tr>
+<tr><th>Description</th><th>Rate / Day</th><th>Days</th><th>Total</th></tr>
 </thead>
 <tbody>
 {% for r in room_items %}
@@ -77,11 +69,10 @@ th { background:#f2f2f2; }
 </tbody>
 </table>
 
-<!-- ================= OTHER CHARGES ================= -->
-<h4>Other Charges</h4>
+<h4 style="margin-top:15px;">Other Charges</h4>
 <table>
 <thead>
-<tr><th>Description</th><th>Type</th><th>Rate</th><th>Qty</th><th>Amount</th></tr>
+<tr><th>Description</th><th>Type</th><th>Rate</th><th>Qty</th><th>Total</th></tr>
 </thead>
 <tbody>
 {% for it in other_items %}
@@ -96,21 +87,11 @@ th { background:#f2f2f2; }
 </tbody>
 </table>
 
-<!-- ================= TOTALS ================= -->
-<p class="right">Subtotal: ₹ {{ subtotal }}</p>
+<p class="right">Subtotal: ₹{{ bill.subtotal }}</p>
+<p class="right">Discount: ₹{{ bill.discount }}</p>
+<p class="right">GST (5%): ₹{{ bill.tax }}</p>
+<h3 class="right">Grand Total: ₹{{ bill.total }}</h3>
 
-<p class="right">
-  CGST ({{ cgst_percent }}%): ₹ {{ cgst }}
-</p>
-
-<p class="right">
-  SGST ({{ sgst_percent }}%): ₹ {{ sgst }}
-</p>
-
-
-<h3 class="right">Grand Total: ₹ {{ grand_total }}</h3>
-
-<!-- ================= FOOTER ================= -->
 <div class="no-print">
   <button onclick="window.print()">🖨 Print</button>
   <a href="{% url 'billingmgmt:inpatientbilling' %}">⬅ Back</a>

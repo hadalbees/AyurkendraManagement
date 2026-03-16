@@ -11,6 +11,7 @@
 
 <div class="container-fluid py-4">
 
+  <!-- PAGE HEADER -->
   <div class="mb-4">
     <h4 class="mb-1">Therapy Billing</h4>
     <p class="text-sm text-muted mb-0">Create and print therapy bills</p>
@@ -22,10 +23,6 @@
       <form method="post" id="therapyBillingForm">
         {% csrf_token %}
         <input type="hidden" name="bill_no" value="{{ bill_no }}">
-
-        <!-- GST % -->
-        <input type="hidden" id="gstPercent"
-               value="{{ settings.therapy_gst|default:0 }}">
 
         <!-- ================= PATIENT ================= -->
         <div class="card shadow-sm mb-4">
@@ -43,6 +40,7 @@
                 </select>
               </div>
             </div>
+
           </div>
         </div>
 
@@ -58,7 +56,7 @@
             </div>
 
             <div class="table-responsive mt-3">
-              <table class="table mb-0" id="therapyTable">
+              <table class="table align-items-center mb-0" id="therapyTable">
                 <thead class="bg-light">
                   <tr>
                     <th>Therapy</th>
@@ -66,15 +64,14 @@
                     <th>Unit Price</th>
                     <th>Qty</th>
                     <th>Subtotal</th>
-                    <th></th>
+                    <th class="text-center">Action</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   <tr class="therapyRow">
                     <td>
-                      <select class="form-select therapySelect"
-                              name="therapy_id[]" required>
+                      <select class="form-select therapySelect" name="therapy_id[]" required>
                         <option value="">-- Select Therapy --</option>
                         {% for therapy in therapies %}
                           <option value="{{ therapy.id }}"
@@ -87,8 +84,10 @@
                     </td>
 
                     <td>
+                      <!-- 🔥 SERIAL FIX -->
                       <input type="text"
                              class="form-control serial_no"
+                             name="serial_no[]"
                              readonly>
                     </td>
 
@@ -103,7 +102,8 @@
                       <input type="number"
                              class="form-control quantityInput"
                              name="quantity[]"
-                             value="1" min="1">
+                             value="1"
+                             min="1">
                     </td>
 
                     <td>
@@ -113,7 +113,7 @@
                              readonly>
                     </td>
 
-                    <td>
+                    <td class="text-center">
                       <button type="button"
                               class="btn btn-danger btn-sm removeTherapyRow">
                         ✕
@@ -127,7 +127,7 @@
           </div>
         </div>
 
-        <!-- ================= SUMMARY ================= -->
+        <!-- ================= BILL SUMMARY ================= -->
         <div class="card shadow-sm mb-4">
           <div class="card-body">
 
@@ -135,33 +135,29 @@
 
             <div class="row g-3">
               <div class="col-md-3">
-                <label>Subtotal</label>
-                <input type="number" id="subtotalTotal"
-                       class="form-control" name="subtotal" readonly>
+                <label class="form-label">Subtotal</label>
+                <input type="number" id="subtotalTotal" class="form-control" name="subtotal" readonly>
               </div>
 
               <div class="col-md-3">
-                <label>Discount</label>
-                <input type="number" id="discountInput"
-                       class="form-control" name="discount" value="0">
+                <label class="form-label">Discount</label>
+                <input type="number" id="discountInput" class="form-control" name="discount" value="0">
               </div>
 
               <div class="col-md-3">
-                <label>GST ({{ settings.therapy_gst }}%)</label>
-                <input type="number" id="taxInput"
-                       class="form-control" name="tax" readonly>
+                <label class="form-label">Tax</label>
+                <input type="number" id="taxInput" class="form-control" name="tax" value="0">
               </div>
 
               <div class="col-md-3">
-                <label>Total</label>
-                <input type="number" id="totalAmount"
-                       class="form-control" name="total" readonly>
+                <label class="form-label">Total</label>
+                <input type="number" id="totalAmount" class="form-control" name="total" readonly>
               </div>
             </div>
 
             <div class="row mt-3">
               <div class="col-md-4">
-                <label>Payment Status</label>
+                <label class="form-label">Payment Status</label>
                 <select class="form-select" name="payment_status">
                   <option value="Pending">Pending</option>
                   <option value="Paid">Paid</option>
@@ -169,7 +165,7 @@
               </div>
 
               <div class="col-md-4">
-                <label>Payment Mode</label>
+                <label class="form-label">Payment Mode</label>
                 <select class="form-select" name="payment_mode">
                   <option>Cash</option>
                   <option>Card</option>
@@ -181,30 +177,35 @@
             </div>
 
             <div class="mt-3">
-              <label>Remarks</label>
-              <textarea class="form-control" name="remarks"></textarea>
+              <label class="form-label">Remarks</label>
+              <textarea class="form-control" name="remarks" rows="2"></textarea>
             </div>
 
           </div>
         </div>
 
-        <div class="text-end">
-          <button class="btn btn-success px-4">Save & Print</button>
+        <!-- ================= ACTION ================= -->
+        <div class="d-flex justify-content-end">
+          <button type="submit" class="btn btn-success px-4">
+            Save & Print
+          </button>
         </div>
 
       </form>
+
     </div>
   </div>
+
 </div>
 
 {% include "includes/footer.html" %}
 </main>
+
 {% include "includes/script.html" %}
 
+<!-- ================= SCRIPT ================= -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-
-  const gstPercent = parseFloat(document.getElementById("gstPercent").value) || 0;
 
   function recalcRow(row) {
     const qty = parseFloat(row.querySelector(".quantityInput").value) || 0;
@@ -218,50 +219,57 @@ document.addEventListener("DOMContentLoaded", function () {
       subtotal += parseFloat(el.value) || 0;
     });
 
-    subtotalTotal.value = subtotal.toFixed(2);
+    document.getElementById("subtotalTotal").value = subtotal.toFixed(2);
 
-    const discount = parseFloat(discountInput.value) || 0;
-    const taxable = subtotal - discount;
-    const tax = taxable * gstPercent / 100;
+    const discount = parseFloat(document.getElementById("discountInput").value) || 0;
+    const tax = parseFloat(document.getElementById("taxInput").value) || 0;
 
-    taxInput.value = tax.toFixed(2);
-    totalAmount.value = (taxable + tax).toFixed(2);
+    document.getElementById("totalAmount").value =
+      (subtotal - discount + tax).toFixed(2);
   }
 
-  function attach(row) {
+  function attachRowEvents(row) {
+
     row.querySelector(".therapySelect").addEventListener("change", function () {
       const opt = this.options[this.selectedIndex];
-      if (!opt.value) return;
+      if (!opt || !opt.value) return;
 
-      row.querySelector(".unitPrice").value = opt.dataset.price;
-      row.querySelector(".serial_no").value = opt.dataset.serial;
+      row.querySelector(".unitPrice").value = opt.dataset.price || 0;
+      row.querySelector(".serial_no").value = opt.dataset.serial || "";
+
       recalcRow(row);
       recalcTotal();
     });
 
-    row.querySelector(".quantityInput").addEventListener("input", () => {
+    row.querySelector(".quantityInput").addEventListener("input", function () {
       recalcRow(row);
       recalcTotal();
     });
 
-    row.querySelector(".removeTherapyRow").addEventListener("click", () => {
+    row.querySelector(".removeTherapyRow").addEventListener("click", function () {
       row.remove();
       recalcTotal();
     });
   }
 
-  attach(document.querySelector(".therapyRow"));
+  attachRowEvents(document.querySelector(".therapyRow"));
 
-  addTherapyRow.addEventListener("click", () => {
-    const row = document.querySelector(".therapyRow").cloneNode(true);
-    row.querySelectorAll("input").forEach(i => i.value = "");
-    row.querySelector(".quantityInput").value = 1;
-    row.querySelector("select").selectedIndex = 0;
-    therapyTable.querySelector("tbody").appendChild(row);
-    attach(row);
+  document.getElementById("addTherapyRow").addEventListener("click", function () {
+    const tbody = document.querySelector("#therapyTable tbody");
+    const newRow = document.querySelector(".therapyRow").cloneNode(true);
+
+    newRow.querySelectorAll("select, input").forEach(el => {
+      if (el.tagName === "SELECT") el.selectedIndex = 0;
+      else if (el.classList.contains("quantityInput")) el.value = 1;
+      else el.value = "";
+    });
+
+    tbody.appendChild(newRow);
+    attachRowEvents(newRow);
   });
 
-  discountInput.addEventListener("input", recalcTotal);
+  document.getElementById("discountInput").addEventListener("input", recalcTotal);
+  document.getElementById("taxInput").addEventListener("input", recalcTotal);
 });
 </script>
 

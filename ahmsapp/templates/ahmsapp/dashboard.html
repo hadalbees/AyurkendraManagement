@@ -7,269 +7,273 @@
 
 {% include "includes/sidebar.html" %}
 
-<main class="main-content position-relative min-vh-100 border-radius-lg">
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
 
-  {% include "includes/header.html" %}
-  {% include "includes/breadcrumb.html" %}
+{% include "includes/header.html" %}
+<!-- ===== LEFT : BREADCRUMB ===== -->
+{% include "includes/breadcrumb.html" %}
 
-  {% if request.user.is_superuser or "dashboard" in user_permissions %}
+{% if request.user.is_superuser or "dashboard" in user_permissions %}
 
-  <!-- ================= WELCOME ================= -->
-  <div class="container-fluid py-3 dashboard-welcome">
-    <h4 class="mb-1">
-      Welcome back, {{ request.user.get_full_name|default:request.user.username }}
-    </h4>
-    <p class="text-muted mb-0">
-      Here is what's happening in the hospital today.
-    </p>
-  </div>
-
-  <!-- ================= DASHBOARD CARDS ================= -->
-  <div class="container-fluid">
-    <div class="row g-3">
-
-      <!-- Today Patients -->
-      <div class="col-xl-3 col-md-6 col-12">
-        <div class="card dashboard-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <p class="card-title">Today Patients</p>
-                <h4 class="card-value">{{ total_today_patients }}</h4>
-              </div>
-              <div class="icon-box bg-primary-soft">
-                <i class="material-symbols-rounded text-primary">group</i>
-              </div>
-            </div>
-            <div class="progress mt-3 card-progress">
-              <div class="progress-bar bg-primary" style="width:70%"></div>
-            </div>
-            <small class="text-muted">New registrations today</small>
-          </div>
-        </div>
-      </div>
-
-      <!-- Attendance -->
-      <div class="col-xl-3 col-md-6 col-12">
-        <div class="card dashboard-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <p class="card-title">Attendance</p>
-                <h4 class="card-value">{{ attendance_percentage }}%</h4>
-              </div>
-              <div class="icon-box bg-success-soft">
-                <i class="material-symbols-rounded text-success">person_check</i>
-              </div>
-            </div>
-            <div class="progress mt-3 card-progress">
-              <div class="progress-bar bg-success"
-                   style="width:{{ attendance_percentage }}%"></div>
-            </div>
-            <small class="text-muted">Present staff today</small>
-          </div>
-        </div>
-      </div>
-
-      <!-- Revenue -->
-      <div class="col-xl-3 col-md-6 col-12">
-        <div class="card dashboard-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <p class="card-title">Today's Revenue</p>
-                <h4 class="card-value">₹ {{ today_revenue }}</h4>
-              </div>
-              <div class="icon-box bg-info-soft">
-                <i class="material-symbols-rounded text-info">payments</i>
-              </div>
-            </div>
-            <div class="progress mt-3 card-progress">
-              <div class="progress-bar bg-info" style="width:60%"></div>
-            </div>
-            <small class="text-muted">Revenue generated today</small>
-          </div>
-        </div>
-      </div>
-
-      <!-- Stock Alert -->
-      <div class="col-xl-3 col-md-6 col-12">
-        <div class="card dashboard-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <p class="card-title">Stock Alert</p>
-                <h4 class="card-value">{{ low_stock_count }}</h4>
-              </div>
-              <div class="icon-box bg-danger-soft">
-                <i class="material-symbols-rounded text-danger">warning</i>
-              </div>
-            </div>
-            <div class="progress mt-3 card-progress">
-              <div class="progress-bar bg-danger" style="width:40%"></div>
-            </div>
-            <span class="badge bg-danger mt-2">Low Stock</span>
-          </div>
-        </div>
-      </div>
-
+<!-- ===== TOP WELCOME + SEARCH BAR ===== -->
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="mb-1">Welcome back, {{ request.user.get_full_name|default:request.user.username }}</h4>
+      <p class="text-muted mb-0">Here is what's happening in the hospital today.</p>
     </div>
   </div>
 
-  <!-- ================= MAIN CONTENT ================= -->
-  <div class="container-fluid mt-4">
-    <div class="row g-4">
+<!-- ===== DASHBOARD ICON CARDS ===== -->
+<div class="row">
 
-      <!-- LEFT CONTENT -->
-      <div class="col-lg-9 col-12">
-
-        {% if request.user.is_superuser or "prescription" in user_permissions %}
-
-        <!-- Patient Details -->
-        <div class="card mb-4">
-          <div class="card-body">
-            <h5 class="mb-3">Patient Details</h5>
-
-            <form id="presForm" method="post" action="{% url 'prescriptionmgmt:create' %}">
-              {% csrf_token %}
-
-              <div class="row g-3">
-                <div class="col-md-3 col-6">
-                  <label>Prescription No</label>
-                  <input type="text" class="form-control" value="{{ prescription_no }}" readonly>
-                </div>
-
-                <div class="col-md-3 col-6">
-                  <label>Patient ID</label>
-                  <input type="text" id="patient_id" class="form-control" onblur="fetchPatientById()">
-                </div>
-
-                <div class="col-md-3 col-12">
-                  <label>Patient Name</label>
-                  <input list="patientList" id="patient_name" class="form-control" onblur="fetchPatientByName()">
-                  <datalist id="patientList">
-                    {% for p in patients %}
-                    <option value="{{ p.patient_name }}"></option>
-                    {% endfor %}
-                  </datalist>
-                </div>
-
-                <div class="col-md-1 col-6">
-                  <label>Age</label>
-                  <input type="text" id="p_age" class="form-control" readonly>
-                </div>
-
-                <div class="col-md-2 col-6">
-                  <label>Gender</label>
-                  <input type="text" id="p_gender" class="form-control" readonly>
-                </div>
-              </div>
+  <!-- Today Patients -->
+  <div class="col-xl-3 col-sm-6 mb-4">
+    <div class="card dashboard-card">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <p class="card-title">Today Patients</p>
+            <h4 class="card-value">{{ total_today_patients }}</h4>
+          </div>
+          <div class="icon-box bg-primary-soft">
+            <i class="material-symbols-rounded text-primary">group</i>
           </div>
         </div>
-
-        <!-- Medicine Allocation -->
-        <div class="card mb-4">
-          <div class="card-body">
-            <h5 class="mb-3">Medicine Allocation</h5>
-
-            <!-- Desktop header -->
-            <div class="row fw-bold text-sm mb-2 d-none d-md-flex">
-              <div class="col-md-3">Medicine</div>
-              <div class="col-md-2">Name</div>
-              <div class="col-md-1">Unit</div>
-              <div class="col-md-2">Dosage</div>
-              <div class="col-md-1">Duration</div>
-              <div class="col-md-1">Qty</div>
-              <div class="col-md-1">Food</div>
-              <div class="col-md-1">Action</div>
-            </div>
-
-            <div id="medContainer"></div>
-
-            <button type="button" class="btn btn-outline-secondary mt-3" id="addMedBtn">
-              + Add Medicine
-            </button>
-          </div>
+        <div class="progress mt-3 card-progress">
+          <div class="progress-bar bg-primary" style="width:70%"></div>
         </div>
-
-        <!-- Notes -->
-        <div class="card mb-4">
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label>Notes</label>
-                <textarea class="form-control"></textarea>
-              </div>
-
-              <div class="col-md-3 col-6">
-                <label>Next Visit</label>
-                <input type="date" class="form-control" value="{{ today }}">
-              </div>
-
-              <div class="col-md-3 col-6 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                  Save Prescription
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        </form>
-        {% endif %}
+        <small class="text-muted">New registrations today</small>
       </div>
-
-      <!-- RIGHT ACTIVITY PANEL -->
-      <div class="col-lg-3 col-12">
-        <div class="card">
-          <div class="card-body">
-            <h6 class="mb-3">Recent Activity</h6>
-
-            <div class="activity-panel">
-              <div class="activity-item">
-                <span class="activity-icon bg-primary">
-                  <i class="material-symbols-rounded">person_add</i>
-                </span>
-                <div>
-                  <strong>New Patient Registered</strong>
-                  <div class="text-muted text-sm">10 mins ago</div>
-                </div>
-              </div>
-
-              <div class="activity-item">
-                <span class="activity-icon bg-warning">
-                  <i class="material-symbols-rounded">warning</i>
-                </span>
-                <div>
-                  <strong>Stock Alert</strong>
-                  <div class="text-muted text-sm">Ashwagandha running low</div>
-                </div>
-              </div>
-
-              <div class="activity-item">
-                <span class="activity-icon bg-success">
-                  <i class="material-symbols-rounded">receipt_long</i>
-                </span>
-                <div>
-                  <strong>Bill Generated</strong>
-                  <div class="text-muted text-sm">Invoice #4023</div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>
 
-  {% endif %}
+  <!-- Attendance -->
+  <div class="col-xl-3 col-sm-6 mb-4">
+    <div class="card dashboard-card">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <p class="card-title">Attendance</p>
+            <h4 class="card-value">{{ attendance_percentage }}%</h4>
+          </div>
+          <div class="icon-box bg-success-soft">
+            <i class="material-symbols-rounded text-success">person_check</i>
+          </div>
+        </div>
+        <div class="progress mt-3 card-progress">
+          <div class="progress-bar bg-success"
+               style="width:{{ attendance_percentage }}%"></div>
+        </div>
+        <small class="text-muted">Present staff today</small>
+      </div>
+    </div>
+  </div>
 
+  <!-- Today's Revenue -->
+  <div class="col-xl-3 col-sm-6 mb-4">
+    <div class="card dashboard-card">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <p class="card-title">Today's Revenue</p>
+            <h4 class="card-value">₹ {{ today_revenue }}</h4>
+          </div>
+          <div class="icon-box bg-info-soft">
+            <i class="material-symbols-rounded text-info">payments</i>
+          </div>
+        </div>
+        <div class="progress mt-3 card-progress">
+          <div class="progress-bar bg-info" style="width:60%"></div>
+        </div>
+        <small class="text-muted">Revenue generated today</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock Alert -->
+  <div class="col-xl-3 col-sm-6 mb-4">
+    <div class="card dashboard-card">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+          <div>
+            <p class="card-title">Stock Alert</p>
+            <h4 class="card-value">{{ low_stock_count }}</h4>
+          </div>
+          <div class="icon-box bg-danger-soft">
+            <i class="material-symbols-rounded text-danger">warning</i>
+          </div>
+        </div>
+        <div class="progress mt-3 card-progress">
+          <div class="progress-bar bg-danger" style="width:40%"></div>
+        </div>
+        <span class="badge bg-danger mt-2">Low Stock</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <div class="row">
+
+    <!-- ===== LEFT CONTENT ===== -->
+    <div class="col-lg-9">
+
+{% if request.user.is_superuser or "prescription" in user_permissions %}
+
+<!-- ===== PATIENT DETAILS ===== -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <h5 class="mb-3">Patient Details</h5>
+
+    <form id="presForm" method="post" action="{% url 'prescriptionmgmt:create' %}">
+      {% csrf_token %}
+
+      <div class="row">
+        <div class="col-md-3">
+          <label>Prescription No</label>
+          <input type="text" name="prescription_no" value="{{ prescription_no }}" class="form-control" readonly>
+        </div>
+
+        <div class="col-md-3">
+          <label>Patient ID</label>
+          <input type="text" id="patient_id" name="patient_id" class="form-control" onblur="fetchPatientById()">
+        </div>
+
+        <div class="col-md-3">
+          <label>Patient Name</label>
+          <input list="patientList" id="patient_name" name="patient_name" class="form-control" onblur="fetchPatientByName()">
+          <datalist id="patientList">
+            {% for p in patients %}
+            <option value="{{ p.patient_name }}"></option>
+            {% endfor %}
+          </datalist>
+        </div>
+
+        <div class="col-md-1">
+          <label>Age</label>
+          <input type="text" id="p_age" class="form-control" readonly>
+        </div>
+
+        <div class="col-md-2">
+          <label>Gender</label>
+          <input type="text" id="p_gender" class="form-control" readonly>
+        </div>
+      </div>
+  </div>
+</div>
+
+<!-- ===== MEDICINE ALLOCATION ===== -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <h5 class="mb-3">Medicine Allocation</h5>
+
+    <div class="row fw-bold mb-2 text-sm">
+      <div class="col-md-3">Medicine</div>
+      <div class="col-md-2">Name</div>
+      <div class="col-md-1">Unit</div>
+      <div class="col-md-2">Dosage</div>
+      <div class="col-md-1">Duration</div>
+      <div class="col-md-1">Qty</div>
+      <div class="col-md-1">Food</div>
+      <div class="col-md-1">Action</div>
+    </div>
+
+    <div id="medContainer"></div>
+
+    <button type="button" class="btn btn-secondary mt-3" id="addMedBtn">
+      + Add Medicine
+    </button>
+  </div>
+</div>
+
+<!-- ===== NOTES ===== -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <label>Notes</label>
+        <textarea name="notes" class="form-control"></textarea>
+      </div>
+
+      <div class="col-md-3">
+        <label>Next Visit</label>
+        <input type="date" name="next_visit" class="form-control" value="{{ today }}">
+      </div>
+
+      <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">
+          Save Prescription
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</form>
+{% endif %}
+    </div>
+
+    <!-- ===== RIGHT ACTIVITY PANEL ===== -->
+<div class="col-lg-3">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h6 class="mb-4">Recent Activity</h6>
+
+      <div class="activity-panel">
+
+        <!-- Activity Item -->
+        <div class="activity-item">
+          <span class="activity-icon bg-primary">
+            <i class="material-symbols-rounded">person_add</i>
+          </span>
+          <div class="activity-text">
+            <strong>New Patient Registered</strong>
+            <div class="text-muted text-sm">10 mins ago</div>
+          </div>
+        </div>
+
+        <!-- Activity Item -->
+        <div class="activity-item">
+          <span class="activity-icon bg-warning">
+            <i class="material-symbols-rounded">warning</i>
+          </span>
+          <div class="activity-text">
+            <strong>Stock Alert</strong>
+            <div class="text-muted text-sm">Ashwagandha running low</div>
+          </div>
+        </div>
+
+        <!-- Activity Item -->
+        <div class="activity-item">
+          <span class="activity-icon bg-success">
+            <i class="material-symbols-rounded">receipt_long</i>
+          </span>
+          <div class="activity-text">
+            <strong>Bill Generated</strong>
+            <div class="text-muted text-sm">Invoice #4023</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+  </div>
+</div>
+
+{% endif %}
+
+{% comment %} {% include "includes/footer.html" %} {% endcomment %}
 </main>
 
 {% include "includes/script.html" %}
-
 
 <!-- ===== YOUR ORIGINAL SCRIPT (UNCHANGED) ===== -->
 <script>

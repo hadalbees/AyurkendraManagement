@@ -267,7 +267,7 @@
         </p>
 
         <p class="mb-1">
-          Tax (<span id="gstPercentText">{{ settings.consultation_gst|default:0 }}</span>%):
+          Tax (5%):
           ₹ <span id="taxAmount">0.00</span>
         </p>
 
@@ -280,9 +280,6 @@
         <input type="hidden" name="tax" id="taxInput">
         <input type="hidden" name="total" id="totalInput">
         <input type="hidden" name="payment_status" value="Paid">
-         <!-- GST % from settings -->
-      <input type="hidden" id="gstPercent"
-             value="{{ settings.consultation_gst|default:0 }}">
 
       </div>
     </div>
@@ -465,15 +462,10 @@ function recalcTotals(){
   const itemSubtotal = parseFloat(subTotal.textContent) || 0;
   const discountPct = parseFloat(discountPercent.value) || 0;
 
-  // ✅ GST % from settings
-  const gstPercent = parseFloat(document.getElementById("gstPercent").value) || 0;
-
   const gross = itemSubtotal + registrationFee;
   const discount = gross * (discountPct / 100);
   const afterDiscount = gross - discount;
-
-  // ✅ DYNAMIC GST
-  const tax = afterDiscount * (gstPercent / 100);
+  const tax = afterDiscount * 0.05;
   const total = afterDiscount + tax;
 
   taxAmount.textContent = tax.toFixed(2);

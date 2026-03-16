@@ -120,52 +120,6 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
 });
-
-document.addEventListener("DOMContentLoaded", function () {
-
-  const sidebar = document.getElementById("sidenav-main");
-  const toggleBtn = document.getElementById("sidebarToggle");
-  const closeBtn = document.getElementById("sidebarClose");
-  const overlay = document.getElementById("sidebarOverlay");
-
-  function openSidebar() {
-    sidebar.classList.add("mobile-show");
-    overlay.classList.add("show");
-    document.body.style.overflow = "hidden";
-  }
-
-  function closeSidebar() {
-    sidebar.classList.remove("mobile-show");
-    overlay.classList.remove("show");
-    document.body.style.overflow = "";
-  }
-
-  // Toggle button
-  if (toggleBtn) {
-    toggleBtn.addEventListener("click", function (e) {
-      e.stopPropagation();
-      sidebar.classList.contains("mobile-show") ? closeSidebar() : openSidebar();
-    });
-  }
-
-  // Close icon
-  if (closeBtn) {
-    closeBtn.addEventListener("click", closeSidebar);
-  }
-
-  // Overlay click
-  if (overlay) {
-    overlay.addEventListener("click", closeSidebar);
-  }
-
-  // ESC key
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-      closeSidebar();
-    }
-  });
-
-});
 </script>
 
 <!-- Github buttons -->

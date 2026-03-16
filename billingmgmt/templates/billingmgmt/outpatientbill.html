@@ -39,8 +39,6 @@
 <input type="hidden" name="tax" id="taxInput">
 <input type="hidden" name="total" id="totalInput">
 <input type="hidden" name="registration_fee" id="regFeeInput">
- <input type="hidden" id="gstPercent"
-             value="{{ settings.consultation_gst|default:0 }}">
 
 <!-- ================= PATIENT ================= -->
 <div class="card mb-4">
@@ -170,7 +168,7 @@ Discount (%)
        style="width:60px" oninput="calcTotal()">
 </p>
 
-<p>GST (<span id="gstPercentText">{{ settings.consultation_gst|default:0 }}</span>%): ₹ <span id="tax">0</span></p>
+<p>GST (5%): ₹ <span id="tax">0</span></p>
 <h5>Total: ₹ <span id="grandTotal">0</span></h5>
 
 </div>
@@ -272,22 +270,12 @@ function renderItems() {
 
 /* ================= TOTAL ================= */
 function calcTotal() {
-  const itemSubtotal = parseFloat(subTotal.textContent) || 0;
-  const gross = itemSubtotal + registrationFee;
-
-  const discountPct = parseFloat(discount.value) || 0;
-  const discountAmt = gross * discountPct / 100;
-  const afterDiscount = gross - discountAmt;
-
-  // 🔥 GST FROM SETTINGS
-  const gstPercent = parseFloat(
-    document.getElementById("gstPercent").value
-  ) || 0;
-
-  const taxAmt = (afterDiscount * gstPercent / 100);
-
+  const s = +subTotal.textContent + registrationFee;
+  const d = +discount.value || 0;
+  const after = s - (s * d / 100);
+  const taxAmt = after * 0.05;
   tax.textContent = taxAmt.toFixed(2);
-  grandTotal.textContent = (afterDiscount + taxAmt).toFixed(2);
+  grandTotal.textContent = (after + taxAmt).toFixed(2);
 }
 
 /* ================= SUBMIT ================= */

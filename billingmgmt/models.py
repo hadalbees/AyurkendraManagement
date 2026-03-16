@@ -185,22 +185,4 @@ class TherapyBillItem(models.Model):
     subtotal = models.DecimalField(max_digits=12, decimal_places=2)
 
     def __str__(self):
-        return f"{self.therapy.name if self.therapy else 'Therapy'} x {self.quantity}"
-
-    
-    
-class HospitalSetting(models.Model):
-    hospital_name = models.CharField(max_length=255)
-    hospital_logo = models.ImageField(upload_to='hospital/logo/', blank=True, null=True)
-
-    address = models.TextField()
-    phone = models.CharField(max_length=50)
-    email = models.EmailField(blank=True, null=True)
-
-    registration_number = models.CharField(max_length=100)
-    gst_number = models.CharField(max_length=50, blank=True, null=True)
-
-    consultation_gst = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    therapy_gst = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-
-    updated_at = models.DateTimeField(auto_now=True)
+        return f"{self.therapy.name} x {self.quantity}"

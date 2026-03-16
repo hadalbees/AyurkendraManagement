@@ -1,10 +1,5 @@
 {% load static %}
-<aside class="sidenav navbar navbar-vertical navbar-expand-xs fixed-start bg-white" id="sidenav-main">
-<!-- Mobile Close Button -->
-<button class="sidebar-close d-xl-none" id="sidebarClose">
-  <i class="material-symbols-rounded">close</i>
-</button>
-
+<aside class="sidenav navbar navbar-vertical navbar-expand-xs border-radius-lg fixed-start ms-2 bg-white my-2" id="sidenav-main">
   <div class="sidenav-header">
     <a class="navbar-brand px-4 py-3 m-0" href="#">
       <img src="{% static 'img/logos/logohms.png' %}"
@@ -29,7 +24,7 @@
       {# ===== Staff Management ===== #}
       {% if request.user.is_superuser or "staffmanagement" in user_permissions %}
       <li class="nav-item">
-        <a class="nav-link {% if '/permission' in request.path or '/role' in request.path %} active bg-gradient-dark text-white{% else %}text-dark{% endif %}" data-bs-toggle="collapse" href="#staffMenu">
+        <a class="nav-link {% if '/permission' in request.path %}active bg-gradient-dark text-white{% else %}text-dark{% endif %}" data-bs-toggle="collapse" href="#staffMenu">
           <i class="material-symbols-rounded opacity-5">person</i>
           <span class="nav-link-text ms-1">Staff Management</span>
       </a>
@@ -40,7 +35,7 @@
             <li><a class="nav-link {% if 'permission' in request.path %}active text-primary{% endif %}" href="{% url 'permissionhome' %}">Staff List</a></li>
             {% endif %}
            {% if request.user.is_superuser or "rolemanagement" in user_permissions %}
-            <li><a class="nav-link {% if 'role' in request.path %}active text-primary{% endif %}" href="{% url 'roledashboard' %}">Role Management</a></li>
+            <li><a class="nav-link {% if 'permission' in request.path %}active text-primary{% endif %}" href="{% url 'roledashboard' %}">Role Management</a></li>
             {% endif %}
           </div>
       </li>
@@ -237,19 +232,6 @@
       {% endif %}
 
 
-      {# ===== Settings Management ===== #}
-      {% if request.user.is_superuser %}
-      <li class="nav-item">
-        <a class="nav-link {% if '/settings' in request.path %}active bg-gradient-dark text-white{% else %}text-dark{% endif %}"
-          href="{% url 'billingmgmt:hospital_settings' %}">
-          <i class="material-symbols-rounded opacity-5">settings</i>
-          <span class="nav-link-text ms-1">Hospital Settings</span>
-        </a>
-      </li>
-      {% endif %}
-
-
-
     </ul>
   </div>
 <!-- Sidebar footer -->
@@ -260,4 +242,3 @@
   </a>
 </div>
 </aside>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
