@@ -45,18 +45,18 @@
         </div>
 
         <div class="col-md-6 d-flex gap-2">
-          <button class="btn bg-gradient-dark">
+          <button class="btn btn-outline-success px-4">
             🔍 Filter
           </button>
 
           <button name="export_pdf"
                   value="1"
-                  class="btn btn-danger">
+                  class="btn btn-outline-success px-4">
             📄 Export PDF
           </button>
 
           <a href="{% url 'accountmgmt:ledger_list' %}"
-             class="btn btn-secondary">
+             class="btn btn-outline-success px-4">
             ⟳ Reset
           </a>
         </div>
@@ -145,7 +145,7 @@
 
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 
 {% include "includes/script.html" %}

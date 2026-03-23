@@ -104,14 +104,14 @@
 
           <div class="input-group">
               <!-- Prefix -->
-              <select name="prefix" class="form-select" style="max-width: 110px;" required>
-                  <option value="Mr." {{ patient.prefix == 'Mr.' ? 'selected' : '' }}>Mr.</option>
-                  <option value="Mrs." {{ patient.prefix == 'Mrs.' ? 'selected' : '' }}>Mrs.</option>
-                  <option value="Ms." {{ patient.prefix == 'Ms.' ? 'selected' : '' }}>Ms.</option>
-                  <option value="Miss" {{ patient.prefix == 'Miss' ? 'selected' : '' }}>Miss</option>
-                  <option value="Baby" {{ patient.prefix == 'Baby' ? 'selected' : '' }}>Baby</option>
-                  <option value="Master" {{ patient.prefix == 'Master' ? 'selected' : '' }}>Master</option>
-              </select>
+             <select name="prefix" class="form-select" style="max-width: 110px;" required>
+                <option value="Mr." {% if patient.prefix == "Mr." %}selected{% endif %}>Mr.</option>
+                <option value="Mrs." {% if patient.prefix == "Mrs." %}selected{% endif %}>Mrs.</option>
+                <option value="Ms." {% if patient.prefix == "Ms." %}selected{% endif %}>Ms.</option>
+                <option value="Miss" {% if patient.prefix == "Miss" %}selected{% endif %}>Miss</option>
+                <option value="Baby" {% if patient.prefix == "Baby" %}selected{% endif %}>Baby</option>
+                <option value="Master" {% if patient.prefix == "Master" %}selected{% endif %}>Master</option>
+            </select>
 
               <!-- Patient Name -->
               <input name="patient_name"
@@ -196,7 +196,7 @@
 
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 
 {% include "includes/script.html" %}

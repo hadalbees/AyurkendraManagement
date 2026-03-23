@@ -202,7 +202,7 @@
     </p>
 
     <p style="margin-top:40px;font-size:13px;opacity:0.7;">
-      © 2024 AHMS Inc. Excellence in Ayurveda.
+      © 2026 AHMS Inc. Excellence in Ayurveda.
     </p>
   </div>
 
@@ -230,25 +230,30 @@
 
         <div class="mb-3">
           <label class="form-label">Email</label>
-          <input type="text"
-                 name="username"
-                 class="form-control"
-                 placeholder="admin@ahms.com"
-                 required>
+          <input type="email"
+                name="username"
+                id="emailField"
+                class="form-control"
+                placeholder="admin@ahms.com"
+                onchange="validateEmail()"
+                required>
+          <small id="emailError" class="text-danger"></small>
         </div>
 
         <div class="mb-3">
           <label class="form-label">Password</label>
           <div class="input-group">
             <input type="password"
-                   id="passwordField"
-                   name="password"
-                   class="form-control"
-                   required>
-            <span class="input-group-text" onclick="togglePassword()">
+                  id="passwordField"
+                  name="password"
+                  class="form-control"
+                  onchange="validatePassword()"
+                  required>
+            <span class="input-group-text" onclick="togglePassword()" style="cursor:pointer;">
               <i id="eyeIcon" class="bi bi-eye-fill"></i>
             </span>
           </div>
+          <small id="passwordError" class="text-danger"></small>
         </div>
 
         <small class="text-success fw-semibold d-block mb-3">
@@ -270,22 +275,53 @@
 </div>
 
 <script>
-function togglePassword() {
-  const pwd = document.getElementById("passwordField");
-  const icon = document.getElementById("eyeIcon");
-  if (pwd.type === "password") {
-    pwd.type = "text";
-    icon.classList.replace("bi-eye-fill", "bi-eye-slash-fill");
-  } else {
-    pwd.type = "password";
-    icon.classList.replace("bi-eye-slash-fill", "bi-eye-fill");
-  }
+function validateEmail() {
+    const email = document.getElementById("emailField").value.trim();
+    const error = document.getElementById("emailError");
+
+    const emailPattern = /^[^ ]+@[^ ]+\.[a-z]{2,3}$/;
+
+    if (email === "") {
+        error.innerText = "Email is required";
+        return false;
+    } else if (!email.match(emailPattern)) {
+        error.innerText = "Enter valid email address";
+        return false;
+    } else {
+        error.innerText = "";
+        return true;
+    }
 }
 
-setTimeout(() => {
-  document.querySelectorAll(".alert").forEach(el => el.remove());
-}, 3000);
+function validatePassword() {
+    const password = document.getElementById("passwordField").value.trim();
+    const error = document.getElementById("passwordError");
+
+    if (password === "") {
+        error.innerText = "Password is required";
+        return false;
+    } else {
+        error.innerText = "";
+        return true;
+    }
+}
+
+function togglePassword() {
+    const passwordField = document.getElementById("passwordField");
+    const eyeIcon = document.getElementById("eyeIcon");
+
+    if (passwordField.type === "password") {
+        passwordField.type = "text";
+        eyeIcon.classList.remove("bi-eye-fill");
+        eyeIcon.classList.add("bi-eye-slash-fill");
+    } else {
+        passwordField.type = "password";
+        eyeIcon.classList.remove("bi-eye-slash-fill");
+        eyeIcon.classList.add("bi-eye-fill");
+    }
+}
 </script>
+
 
 </body>
 </html>

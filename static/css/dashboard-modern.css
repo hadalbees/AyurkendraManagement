@@ -735,3 +735,6 @@
   background: linear-gradient(135deg,#ede9fe,#ddd6fe);
   color:#5b21b6;
 }
+.is-invalid {
+    border: 1px solid red;
+}

@@ -24,6 +24,7 @@ from django.http import JsonResponse
 from django.db.models import Value, CharField
 from datetime import date
 from .models import HospitalSetting
+from fieldmgmt.models import IPOtherCharge
 
 
 
@@ -154,28 +155,41 @@ def get_patient_prescription(request):
 # ----------------------------
 @transaction.atomic
 def medical_billing_view(request):
+
     patients = Patient.objects.filter(is_active=True)
     settings = HospitalSetting.objects.first()
-    bill_no = generate_medical_bill_number()
-    medicines = Stock.objects.select_related("medicine").all()
-    today = timezone.localdate()
 
+    bill_no = generate_medical_bill_number()
+
+    medicines = Stock.objects.select_related("medicine").filter(
+        total_base_quantity__gt=0
+    )
+
+    today = timezone.localdate()
+    print("POST DATA:", request.POST)
     if request.method == "POST":
+
         try:
-            # -------- BILL DATA --------
+
             doctor_name = request.POST.get("doctor_name", "").strip()
             bill_date = request.POST.get("bill_date") or today
+
             subtotal = Decimal(request.POST.get("subtotal", "0") or "0")
+            tax = Decimal(request.POST.get("tax", "0") or "0")
+            total = Decimal(request.POST.get("total", "0") or "0")
+
             payment_mode = request.POST.get("payment_mode") or "Cash"
             payment_status = request.POST.get("payment_status") or "Pending"
             remarks = request.POST.get("remarks", "")
 
-            # 🔹 CUSTOMER TYPE
+            # -------- CUSTOMER TYPE --------
             customer_type = request.POST.get("customer_type", "patient")
             patient = None
 
             if customer_type == "patient":
+
                 patient_id = request.POST.get("patient_id")
+
                 if not patient_id:
                     return redirect("billingmgmt:medicalbilling")
 
@@ -185,23 +199,14 @@ def medical_billing_view(request):
                     is_active=True
                 )
 
-            # -------- GST (DYNAMIC FROM SETTINGS) --------
-            settings = HospitalSetting.objects.first()
-            gst_percent = Decimal(settings.consultation_gst or 0) if settings else Decimal("0")
-
-            tax = (subtotal * gst_percent / Decimal("100")).quantize(Decimal("0.01"))
-            total = subtotal + tax
-
             # -------- MEDICINE DATA --------
             stock_ids = request.POST.getlist("stock_id[]")
             units = request.POST.getlist("unit[]")
             qtys = request.POST.getlist("quantity[]")
-            subs_vals = request.POST.getlist("subtotal[]")
+            subs = request.POST.getlist("subtotal[]")
 
             if not stock_ids:
                 return redirect("billingmgmt:medicalbilling")
-
-            mi_field_names = [f.name for f in MedicineItem._meta.fields]
 
             with transaction.atomic():
 
@@ -218,63 +223,49 @@ def medical_billing_view(request):
                     remarks=remarks,
                 )
 
-                for idx in range(len(stock_ids)):
-                    sid = stock_ids[idx] if idx < len(stock_ids) else None
-                    user_unit = units[idx] if idx < len(units) else None
-                    qty_str = qtys[idx] if idx < len(qtys) else None
-                    sub_str = subs_vals[idx] if idx < len(subs_vals) else "0"
+                for i in range(len(stock_ids)):
 
-                    if not sid or not qty_str:
-                        continue
+                    sid = stock_ids[i]
+                    qty = Decimal(qtys[i])
+                    sub = Decimal(subs[i])
+                    unit = units[i]
 
-                    try:
-                        stock = Stock.objects.select_for_update().get(id=sid)
-                        qty_decimal = Decimal(qty_str)
-                        subtotal_decimal = Decimal(sub_str or "0")
-                    except Exception:
-                        continue
+                    stock = Stock.objects.select_for_update().get(id=sid)
 
-                    if qty_decimal <= 0:
-                        continue
+                    # check stock
+                    if qty > stock.total_base_quantity:
+                        raise Exception(
+                            f"Insufficient stock for {stock.medicine.name}"
+                        )
 
-                    user_unit_norm = (user_unit or "").strip().upper()
-                    stock_unit_norm = (stock.unit or "").strip().upper()
+                    # save item
+                    MedicineItem.objects.create(
+                        bill=bill,
+                        medicine_name=stock.medicine.name,
+                        unit_price=stock.selling_price,
+                        quantity=qty,
+                        subtotal=sub
+                    )
 
-                    user_base_mul = UNIT_TO_BASE.get(user_unit_norm, UNIT_TO_BASE["UNIT"])
-                    stock_base_mul = UNIT_TO_BASE.get(stock_unit_norm, UNIT_TO_BASE["UNIT"])
-
-                    qty_base = qty_decimal * user_base_mul
-                    stock_base_qty = stock.quantity * stock_base_mul
-
-                    deduct_qty = min(qty_base, stock_base_qty) / stock_base_mul
-
-                    mi_kwargs = {
-                        "bill": bill,
-                        "medicine_name": stock.medicine.name,
-                        "unit_price": stock.selling_price,
-                        "quantity": int(qty_decimal),
-                        "subtotal": subtotal_decimal,
-                    }
-
-                    if "unit" in mi_field_names:
-                        mi_kwargs["unit"] = user_unit_norm or stock_unit_norm or "UNIT"
-
-                    MedicineItem.objects.create(**mi_kwargs)
-
-                    stock.quantity = max(stock.quantity - deduct_qty, Decimal("0"))
+                    # reduce stock
+                    stock.total_base_quantity -= qty
                     stock.save()
 
             return redirect("billingmgmt:print_bill", bill_no=bill.bill_no)
 
-        except Exception:
-            return redirect("billingmgmt:medicalbilling")
+        # except Exception as e:
+        #     print("Medical Billing Error:", e)
+        #     return redirect("billingmgmt:medicalbilling")
+        except Exception as e:
+            print("MEDICAL BILL ERROR:", e)
+            raise e
 
     return render(request, "billingmgmt/medicalbill.html", {
         "patients": patients,
         "bill_no": bill_no,
         "today": today,
         "medicines": medicines,
-        "settings":settings,
+        "settings": settings,
     })
 def print_bill(request, bill_no):
     bill = get_object_or_404(MedicalBill, bill_no=bill_no)
@@ -300,7 +291,109 @@ def print_bill(request, bill_no):
         "sgst": sgst,
     })
 
+def edit_medical_bill_view(request, bill_no):
 
+    bill = get_object_or_404(MedicalBill, bill_no=bill_no)
+
+    patients = Patient.objects.filter(is_active=True)
+
+    medicines = Stock.objects.select_related("medicine").filter(
+        total_base_quantity__gt=0
+    )
+
+    settings = HospitalSetting.objects.first()
+
+    today = timezone.localdate()
+
+    items = MedicineItem.objects.filter(bill=bill)
+
+    if request.method == "POST":
+
+        try:
+
+            doctor_name = request.POST.get("doctor_name", "").strip()
+            bill_date = request.POST.get("bill_date")
+
+            subtotal = Decimal(request.POST.get("subtotal", "0"))
+            tax = Decimal(request.POST.get("tax", "0"))
+            total = Decimal(request.POST.get("total", "0"))
+
+            payment_mode = request.POST.get("payment_mode")
+            payment_status = request.POST.get("payment_status")
+
+            with transaction.atomic():
+
+                # 🔹 Restore old stock
+                for old in items:
+
+                    stock = Stock.objects.filter(
+                        medicine__name=old.medicine_name
+                    ).first()
+
+                    if stock:
+                        stock.total_base_quantity += old.quantity
+                        stock.save()
+
+                items.delete()
+
+                # 🔹 Save new medicines
+                stock_ids = request.POST.getlist("stock_id[]")
+                qtys = request.POST.getlist("quantity[]")
+                subs = request.POST.getlist("subtotal[]")
+
+                for i in range(len(stock_ids)):
+
+                    stock = Stock.objects.select_for_update().get(
+                        id=stock_ids[i]
+                    )
+
+                    qty = Decimal(qtys[i])
+                    sub = Decimal(subs[i])
+
+                    if qty > stock.total_base_quantity:
+                        raise Exception(
+                            f"Stock not available for {stock.medicine.name}"
+                        )
+
+                    MedicineItem.objects.create(
+                        bill=bill,
+                        medicine_name=stock.medicine.name,
+                        unit_price=stock.selling_price,
+                        quantity=qty,
+                        subtotal=sub
+                    )
+
+                    stock.total_base_quantity -= qty
+                    stock.save()
+
+                # 🔹 Update Bill
+                bill.doctor_name = doctor_name
+                bill.bill_date = bill_date
+                bill.subtotal = subtotal
+                bill.tax = tax
+                bill.total = total
+                bill.payment_mode = payment_mode
+                bill.payment_status = payment_status
+
+                bill.save()
+
+            return redirect("billingmgmt:print_bill", bill_no=bill.bill_no)
+
+        except Exception as e:
+            print("Edit bill error:", e)
+
+    return render(
+        request,
+        "billingmgmt/medicalbill_edit.html",
+        {
+            "bill": bill,
+            "patients": patients,
+            "medicines": medicines,
+            "settings": settings,
+            "today": bill.bill_date,
+            "items": items,
+        },
+    )
 
 def generate_ip_bill_number():
     """Generate a unique InpatientBill number safely."""
@@ -326,6 +419,7 @@ def inpatient_billing_view(request):
         bill_no = generate_ip_bill_number()
         patients = Patient.objects.filter(is_active=True)
         settings = HospitalSetting.objects.first()
+        charges = IPOtherCharge.objects.filter(status=True)
         medicines = MedicalStock.objects.filter(quantity__gt=0).select_related('medicine')[:1000]
         therapies = TherapyMaster.objects.all()
 
@@ -334,11 +428,13 @@ def inpatient_billing_view(request):
             "patients": patients,
             "medicines": medicines,
             "therapies": therapies,
-            "settings":settings,
+            "settings": settings,
+            "charges": charges,
             "today": timezone.localdate(),
         })
 
     # ---------------- POST ----------------
+
     if request.method == "POST":
 
         bill_no = request.POST.get("bill_no")
@@ -347,7 +443,10 @@ def inpatient_billing_view(request):
         admit_date = request.POST.get("admit_date") or None
         discharge_date = request.POST.get("discharge_date") or None
 
-        discount = Decimal(request.POST.get("discount") or "0")
+        # 🔹 Discount percent from form
+        discount_percent = Decimal(request.POST.get("discount") or "0")
+        advance_payment = Decimal(request.POST.get("advance_payment") or "0")
+        balance_amount = Decimal(request.POST.get("balance_amount") or "0")
         payment_mode = request.POST.get("payment_mode") or "Cash"
         payment_status = request.POST.get("payment_status") or "Pending"
         remarks = request.POST.get("remarks") or ""
@@ -381,35 +480,167 @@ def inpatient_billing_view(request):
                 doctor_name=doctor_name,
                 admit_date=admit_date,
                 discharge_date=discharge_date,
-                subtotal=Decimal("0.00"),  # temp
-                discount=discount,
-                tax=Decimal("0.00"),       # temp
-                total=Decimal("0.00"),     # temp
+                subtotal=Decimal("0.00"),
+                discount=Decimal("0.00"),
+                tax=Decimal("0.00"),
+                total=Decimal("0.00"),
+                advance_payment=advance_payment,
+                balance_amount=balance_amount,
                 payment_mode=payment_mode,
                 payment_status=payment_status,
                 remarks=remarks,
+                discount_percent=discount_percent,
                 created_by=request.user
             )
 
             for name, rate, qty, itype, stock_id in zip(
                 item_names, item_rates, item_qtys, item_types, item_stock_ids
             ):
+
                 if not name:
                     continue
 
                 rate_d = Decimal(rate or "0")
                 qty_d = Decimal(qty or "0")
-                sub = (rate_d * qty_d).quantize(Decimal("0.01"))
-                calculated_subtotal += sub
+
+                subtotal = (rate_d * qty_d).quantize(Decimal("0.01"))
+                calculated_subtotal += subtotal
 
                 stock_obj = None
+
+                # -------- MEDICINE STOCK --------
                 if itype == "medicine" and stock_id:
+
                     stock_obj = MedicalStock.objects.select_for_update().get(id=stock_id)
+
                     if Decimal(stock_obj.quantity) < qty_d:
-                        raise ValueError("Not enough stock")
+                        raise ValueError(f"Not enough stock for {name}")
+
                     stock_obj.quantity -= qty_d
                     stock_obj.save()
 
+                # -------- CREATE BILL ITEM --------
+                InpatientItem.objects.create(
+                    bill=bill,
+                    item_type=itype,
+                    item_name=name,
+                    unit_price=rate_d,
+                    quantity=qty_d,
+                    subtotal=subtotal,
+                    medical_stock=stock_obj
+                )
+
+            # ---------------- FINAL CALCULATION ----------------
+
+            # Add registration fee
+            final_subtotal = calculated_subtotal + registration_fee
+
+            # Discount calculation
+            discount_amount = (final_subtotal * discount_percent / Decimal("100")).quantize(Decimal("0.01"))
+
+            subtotal_after_discount = final_subtotal - discount_amount
+
+            # GST calculation
+            tax = (subtotal_after_discount * gst_percent / Decimal("100")).quantize(Decimal("0.01"))
+
+            total = subtotal_after_discount + tax
+
+            bill.subtotal = final_subtotal
+            bill.discount = discount_amount
+            bill.tax = tax
+            bill.total = total
+            bill.save()
+
+        return redirect("billingmgmt:print_inpatient_bill", bill_no=bill.bill_no)
+
+
+def edit_inpatient_bill_view(request, bill_no):
+
+    bill = get_object_or_404(InpatientBill, bill_no=bill_no)
+
+    patients = Patient.objects.filter(is_active=True)
+    settings = HospitalSetting.objects.first()
+    charges = IPOtherCharge.objects.filter(status=True)
+
+    medicines = MedicalStock.objects.filter(
+        quantity__gt=0
+    ).select_related("medicine")[:1000]
+
+    therapies = TherapyMaster.objects.all()
+
+    items = InpatientItem.objects.filter(bill=bill)
+
+    if request.method == "POST":
+
+        bill.patient = Patient.objects.get(
+            patient_unique_id=request.POST.get("patient_id")
+        )
+
+        bill.doctor_name = request.POST.get("doctor_name") or ""
+        bill.admit_date = request.POST.get("admit_date") or None
+        bill.discharge_date = request.POST.get("discharge_date") or None
+
+        discount_percent = Decimal(request.POST.get("discount") or "0")
+
+        payment_mode = request.POST.get("payment_mode") or "Cash"
+        payment_status = request.POST.get("payment_status") or "Pending"
+        remarks = request.POST.get("remarks") or ""
+
+        item_names = request.POST.getlist("item_name[]")
+        item_rates = request.POST.getlist("item_rate[]")
+        item_qtys = request.POST.getlist("item_qty[]")
+        item_types = request.POST.getlist("item_type[]")
+        item_stock_ids = request.POST.getlist("item_stock_id[]")
+
+        gst_percent = Decimal(settings.consultation_gst or 0)
+
+        with transaction.atomic():
+
+            # ---------- RESTORE OLD STOCK ----------
+            for old in items:
+                if old.item_type == "medicine" and old.medical_stock:
+                    stock = old.medical_stock
+                    stock.quantity += old.quantity
+                    stock.save()
+
+            # ---------- DELETE OLD ITEMS ----------
+            items.delete()
+
+            subtotal = Decimal("0.00")
+
+            for name, rate, qty, itype, stock_id in zip(
+                item_names,
+                item_rates,
+                item_qtys,
+                item_types,
+                item_stock_ids,
+            ):
+
+                if not name:
+                    continue
+
+                rate_d = Decimal(rate or "0")
+                qty_d = Decimal(qty or "0")
+
+                sub = (rate_d * qty_d).quantize(Decimal("0.01"))
+                subtotal += sub
+
+                stock_obj = None
+
+                # -------- MEDICINE STOCK --------
+                if itype == "medicine" and stock_id:
+
+                    stock_obj = MedicalStock.objects.select_for_update().get(
+                        id=stock_id
+                    )
+
+                    if stock_obj.quantity < qty_d:
+                        raise ValueError(f"Not enough stock for {name}")
+
+                    stock_obj.quantity -= qty_d
+                    stock_obj.save()
+
+                # -------- CREATE ITEM --------
                 InpatientItem.objects.create(
                     bill=bill,
                     item_type=itype,
@@ -420,19 +651,67 @@ def inpatient_billing_view(request):
                     medical_stock=stock_obj
                 )
 
-            # ---- FINAL CALCULATION ----
-            final_subtotal = calculated_subtotal + registration_fee
-            tax = (final_subtotal * gst_percent / Decimal("100")).quantize(Decimal("0.01"))
-            total = final_subtotal + tax - discount
+            # ---------- BILL CALCULATION ----------
 
-            bill.subtotal = final_subtotal
+            discount_amount = (
+                subtotal * discount_percent / Decimal("100")
+            ).quantize(Decimal("0.01"))
+
+            subtotal_after_discount = subtotal - discount_amount
+
+            tax = (
+                subtotal_after_discount * gst_percent / Decimal("100")
+            ).quantize(Decimal("0.01"))
+
+            total = subtotal_after_discount + tax
+
+            # ---------- ADVANCE PAYMENT LOGIC ----------
+
+            old_advance = bill.advance_payment or Decimal("0")
+            new_payment = Decimal(request.POST.get("advance_payment") or "0")
+
+            total_advance = old_advance + new_payment
+
+            balance_amount = total - total_advance
+
+            if balance_amount < 0:
+                balance_amount = Decimal("0.00")
+
+            # ---------- SAVE BILL ----------
+
+            bill.subtotal = subtotal
+            bill.discount = discount_amount
             bill.tax = tax
             bill.total = total
+
+            bill.advance_payment = total_advance
+            bill.balance_amount = balance_amount
+
+            bill.payment_mode = payment_mode
+            bill.payment_status = payment_status
+            bill.remarks = remarks
+            bill.discount_percent = discount_percent
+
             bill.save()
 
-        return redirect("billingmgmt:print_inpatient_bill", bill_no=bill.bill_no)
+        return redirect(
+            "billingmgmt:print_inpatient_bill",
+            bill_no=bill.bill_no
+        )
 
-
+    return render(
+        request,
+        "billingmgmt/inpatientbill_edit.html",
+        {
+            "bill": bill,
+            "items": items,
+            "patients": patients,
+            "medicines": medicines,
+            "therapies": therapies,
+            "charges": charges,
+            "settings": settings,
+        },
+    )
 
 # AJAX patient lookup (by id or name)
 def get_patient(request):
@@ -542,45 +821,61 @@ def generate_op_bill_no():
         return f"OP{num+1:03d}"
     return "OP001"
 def outpatient_billing_view(request):
+
     therapies = TherapyMaster.objects.all()
 
     # ---------- GET ----------
     if request.method == "GET":
         settings = HospitalSetting.objects.first()
+
         return render(request, "billingmgmt/outpatientbill.html", {
             "bill_no": generate_op_bill_no(),
             "today": timezone.localdate(),
             "therapies": therapies,
-            "settings":settings
+            "settings": settings
         })
 
     # ---------- POST ----------
+
     bill_no = request.POST.get("bill_no")
     patient_id = request.POST.get("patient_id")
     doctor_name = request.POST.get("doctor_name") or ""
     visit_date = request.POST.get("visit_date") or timezone.localdate()
+
     payment_mode = request.POST.get("payment_mode") or "Cash"
     payment_status = request.POST.get("payment_status") or "Pending"
+
     subtotal = Decimal(request.POST.get("subtotal") or "0")
-    discount = Decimal(request.POST.get("discount") or "0")
+
+    discount_percent = Decimal(request.POST.get("discount") or "0")
 
     try:
         patient = Patient.objects.get(id=patient_id)
     except (Patient.DoesNotExist, ValueError, TypeError):
         return HttpResponseBadRequest("Invalid Patient")
 
-    # ---- REGISTRATION FEE ----
+    # -------- REGISTRATION FEE --------
     is_new_patient = patient.created_at.date() == timezone.localdate()
     registration_fee = Decimal("50.00") if is_new_patient else Decimal("0.00")
 
     subtotal = subtotal + registration_fee
 
-    # ---- GST FROM SETTINGS ----
+    # -------- DISCOUNT CALCULATION --------
+    discount_amount = (
+        subtotal * discount_percent / Decimal("100")
+    ).quantize(Decimal("0.01"))
+
+    subtotal_after_discount = subtotal - discount_amount
+
+    # -------- GST --------
     settings = HospitalSetting.objects.first()
     gst_percent = Decimal(settings.consultation_gst or 0) if settings else Decimal("0")
 
-    tax = (subtotal * gst_percent / Decimal("100")).quantize(Decimal("0.01"))
-    total = subtotal + tax - discount
+    tax = (
+        subtotal_after_discount * gst_percent / Decimal("100")
+    ).quantize(Decimal("0.01"))
+
+    total = subtotal_after_discount + tax
 
     item_names = request.POST.getlist("item_name[]")
     item_rates = request.POST.getlist("item_rate[]")
@@ -593,22 +888,27 @@ def outpatient_billing_view(request):
             patient=patient,
             doctor_name=doctor_name,
             visit_date=visit_date,
+
             subtotal=subtotal,
-            discount=discount,
+            discount_percent=discount_percent,
+            discount=discount_amount,
             tax=tax,
+            total=total,
+
             payment_mode=payment_mode,
             payment_status=payment_status,
-            total=total,
             created_by=request.user,
         )
 
-        # ---- SAVE NORMAL ITEMS ----
+        # -------- SAVE ITEMS --------
         for name, rate, qty in zip(item_names, item_rates, item_qtys):
+
             if not name:
                 continue
 
             rate_d = Decimal(rate or "0")
             qty_d = Decimal(qty or "0")
+
             sub = rate_d * qty_d
 
             OutpatientItem.objects.create(
@@ -619,7 +919,7 @@ def outpatient_billing_view(request):
                 subtotal=sub
             )
 
-        # ---- SAVE REGISTRATION FEE AS ITEM ----
+        # -------- REGISTRATION ITEM --------
         if registration_fee > 0:
             OutpatientItem.objects.create(
                 bill=bill,
@@ -629,7 +929,109 @@ def outpatient_billing_view(request):
                 subtotal=registration_fee
             )
 
-    return redirect("billingmgmt:print_outpatient_bill", bill_no=bill.bill_no)
+    return redirect(
+        "billingmgmt:print_outpatient_bill",
+        bill_no=bill.bill_no
+    )
+
+def edit_outpatient_bill_view(request, bill_no):
+
+    bill = get_object_or_404(OutpatientBill, bill_no=bill_no)
+
+    settings = HospitalSetting.objects.first()
+    therapies = TherapyMaster.objects.all()
+
+    items = OutpatientItem.objects.filter(bill=bill)
+
+    if request.method == "POST":
+
+        doctor_name = request.POST.get("doctor_name") or ""
+        visit_date = request.POST.get("visit_date") or timezone.localdate()
+
+        payment_mode = request.POST.get("payment_mode") or "Cash"
+        payment_status = request.POST.get("payment_status") or "Pending"
+
+        discount_percent = Decimal(request.POST.get("discount") or "0")
+
+        item_names = request.POST.getlist("item_name[]")
+        item_rates = request.POST.getlist("item_rate[]")
+        item_qtys = request.POST.getlist("item_qty[]")
+
+        gst_percent = Decimal(settings.consultation_gst or 0) if settings else Decimal("0")
+
+        with transaction.atomic():
+
+            # delete old items
+            items.delete()
+
+            subtotal = Decimal("0.00")
+
+            for name, rate, qty in zip(item_names, item_rates, item_qtys):
+
+                if not name:
+                    continue
+
+                rate_d = Decimal(rate or "0")
+                qty_d = Decimal(qty or "0")
+
+                sub = rate_d * qty_d
+                subtotal += sub
+
+                OutpatientItem.objects.create(
+                    bill=bill,
+                    item_name=name,
+                    unit_price=rate_d,
+                    quantity=qty_d,
+                    subtotal=sub
+                )
+
+            # -------- REGISTRATION FEE --------
+            is_new_patient = bill.patient.created_at.date() == timezone.localdate()
+            registration_fee = Decimal("50.00") if is_new_patient else Decimal("0.00")
+
+            subtotal = subtotal + registration_fee
+
+            discount_amount = (
+                subtotal * discount_percent / Decimal("100")
+            ).quantize(Decimal("0.01"))
+
+            subtotal_after_discount = subtotal - discount_amount
+
+            tax = (
+                subtotal_after_discount * gst_percent / Decimal("100")
+            ).quantize(Decimal("0.01"))
+
+            total = subtotal_after_discount + tax
+
+            bill.doctor_name = doctor_name
+            bill.visit_date = visit_date
+
+            bill.subtotal = subtotal
+            bill.discount_percent = discount_percent
+            bill.discount = discount_amount
+            bill.tax = tax
+            bill.total = total
+
+            bill.payment_mode = payment_mode
+            bill.payment_status = payment_status
+
+            bill.save()
+
+        return redirect(
+            "billingmgmt:print_outpatient_bill",
+            bill_no=bill.bill_no
+        )
+
+    return render(
+        request,
+        "billingmgmt/outpatientbill_edit.html",
+        {
+            "bill": bill,
+            "items": items,
+            "settings": settings,
+            "therapies": therapies,
+        },
+    )
 
 def print_outpatient_bill(request, bill_no):
     bill = get_object_or_404(OutpatientBill, bill_no=bill_no)
@@ -695,24 +1097,42 @@ def therapy_billing_view(request):
 
         bill_no = request.POST.get("bill_no") or generate_therapy_bill_number()
         bill_date = request.POST.get("bill_date") or timezone.localdate()
+
         payment_mode = request.POST.get("payment_mode") or "Cash"
         payment_status = request.POST.get("payment_status") or "Pending"
         remarks = request.POST.get("remarks", "")
 
-        # ---------- TOTALS ----------
+        # ---------- TOTAL INPUT ----------
         try:
             subtotal = Decimal(request.POST.get("subtotal") or "0")
-            discount = Decimal(request.POST.get("discount") or "0")
+            discount_percent = Decimal(request.POST.get("discount_percent") or "0")
+            advance_payment = Decimal(request.POST.get("advance_payment") or "0")
         except InvalidOperation:
             subtotal = Decimal("0")
-            discount = Decimal("0")
+            discount_percent = Decimal("0")
+            advance_payment = Decimal("0")
 
-        # ---------- GST FROM SETTINGS ----------
+        # ---------- GST ----------
         settings = HospitalSetting.objects.first()
         gst_percent = Decimal(settings.therapy_gst or 0) if settings else Decimal("0")
 
         tax = (subtotal * gst_percent / Decimal("100")).quantize(Decimal("0.01"))
-        total = subtotal + tax - discount
+
+        subtotal_with_gst = subtotal + tax
+
+        # ---------- DISCOUNT ----------
+        discount = (
+            subtotal_with_gst * discount_percent / Decimal("100")
+        ).quantize(Decimal("0.01"))
+
+        # ---------- TOTAL ----------
+        total = subtotal_with_gst - discount
+
+        # ---------- BALANCE ----------
+        balance_amount = total - advance_payment
+
+        if balance_amount < 0:
+            balance_amount = Decimal("0.00")
 
         # ---------- FORM ARRAYS ----------
         therapy_ids = request.POST.getlist("therapy_id[]")
@@ -728,10 +1148,17 @@ def therapy_billing_view(request):
                 patient=patient,
                 bill_no=bill_no,
                 bill_date=bill_date,
+
                 subtotal=subtotal,
+                discount_percent=discount_percent,
                 discount=discount,
+
                 tax=tax,
                 total=total,
+
+                advance_payment=advance_payment,
+                balance_amount=balance_amount,
+
                 payment_mode=payment_mode,
                 payment_status=payment_status,
                 remarks=remarks
@@ -741,6 +1168,7 @@ def therapy_billing_view(request):
             for t_id, qty, price, sub in zip(
                 therapy_ids, quantities, unit_prices, subtotals
             ):
+
                 if not t_id:
                     continue
 
@@ -749,6 +1177,7 @@ def therapy_billing_view(request):
                     qty_int = int(float(qty))
                     unit_price = Decimal(price)
                     subtotal_amt = Decimal(sub)
+
                 except (TherapyMaster.DoesNotExist, ValueError, TypeError, InvalidOperation):
                     continue
 
@@ -772,6 +1201,65 @@ def therapy_billing_view(request):
         "bill_no": generate_therapy_bill_number(),
         "settings": HospitalSetting.objects.first(),
         "today": timezone.localdate(),
+    })
+    
+    
+def edit_therapy_bill_view(request, bill_no):
+
+    bill = get_object_or_404(TherapyBill, bill_no=bill_no)
+
+    settings = HospitalSetting.objects.first()
+
+    if request.method == "POST":
+
+        subtotal = Decimal(request.POST.get("subtotal") or "0")
+        discount_percent = Decimal(request.POST.get("discount_percent") or "0")
+
+        old_advance = Decimal(request.POST.get("old_advance") or "0")
+        new_payment = Decimal(request.POST.get("advance_payment") or "0")
+
+        gst_percent = Decimal(settings.therapy_gst or 0)
+
+        tax = (subtotal * gst_percent / Decimal("100")).quantize(Decimal("0.01"))
+
+        subtotal_with_gst = subtotal + tax
+
+        discount = (
+            subtotal_with_gst * discount_percent / Decimal("100")
+        ).quantize(Decimal("0.01"))
+
+        total = subtotal_with_gst - discount
+
+        # 🔹 CORRECT ADVANCE LOGIC
+        total_advance = old_advance + new_payment
+
+        balance_amount = total - total_advance
+
+        if balance_amount < 0:
+            balance_amount = Decimal("0")
+
+        bill.subtotal = subtotal
+        bill.discount_percent = discount_percent
+        bill.discount = discount
+        bill.tax = tax
+        bill.total = total
+
+        bill.advance_payment = total_advance
+        bill.balance_amount = balance_amount
+
+        bill.payment_mode = request.POST.get("payment_mode")
+        bill.payment_status = request.POST.get("payment_status")
+        bill.remarks = request.POST.get("remarks")
+
+        bill.save()
+
+        return redirect("billingmgmt:therapy_bill_print", bill_no=bill.bill_no)
+
+    return render(request, "billingmgmt/therapybill_edit.html", {
+        "bill": bill,
+        "patients": Patient.objects.filter(is_active=True),
+        "therapies": TherapyMaster.objects.filter(status=True),
+        "settings": settings,
     })
 def therapy_bill_print_view(request, bill_no):
     bill = get_object_or_404(TherapyBill, bill_no=bill_no)
@@ -1294,6 +1782,7 @@ def hospital_settings(request):
         settings.hospital_name = request.POST.get('hospital_name')
         settings.address = request.POST.get('address')
         settings.phone = request.POST.get('phone')
+        settings.landline = request.POST.get('landline')
         settings.email = request.POST.get('email')
         settings.registration_number = request.POST.get('registration_number')
         settings.gst_number = request.POST.get('gst_number')

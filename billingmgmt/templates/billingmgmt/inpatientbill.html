@@ -134,69 +134,80 @@
   </div>
 
   <!-- ================= OTHER CHARGES ================= -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
+<!-- ================= OTHER CHARGES ================= -->
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
 
-      <h6 class="mb-3">Other Charges (Therapy / Lab / Medicine)</h6>
+    <h6 class="mb-3">Other Charges (Therapy / Lab / Medicine)</h6>
 
-      <div class="row g-3 align-items-end">
+    <div class="row g-3 align-items-end">
 
-        <div class="col-md-4">
-          <label class="form-label">Item / Therapy</label>
-          <input id="itemName" list="itemList"
-                 class="form-control"
-                 oninput="onItemSelected()">
-          <datalist id="itemList">
-            {% for s in medicines %}
-              <option value="{{ s.medicine.name }}"
-                      data-source="medicine"
-                      data-stock-id="{{ s.id }}"
-                      data-price="{{ s.selling_price }}">
-            {% endfor %}
-            {% for t in therapies %}
-              <option value="{{ t.name }}"
-                      data-source="therapy"
-                      data-price="{{ t.charges }}">
-            {% endfor %}
-          </datalist>
-        </div>
+      <!-- Item -->
+      <div class="col-md-4">
+        <label class="form-label">Item / Therapy</label>
 
-        <div class="col-md-2">
-          <label class="form-label">Unit Price</label>
-          <input id="itemRate" type="number" step="0.01" class="form-control">
-        </div>
+        <select id="chargeSelect" class="form-control">
 
-        <div class="col-md-2">
-          <label class="form-label">Qty</label>
-          <input id="itemQty" type="number" value="1" step="0.01"
-                 class="form-control">
-        </div>
+          <option value="">Select Item</option>
 
-        <div class="col-md-2">
-          <label class="form-label">Type</label>
-          <select id="itemType" class="form-control">
-            <option value="medicine">Medicine</option>
-            <option value="treatment">Treatment</option>
-            <option value="lab">Lab</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
+          {% for c in charges %}
+          <option
+            value="{{ c.id }}"
+            data-name="{{ c.name }}"
+            data-type="{{ c.type }}"
+            data-price="{{ c.unit_price }}"
+          >
+            {{ c.name }} ({{ c.type }}) - ₹{{ c.unit_price }}
+          </option>
+          {% endfor %}
 
-        <div class="col-md-2">
-          <button type="button"
-                  class="btn btn-success w-100"
-                  onclick="addItem()">
-            + Add Item
-          </button>
-        </div>
+        </select>
+      </div>
 
+      <!-- Rate -->
+      <div class="col-md-2">
+        <label class="form-label">Unit Price</label>
+        <input id="itemRate" type="number"
+               class="form-control" readonly>
+      </div>
+
+      <!-- Qty -->
+      <div class="col-md-2">
+        <label class="form-label">Qty</label>
+        <input id="itemQty" type="number"
+               value="1" min="1"
+               class="form-control">
+      </div>
+
+      <!-- Type -->
+      <div class="col-md-2">
+        <label class="form-label">Type</label>
+        <input id="itemType"
+               class="form-control"
+               readonly>
+      </div>
+
+      <!-- Button -->
+      <div class="col-md-2">
+        <button type="button"
+                class="btn btn-success w-100"
+                onclick="addItem()">
+          + Add Item
+        </button>
       </div>
 
     </div>
-  </div>
 
-  <!-- ================= ITEMS TABLE ================= -->
-  <div class="card shadow-sm mb-4">
+  </div>
+</div>
+
+  
+
+  <!-- ================= BILL SUMMARY ================= -->
+  <div class="row mb-4">
+  <div class="col-md-8">
+    <!-- ================= ITEMS TABLE ================= -->
+  <div class="card shadow-sm mb-4" style="background: #fff;padding: 15px;">
     <div class="card-body p-0">
 
       <div class="table-responsive">
@@ -217,10 +228,7 @@
 
     </div>
   </div>
-
-  <!-- ================= BILL SUMMARY ================= -->
-  <div class="row mb-4">
-  <div class="col-md-8"></div>
+  </div>
 
   <div class="col-md-4">
     <div class="card shadow-sm">
@@ -262,6 +270,7 @@
           <input id="discountPercent"
                  type="number"
                  value="0"
+                 name="discount"
                  style="width:70px"
                  oninput="recalcTotals()">
         </p>
@@ -275,6 +284,27 @@
           Total:
           ₹ <span id="grandTotal">0.00</span>
         </h5>
+        <hr>
+
+        <div class="mb-2">
+          <label class="form-label">Advance Payment</label>
+          <input type="number"
+                id="advancePayment"
+                name="advance_payment"
+                value="0"
+                class="form-control"
+                oninput="calcBalance()">
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label">Balance Amount</label>
+          <input type="text"
+                id="balanceAmount"
+                class="form-control"
+                readonly>
+        </div>
+
+<input type="hidden" name="balance_amount" id="balanceInput">
 
         <input type="hidden" name="subtotal" id="subtotalInput">
         <input type="hidden" name="tax" id="taxInput">
@@ -301,7 +331,7 @@
 
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 
 {% include "includes/script.html" %}
@@ -409,29 +439,54 @@ function onItemSelected(){
     itemName.dataset.stockId = opt.dataset.stockId || "";
   }
 }
+/* ---------- CHARGE SELECT ---------- */
 
+document.getElementById("chargeSelect")
+.addEventListener("change", function(){
+
+  const opt = this.selectedOptions[0];
+
+  if(!opt.value) return;
+
+  document.getElementById("itemRate").value =
+    opt.dataset.price;
+
+  document.getElementById("itemType").value =
+    opt.dataset.type;
+
+});
 function addItem(){
-  if(!itemName.value || itemQty.value <= 0)
-    return alert("Invalid item");
 
-  const subtotal = +(itemRate.value * itemQty.value).toFixed(2);
+  const select = document.getElementById("chargeSelect");
+
+  if(!select.value)
+    return alert("Select item");
+
+  const opt = select.selectedOptions[0];
+
+  const name = opt.dataset.name;
+  const type = opt.dataset.type;
+  const price = parseFloat(opt.dataset.price) || 0;
+  const qty = parseFloat(itemQty.value) || 1;
+
+  const subtotal = +(price * qty).toFixed(2);
 
   items.push({
-    item_type: itemType.value,
-    item_name: itemName.value,
-    unit_price: +itemRate.value || 0,
-    quantity: +itemQty.value,
+    item_type: type,
+    item_name: name,
+    unit_price: price,
+    quantity: qty,
     subtotal: subtotal,
-    stock_id: itemName.dataset.stockId || ""
+    stock_id: ""
   });
 
-  itemName.value = "";
+  select.value = "";
   itemRate.value = "";
   itemQty.value = 1;
-  delete itemName.dataset.stockId;
+  itemType.value = "";
+
   renderItems();
 }
-
 /* ---------- RENDER ---------- */
 function renderItems(){
   itemsTable.tBodies[0].innerHTML = "";
@@ -482,6 +537,8 @@ function recalcTotals(){
   subtotalInput.value = gross.toFixed(2);
   taxInput.value = tax.toFixed(2);
   totalInput.value = total.toFixed(2);
+
+  calcBalance();
 }
 
 /* ---------- SYNC HIDDEN ---------- */
@@ -497,6 +554,28 @@ function syncHidden(){
       <input type="hidden" name="item_stock_id[]" value="${i.stock_id}">
     `);
   });
+}
+
+function calcBalance(){
+
+  const total =
+      parseFloat(document.getElementById("grandTotal").textContent) || 0;
+
+  let advance =
+      parseFloat(document.getElementById("advancePayment").value) || 0;
+
+  if(advance > total){
+      advance = total;
+      document.getElementById("advancePayment").value = total;
+  }
+
+  const balance = total - advance;
+
+  document.getElementById("balanceAmount").value =
+      balance.toFixed(2);
+
+  document.getElementById("balanceInput").value =
+      balance.toFixed(2);
 }
 </script>
 

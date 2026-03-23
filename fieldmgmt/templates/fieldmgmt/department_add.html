@@ -1,0 +1,156 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">Add Department</h4>
+      <p class="text-muted text-sm mb-0">
+        Create a new hospital department
+      </p>
+    </div>
+
+    <a href="{% url 'fieldmgmt:department_list' %}"
+       class="btn btn-outline-secondary rounded-pill px-4">
+      ← Back
+    </a>
+  </div>
+
+  <!-- FORM CARD -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body px-4 py-4">
+
+      <form id="departmentForm" method="POST" novalidate>
+        {% csrf_token %}
+
+        <div class="row g-4">
+
+          <!-- Department Name -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">
+              Department Name <span class="text-danger">*</span>
+            </label>
+            <input type="text"
+                   name="department_name"
+                   class="form-control"
+                   placeholder="Enter department name"
+                   >
+                   <small class="text-danger error-msg"></small>
+          </div>
+
+          <!-- Status -->
+          <div class="col-md-6 d-flex align-items-end">
+            <div class="form-check form-switch">
+              <input class="form-check-input"
+                     type="checkbox"
+                     name="status"
+                     id="statusSwitch"
+                     checked>
+              <label class="form-check-label fw-semibold" for="statusSwitch">
+                Active
+              </label>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="col-md-12">
+            <label class="form-label fw-semibold">
+              Description
+            </label>
+            <textarea name="description"
+                      class="form-control"
+                      rows="3"
+                      placeholder="Optional description"></textarea>
+          </div>
+
+        </div>
+
+        <!-- ACTION BUTTONS -->
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <a href="{% url 'fieldmgmt:department_list' %}"
+             class="btn btn-outline-secondary px-4">
+            Cancel
+          </a>
+
+          <button type="submit"
+                  class="btn bg-gradient-dark px-4">
+            Save Department
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+
+</main>
+
+{% include "includes/script.html" %}
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("departmentForm");
+
+    function setError(input, message) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.add("is-invalid");
+        if (error) error.innerText = message;
+    }
+
+    function clearError(input) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.remove("is-invalid");
+        if (error) error.innerText = "";
+    }
+
+    const nameInput = document.querySelector('[name="department_name"]');
+
+    // 🔥 optional: real-time validation
+    nameInput.addEventListener("input", function () {
+        if (this.value.trim()) {
+            clearError(this);
+        }
+    });
+
+    form.addEventListener("submit", function(e) {
+
+        let isValid = true;
+
+        clearError(nameInput);
+
+        // ✅ EMPTY CHECK
+        if (!nameInput.value.trim()) {
+            setError(nameInput, "Department name is required");
+            isValid = false;
+        }
+
+        // ❌ STOP SUBMIT
+        if (!isValid) {
+            e.preventDefault();
+            e.stopPropagation();
+            nameInput.focus();
+            return false;
+        }
+
+    });
+
+});
+
+</script>
+</body>
+</html>

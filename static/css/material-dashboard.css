@@ -29527,3 +29527,58 @@ body {
 .billing-card.combined .billing-icon {
   background: none;
 }
+.edit-med-icon {
+  font-size: 22px;          /* Bigger */
+  font-weight: 600;         /* Bold look */
+  cursor: pointer;
+  color: #4f46e5;           /* Clean indigo */
+  transition: 0.2s ease;
+}
+
+.edit-med-icon:hover {
+  color: #111827;           /* Dark on hover */
+  transform: scale(1.15);   /* Smooth zoom */
+}
+.bill-action-cell{
+  position:relative;
+}
+
+.bill-action-btn{
+  background:none;
+  border:none;
+  cursor:pointer;
+}
+
+.bill-action-wrapper{
+  position: relative;
+}
+
+.bill-action-menu{
+  display:none;
+  position:absolute;
+  right:0;
+  top:100%;
+  margin-top:6px;
+  background:#fff;
+  min-width:150px;
+  border-radius:6px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.15);
+  z-index:9999;
+}
+
+.bill-action-menu.show{
+  display:block;
+}
+
+.bill-action-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  text-decoration:none;
+  color:#333;
+}
+
+.bill-action-item:hover{
+  background:#f3f3f3;
+}

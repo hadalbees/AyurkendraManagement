@@ -22,12 +22,19 @@
         Manage access rights and module visibility for hospital staff members.
       </p>
     </div>
+     <div class="d-flex gap-2">
+      <a href="{% url 'staffaddform' %}"
+         class="btn btn-success rounded-pill px-4"
+         style="background:#c1e7d2;color:#065f46;">
+        Add Staff
+      </a>
 
-    <a href="{% url 'staffaddform' %}"
-       class="btn btn-success rounded-pill px-4"
-       style="color:#065f46;background:#c1e7d2;">
-      + Add Staff
-    </a>
+      <a href="{% url 'staff_export_pdf' %}" class="btn btn-outline-success rounded-pill px-4">
+        Export PDF
+      </a>
+    </div>
+
+
   </div>
 
   <!-- STAFF TABLE -->
@@ -188,7 +195,7 @@
 
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 
 {% include "includes/script.html" %}

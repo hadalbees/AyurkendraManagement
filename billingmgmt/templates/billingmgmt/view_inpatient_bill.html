@@ -11,135 +11,200 @@
 
 <div class="container-fluid py-4">
 
-  <!-- PAGE HEADER -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h4 class="fw-bold mb-1">Inpatient Bill Details</h4>
-      <p class="text-muted text-sm mb-0">
-        Bill No: <strong>{{ bill.bill_no }}</strong>
-      </p>
-    </div>
+<!-- ================= PAGE HEADER ================= -->
+<div class="d-flex justify-content-between align-items-center mb-4">
 
-    <div class="d-flex gap-2">
-      <a href="{% url 'billingmgmt:inpatient_billing_list' %}"
-         class="btn btn-outline-secondary">
-        ← Back
-      </a>
+<div>
+<h4 class="fw-bold mb-1">Inpatient Bill Details</h4>
 
-      <a href="{% url 'billingmgmt:print_inpatient_bill' bill.bill_no %}"
-         class="btn btn-success">
-        🖨 Print
-      </a>
-    </div>
-  </div>
-
-  <!-- ================= PATIENT INFO ================= -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <h6 class="fw-bold mb-3">Patient Information</h6>
-
-      <div class="row text-sm">
-        <div class="col-md-4">
-          <strong>Patient Name:</strong><br>
-            {% if bill.patient %}
-                {% if bill.patient.prefix|default:'' and bill.patient.prefix|last == '.' %}
-                    {{ bill.patient.prefix|title }} {{ bill.patient.patient_name }}
-                {% else %}
-                    {{ bill.patient.patient_name }}
-                {% endif %}
-            {% else %}
-                Walk-in Customer
-            {% endif %}
-        </div>
-
-        <div class="col-md-4">
-          <strong>Bill Date:</strong><br>
-          {{ bill.created_at|date:"d M Y, h:i A" }}
-        </div>
-
-        <div class="col-md-4">
-          <strong>Payment Status:</strong><br>
-          <span class="badge bg-secondary">
-            {{ bill.payment_status }}
-          </span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= BILL ITEMS ================= -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table align-items-center mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>#</th>
-              <th>Therapy</th>
-              <th>Unit Price</th>
-              <th>Qty</th>
-              <th>Subtotal</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {% for item in bill.items.all %}
-            <tr>
-              <td>{{ forloop.counter }}</td>
-              <td>{{ item.therapy.name }}</td>
-              <td>₹{{ item.unit_price }}</td>
-              <td>{{ item.quantity }}</td>
-              <td>₹{{ item.subtotal }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="5" class="text-center text-muted py-3">
-                No items found
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ================= BILL SUMMARY ================= -->
-  <div class="row justify-content-end">
-    <div class="col-md-4">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h6 class="fw-bold mb-3">Billing Summary</h6>
-
-          <div class="d-flex justify-content-between">
-            <span>Subtotal</span>
-            <strong>₹{{ bill.subtotal }}</strong>
-          </div>
-
-          <div class="d-flex justify-content-between">
-            <span>Discount</span>
-            <strong>₹{{ bill.discount }}</strong>
-          </div>
-
-          <div class="d-flex justify-content-between">
-            <span>Tax</span>
-            <strong>₹{{ bill.tax }}</strong>
-          </div>
-
-          <hr>
-
-          <div class="d-flex justify-content-between fs-5">
-            <strong>Total</strong>
-            <strong>₹{{ bill.total }}</strong>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<p class="text-muted text-sm mb-0">
+Bill No: <strong>{{ bill.bill_no }}</strong>
+</p>
 
 </div>
 
-{% include "includes/footer.html" %}
+<div class="d-flex gap-2">
+
+<a href="{% url 'billingmgmt:inpatient_billing_list' %}"
+class="btn btn-outline-secondary">
+← Back
+</a>
+
+<a href="{% url 'billingmgmt:print_inpatient_bill' bill.bill_no %}"
+class="btn btn-success">
+🖨 Print
+</a>
+
+</div>
+</div>
+
+
+<!-- ================= PATIENT INFO ================= -->
+<div class="card shadow-sm mb-4">
+
+<div class="card-body">
+
+<h6 class="fw-bold mb-3">Patient Information</h6>
+
+<div class="row text-sm">
+
+<div class="col-md-4">
+<strong>Patient Name:</strong><br>
+
+{% if bill.patient %}
+{{ bill.patient.patient_name }}
+{% else %}
+Walk-in Customer
+{% endif %}
+
+</div>
+
+
+<div class="col-md-4">
+<strong>Bill Date:</strong><br>
+{{ bill.created_at|date:"d M Y, h:i A" }}
+</div>
+
+
+<div class="col-md-4">
+<strong>Payment Status:</strong><br>
+
+<span class="badge bg-secondary">
+{{ bill.payment_status }}
+</span>
+
+</div>
+
+</div>
+</div>
+</div>
+
+
+<!-- ================= BILL ITEMS ================= -->
+<div class="card shadow-sm mb-4">
+
+<div class="card-body p-0">
+
+<div class="table-responsive">
+
+<table class="table align-items-center mb-0">
+
+<thead class="table-light">
+
+<tr>
+<th>#</th>
+<th>Type</th>
+<th>Item</th>
+<th>Unit Price</th>
+<th>Qty</th>
+<th>Subtotal</th>
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for item in bill.items.all %}
+
+<tr>
+
+<td>{{ forloop.counter }}</td>
+
+<td>
+<span class="badge bg-info">
+{{ item.item_type|title }}
+</span>
+</td>
+
+<td>{{ item.item_name }}</td>
+
+<td>₹{{ item.unit_price }}</td>
+
+<td>{{ item.quantity }}</td>
+
+<td>₹{{ item.subtotal }}</td>
+
+</tr>
+
+{% empty %}
+
+<tr>
+<td colspan="6" class="text-center text-muted py-3">
+No items found
+</td>
+</tr>
+
+{% endfor %}
+
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+
+
+<!-- ================= BILL SUMMARY ================= -->
+<div class="row justify-content-end">
+
+<div class="col-md-4">
+
+<div class="card shadow-sm">
+
+<div class="card-body">
+
+<h6 class="fw-bold mb-3">Billing Summary</h6>
+
+
+<div class="d-flex justify-content-between">
+<span>Subtotal</span>
+<strong>₹{{ bill.subtotal }}</strong>
+</div>
+
+
+<div class="d-flex justify-content-between">
+<span>Discount({{bill.discount_percent}} %)</span>
+<strong>₹{{ bill.discount }}</strong>
+</div>
+
+
+<div class="d-flex justify-content-between">
+<span>Tax</span>
+<strong>₹{{ bill.tax }}</strong>
+</div>
+
+
+<div class="d-flex justify-content-between">
+<span>Payment Mode</span>
+<strong>{{ bill.payment_mode }}</strong>
+</div>
+
+
+<div class="d-flex justify-content-between">
+<span>Payment Status</span>
+<strong>{{ bill.payment_status }}</strong>
+</div>
+
+
+<hr>
+
+
+<div class="d-flex justify-content-between fs-5">
+
+<strong>Total</strong>
+
+<strong>₹{{ bill.total }}</strong>
+
+</div>
+
+</div>
+</div>
+</div>
+
+</div>
+
+</div>
+
 </main>
 
 {% include "includes/script.html" %}

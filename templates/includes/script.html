@@ -166,6 +166,30 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
 });
+
+function toggleBillMenu(button){
+
+  let menu = button.nextElementSibling;
+
+  document.querySelectorAll(".bill-action-menu").forEach(m=>{
+      if(m !== menu){
+          m.classList.remove("show");
+      }
+  });
+
+  menu.classList.toggle("show");
+}
+
+
+document.addEventListener("click",function(e){
+
+  if(!e.target.closest(".bill-action-wrapper")){
+      document.querySelectorAll(".bill-action-menu").forEach(menu=>{
+          menu.classList.remove("show");
+      });
+  }
+
+});
 </script>
 
 <!-- Github buttons -->

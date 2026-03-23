@@ -10,7 +10,9 @@ from patientmgmt.models import Patient
 from attendancemgmt.models import Attendance
 from billingmgmt.models import MedicalBill, InpatientBill, OutpatientBill, TherapyBill
 from stockmgmt.models import Stock
-
+from django.utils.timesince import timesince
+from datetime import datetime
+from fieldmgmt.models import Adjuvant
 # @login_required
 # def dashboardview(request):
 #     # For now, let’s simulate user_permissions manually.
@@ -36,25 +38,33 @@ def generate_prescription_no():
 
 
 def dashboardview(request):
+
     user_permissions = []
     if request.user.is_authenticated and request.user.menu_permission:
         user_permissions = request.user.menu_permission.split(",")
 
     today = timezone.localdate()
-
-    # Today's patients
+    adjuvants = Adjuvant.objects.filter(status=True).order_by("name")
+    # -------------------------
+    # TODAY'S PATIENTS
+    # -------------------------
     todays_patients = Patient.objects.filter(created_at__date=today)
     total_today_patients = todays_patients.count()
 
-    # Attendance Summary
+    # -------------------------
+    # ATTENDANCE SUMMARY
+    # -------------------------
     todays_attendance = Attendance.objects.filter(date=today)
     total_attendance = todays_attendance.count()
     attended_count = todays_attendance.filter(status='present').count()
+
     attendance_percentage = 0
     if total_attendance > 0:
         attendance_percentage = round((attended_count / total_attendance) * 100)
 
-    # Today's Revenue
+    # -------------------------
+    # TODAY REVENUE
+    # -------------------------
     revenue_medical = MedicalBill.objects.filter(bill_date=today).aggregate(total=Sum('total'))['total'] or 0
     revenue_inpatient = InpatientBill.objects.filter(created_at__date=today).aggregate(total=Sum('total'))['total'] or 0
     revenue_outpatient = OutpatientBill.objects.filter(visit_date=today).aggregate(total=Sum('total'))['total'] or 0
@@ -62,13 +72,88 @@ def dashboardview(request):
 
     today_revenue = revenue_medical + revenue_inpatient + revenue_outpatient + revenue_therapy
 
-    # Stock Alert
-    low_stock_count = Stock.objects.filter(quantity__lte=5).count()
+    # -------------------------
+    # STOCK ALERT
+    # -------------------------
+    low_stock_count = Stock.objects.filter(total_base_quantity__lte=5).count()
 
+    # -------------------------
+    # RECENT ACTIVITY (DYNAMIC)
+    # -------------------------
+    activities = []
+
+    # Latest Patient
+    latest_patient = Patient.objects.order_by('-created_at').first()
+    if latest_patient:
+        activities.append({
+            "title": "New Patient Registered",
+            "description": latest_patient.patient_name,
+            "time": timesince(latest_patient.created_at) + " ago",
+            "icon": "person_add",
+            "color": "primary",
+            "created_at": latest_patient.created_at
+        })
+
+    # Latest Medical Bill (bill_date is DATE → convert to datetime)
+    latest_medical_bill = MedicalBill.objects.order_by('-bill_date').first()
+    if latest_medical_bill:
+        bill_datetime = datetime.combine(
+            latest_medical_bill.bill_date,
+            datetime.min.time()
+        )
+        bill_datetime = timezone.make_aware(bill_datetime)
+
+        activities.append({
+            "title": "Medical Bill Generated",
+            "description": f"Invoice #{latest_medical_bill.bill_no}",
+            "time": timesince(bill_datetime) + " ago",
+            "icon": "receipt_long",
+            "color": "success",
+            "created_at": bill_datetime
+        })
+
+    # Latest Inpatient Bill
+    latest_inpatient_bill = InpatientBill.objects.order_by('-created_at').first()
+    if latest_inpatient_bill:
+        activities.append({
+            "title": "Inpatient Bill Generated",
+            "description": f"Invoice #{latest_inpatient_bill.bill_no}",
+            "time": timesince(latest_inpatient_bill.created_at) + " ago",
+            "icon": "receipt_long",
+            "color": "info",
+            "created_at": latest_inpatient_bill.created_at
+        })
+
+    # Low Stock Alert
+    low_stock_item = Stock.objects.filter(total_base_quantity__lte=5).select_related("medicine").first()
+    if low_stock_item:
+        activities.append({
+            "title": "Stock Alert",
+            "description": f"{low_stock_item.medicine.name} running low",
+            "time": "Check inventory",
+            "icon": "warning",
+            "color": "warning",
+            "created_at": timezone.now()
+        })
+
+    # Sort safely
+    activities = sorted(activities, key=lambda x: x["created_at"], reverse=True)
+
+    # Limit
+    activities = activities[:5]
+
+    # -------------------------
+    # OTHER DATA
+    # -------------------------
     prescription_no = generate_prescription_no()
     patients = Patient.objects.filter(is_active=True)
-    stocks = Stock.objects.filter(quantity__gt=0).select_related("medicine").order_by("medicine__name")
+    stocks = Stock.objects.filter(
+    total_base_quantity__gt=0
+    ).select_related("medicine").order_by("medicine__name")
 
+    # -------------------------
+    # CONTEXT
+    # -------------------------
     context = {
         "user_permissions": user_permissions,
         "todays_patients": todays_patients,
@@ -79,13 +164,9 @@ def dashboardview(request):
         "prescription_no": prescription_no,
         "stocks": stocks,
         "patients": patients,
-    }
+        "activities": activities,
+        "adjuvants": adjuvants
 
-    # ✅ WELCOME TOAST MESSAGE (ONLY IF USER IS LOGGED IN)
-    # if request.user.is_authenticated:
-    #     messages.success(
-    #         request,
-    #         f"Welcome back, {request.user.get_full_name() or request.user.username} 👋"
-    #     )
+    }
 
     return render(request, "ahmsapp/dashboard.html", context)

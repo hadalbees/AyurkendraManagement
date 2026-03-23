@@ -110,7 +110,6 @@
 
         <div class="card shadow-sm mb-4">
           <div class="card-body">
-
             <div class="d-flex justify-content-between align-items-center mb-3">
               <h6 class="mb-0">Add Medicines</h6>
               <button type="button"
@@ -182,9 +181,7 @@
       </div>
 
       <div class="d-flex justify-content-between mb-2">
-        <span>
-          GST (<span id="gstPercentText">{{ settings.consultation_gst|default:0 }}</span>%)
-        </span>
+        <span>Total GST</span>
         <strong>₹ <span id="taxText">0.00</span></strong>
       </div>
 
@@ -227,7 +224,7 @@
 
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 
 {% include "includes/script.html" %}
@@ -240,10 +237,11 @@ const allMedicines = [
   {
     id: "{{ m.id }}",
     name: "{{ m.medicine.name|escapejs }}",
-    unit: "{{ m.unit|escapejs }}",
-    quantity: "{{ m.quantity }}",
-    selling_price: "{{ m.selling_price }}",
-    price_per_single: "{{ m.price_per_single }}"
+    unit: "{{ m.base_unit|escapejs }}",
+    available: {{ m.total_base_quantity }},
+    selling_price: {{ m.selling_price }},
+    price_per_unit: {{ m.price_per_base_unit }},
+    gst: {{ m.medicine.gst_percentage|default:0 }}
   }{% if not forloop.last %},{% endif %}
   {% endfor %}
 ];
@@ -296,15 +294,17 @@ function renderManualBlankRow(selectedName = "", qtyValue = ""){
 
   let options = `<option value="">-- Select --</option>`;
   allMedicines.forEach(m=>{
-    options += `
-      <option value="${m.id}"
-              data-unit="${m.unit}"
-              data-price="${m.selling_price}"
-              data-single="${m.price_per_single}"
-              ${m.name === selectedName ? "selected" : ""}>
-        ${m.name} (${m.unit}) - Stock: ${m.quantity}
-      </option>`;
-  });
+  options += `
+<option value="${m.id}"
+        data-unit="${m.unit}"
+        data-price="${m.selling_price}"
+        data-single="${m.price_per_unit}"
+        data-available="${m.available}"
+        data-gst="${m.gst}">
+  ${m.name} (${m.unit}) - Available: ${m.available}
+</option>`;
+});
+
 
   const div = document.createElement("div");
   div.className = "row g-2 align-items-end mb-2";
@@ -349,13 +349,31 @@ function renderManualBlankRow(selectedName = "", qtyValue = ""){
 function updateRow(div){
   const opt = div.querySelector(".medSelect").selectedOptions[0];
   if(!opt) return;
+
   const qty = num(div.querySelector(".qtyField").value);
-  const single = num(opt.dataset.single);
+  const pricePerUnit = num(opt.dataset.single);
+  const available = num(opt.dataset.available);
+  const gstPercent = num(opt.dataset.gst);
 
   div.querySelector(".unitField").value = opt.dataset.unit || "";
-  div.querySelector(".priceField").value = num(opt.dataset.price).toFixed(2);
-  div.querySelector(".subField").value = (qty * single).toFixed(2);
+  div.querySelector(".priceField").value = pricePerUnit.toFixed(2);
+
+  if(qty > available){
+    alert("Insufficient stock. Available: " + available);
+    div.querySelector(".qtyField").value = "";
+    div.querySelector(".subField").value = "0.00";
+    return;
+  }
+
+  const subtotal = qty * pricePerUnit;
+  const gstAmount = (subtotal * gstPercent) / 100;
+
+  div.querySelector(".subField").value = subtotal.toFixed(2);
+
+  div.dataset.gstAmount = gstAmount;
+  div.dataset.gstPercent = gstPercent;
 }
+
 
 /* ---------- Add Row ---------- */
 function addRowToTable(div){
@@ -363,15 +381,21 @@ function addRowToTable(div){
   if(!opt) return alert("Select a medicine");
   const qty = num(div.querySelector(".qtyField").value);
   if(qty <= 0) return alert("Invalid quantity");
+const gstPercent = num(opt.dataset.gst);
+const subtotal = qty * num(opt.dataset.single);
+const gstAmount = (subtotal * gstPercent) / 100;
 
-  items.push({
-    id: opt.value,
-    name: opt.textContent.split("(")[0].trim(),
-    unit: opt.dataset.unit,
-    qty: qty,
-    selling_price: num(opt.dataset.price),
-    subtotal: qty * num(opt.dataset.single)
-  });
+items.push({
+  id: opt.value,
+  name: opt.textContent.split("(")[0].trim(),
+  unit: opt.dataset.unit,
+  qty: qty,
+  selling_price: num(opt.dataset.single),
+  subtotal: subtotal,
+  gst_percent: gstPercent,
+  gst_amount: gstAmount
+});
+
 
   renderItems();
 }
@@ -381,9 +405,13 @@ function renderItems(){
   const tb = document.querySelector("#itemsTable tbody");
   tb.innerHTML = "";
   let subtotal = 0;
+  let totalGST = 0;
 
   items.forEach((it,i)=>{
+
     subtotal += it.subtotal;
+    totalGST += it.gst_amount;
+
     tb.innerHTML += `
       <tr>
         <td>
@@ -392,6 +420,8 @@ function renderItems(){
           <input type="hidden" name="unit[]" value="${it.unit}">
           <input type="hidden" name="quantity[]" value="${it.qty}">
           <input type="hidden" name="subtotal[]" value="${it.subtotal}">
+          <input type="hidden" name="gst_percent[]" value="${it.gst_percent}">
+          <input type="hidden" name="gst_amount[]" value="${it.gst_amount}">
         </td>
         <td>${it.unit}</td>
         <td>₹${it.selling_price.toFixed(2)}</td>
@@ -405,22 +435,14 @@ function renderItems(){
       </tr>`;
   });
 
-  /* ================== DYNAMIC GST ================== */
-  const gstPercent = parseFloat(
-    document.getElementById("gstPercent").value || 0
-  );
+  const total = subtotal + totalGST;
 
-  const tax = (subtotal * gstPercent) / 100;
-  const total = subtotal + tax;
-
-  /* ================== UI UPDATE ================== */
   document.getElementById("subtotalText").innerText = subtotal.toFixed(2);
-  document.getElementById("taxText").innerText = tax.toFixed(2);
+  document.getElementById("taxText").innerText = totalGST.toFixed(2);
   document.getElementById("totalText").innerText = total.toFixed(2);
 
-  /* ================== FORM VALUES ================== */
   document.getElementById("subtotalVal").value = subtotal.toFixed(2);
-  document.getElementById("taxVal").value = tax.toFixed(2);
+  document.getElementById("taxVal").value = totalGST.toFixed(2);
   document.getElementById("totalVal").value = total.toFixed(2);
 }
 

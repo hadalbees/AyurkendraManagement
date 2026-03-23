@@ -1,0 +1,445 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+<div class="mb-4">
+  <h4 class="mb-1">Edit Inpatient Billing</h4>
+  <p class="text-sm text-muted mb-0">Update inpatient bill</p>
+</div>
+
+<form id="billingForm" method="post"
+      action="{% url 'billingmgmt:edit_inpatient_bill' bill.bill_no %}">
+{% csrf_token %}
+
+<!-- ================= PATIENT DETAILS ================= -->
+
+<div class="card shadow-sm mb-4">
+<div class="card-body">
+
+<h6 class="mb-3">Patient & Admission Details</h6>
+
+<div class="row g-3">
+
+<div class="col-md-3">
+<label class="form-label">Bill No</label>
+<input class="form-control" name="bill_no"
+       value="{{ bill.bill_no }}" readonly>
+</div>
+
+<div class="col-md-3">
+<label class="form-label">Patient ID</label>
+<input class="form-control"
+       name="patient_id"
+       value="{{ bill.patient.patient_unique_id }}">
+</div>
+
+<div class="col-md-3">
+<label class="form-label">Patient Name</label>
+<input class="form-control"
+       value="{{ bill.patient.patient_name }}">
+</div>
+
+<div class="col-md-1">
+<label class="form-label">Age</label>
+<input class="form-control"
+       value="{{ bill.patient.age }}" readonly>
+</div>
+
+<div class="col-md-2">
+<label class="form-label">Gender</label>
+<input class="form-control"
+       value="{{ bill.patient.gender }}" readonly>
+</div>
+
+<div class="col-md-3">
+<label class="form-label">Admit Date</label>
+<input type="date"
+       name="admit_date"
+       value="{{ bill.admit_date|date:'Y-m-d' }}"
+       class="form-control">
+</div>
+
+<div class="col-md-3">
+<label class="form-label">Discharge Date</label>
+<input type="date"
+       name="discharge_date"
+       value="{{ bill.discharge_date|date:'Y-m-d' }}"
+       class="form-control">
+</div>
+
+<div class="col-md-3">
+<label class="form-label">Doctor Name</label>
+<input name="doctor_name"
+       value="{{ bill.doctor_name }}"
+       class="form-control">
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ================= OTHER CHARGES ================= -->
+
+<div class="card shadow-sm mb-4">
+<div class="card-body">
+
+<h6 class="mb-3">Add Charges</h6>
+
+<div class="row g-3 align-items-end">
+
+<div class="col-md-4">
+<label class="form-label">Item</label>
+<select id="chargeSelect" class="form-control">
+
+<option value="">Select Item</option>
+
+{% for c in charges %}
+<option value="{{ c.id }}"
+        data-name="{{ c.name }}"
+        data-type="{{ c.type }}"
+        data-price="{{ c.unit_price }}">
+  {{ c.name }} ({{ c.type }}) - ₹{{ c.unit_price }}
+</option>
+{% endfor %}
+
+</select>
+</div>
+
+<div class="col-md-2">
+<label>Rate</label>
+<input id="itemRate" class="form-control" readonly>
+</div>
+
+<div class="col-md-2">
+<label>Qty</label>
+<input id="itemQty" value="1" min="1"
+       class="form-control">
+</div>
+
+<div class="col-md-2">
+<label>Type</label>
+<input id="itemType" class="form-control" readonly>
+</div>
+
+<div class="col-md-2">
+<button type="button"
+        class="btn btn-success w-100"
+        onclick="addItem()">
++ Add Item
+</button>
+</div>
+
+</div>
+</div>
+</div>
+
+<!-- ================= ITEMS TABLE ================= -->
+
+<div class="card shadow-sm mb-4">
+<div class="card-body p-0">
+
+<table class="table mb-0" id="itemsTable">
+<thead class="bg-light">
+<tr>
+<th>Type</th>
+<th>Item</th>
+<th>Rate</th>
+<th>Qty</th>
+<th>Subtotal</th>
+<th></th>
+</tr>
+</thead>
+
+<tbody></tbody>
+</table>
+
+</div>
+</div>
+
+<!-- ================= BILL SUMMARY ================= -->
+
+<div class="card shadow-sm">
+<div class="card-body">
+
+<h6 class="mb-3">Billing Summary</h6>
+
+<p>Subtotal ₹ <span id="subTotal">0.00</span></p>
+
+<p>
+Discount %
+<input id="discountPercent"
+       type="number"
+       name="discount"
+       value="{{ bill.discount_percent }}"
+       style="width:80px"
+       oninput="recalcTotals()">
+</p>
+
+<p>Tax ₹ <span id="taxAmount">0.00</span></p>
+
+<h5>Total ₹ <span id="grandTotal">0.00</span></h5>
+
+<hr>
+
+<div class="mb-2">
+
+<label class="form-label">Previous Advance</label>
+
+<input type="number"
+       class="form-control"
+       value="{{ bill.advance_payment }}"
+       readonly>
+
+<input type="hidden"
+       id="oldAdvance"
+       value="{{ bill.advance_payment }}">
+
+</div>
+
+
+<div class="mb-2">
+
+<label class="form-label">New Payment</label>
+
+<input type="number"
+       id="advancePayment"
+       name="advance_payment"
+       value="0"
+       class="form-control"
+       oninput="calcBalance()">
+
+</div>
+
+
+<div class="mb-2">
+
+<label class="form-label">Balance Amount</label>
+
+<input type="text"
+       id="balanceAmount"
+       value="{{ bill.balance_amount }}"
+       class="form-control"
+       readonly>
+
+</div>
+
+<input type="hidden" name="balance_amount" id="balanceInput">
+
+<input type="hidden" name="subtotal" id="subtotalInput">
+<input type="hidden" name="tax" id="taxInput">
+<input type="hidden" name="total" id="totalInput">
+
+<input type="hidden"
+       id="gstPercent"
+       value="{{ settings.consultation_gst }}">
+
+</div>
+</div>
+
+<div class="d-flex justify-content-end mt-4">
+<button class="btn btn-success px-4">
+Update Bill
+</button>
+</div>
+
+</form>
+</div>
+
+</main>
+
+{% include "includes/script.html" %}
+
+<script>
+
+let items = [
+
+{% for i in items %}
+{
+ item_type:"{{ i.item_type }}",
+ item_name:"{{ i.item_name|escapejs }}",
+ unit_price:{{ i.unit_price }},
+ quantity:{{ i.quantity }},
+ subtotal:{{ i.subtotal }},
+ stock_id:"{{ i.medical_stock_id|default:'' }}"
+},
+{% endfor %}
+
+];
+
+renderItems();
+
+function renderItems(){
+
+let s=0;
+
+itemsTable.tBodies[0].innerHTML="";
+
+items.forEach((i,x)=>{
+
+s+=i.subtotal;
+
+itemsTable.tBodies[0].innerHTML+=`
+<tr>
+<td>${i.item_type}</td>
+<td>${i.item_name}</td>
+<td>${i.unit_price}</td>
+<td>${i.quantity}</td>
+<td>${i.subtotal}</td>
+<td>
+<button class="btn btn-sm btn-danger"
+onclick="items.splice(${x},1);renderItems()">X</button>
+</td>
+</tr>
+`;
+
+});
+
+subTotal.textContent=s.toFixed(2);
+
+recalcTotals();
+syncHidden();
+}
+
+function recalcTotals(){
+
+const sub=parseFloat(subTotal.textContent)||0;
+const discount=parseFloat(discountPercent.value)||0;
+const gst=parseFloat(gstPercent.value)||0;
+
+const discAmt=sub*(discount/100);
+const after=sub-discAmt;
+
+const tax=after*(gst/100);
+
+const total=after+tax;
+
+taxAmount.textContent=tax.toFixed(2);
+grandTotal.textContent=total.toFixed(2);
+
+subtotalInput.value=sub.toFixed(2);
+taxInput.value=tax.toFixed(2);
+totalInput.value=total.toFixed(2);
+
+calcBalance();
+
+}
+
+function calcBalance(){
+
+const total=parseFloat(grandTotal.textContent)||0;
+const advance=parseFloat(advancePayment.value)||0;
+
+const balance=total-advance;
+
+balanceAmount.value=balance.toFixed(2);
+balanceInput.value=balance.toFixed(2);
+
+}
+
+function syncHidden(){
+
+document.querySelectorAll('[name^="item_"]').forEach(e=>e.remove());
+
+items.forEach(i=>{
+billingForm.insertAdjacentHTML("beforeend",`
+<input type="hidden" name="item_name[]" value="${i.item_name}">
+<input type="hidden" name="item_rate[]" value="${i.unit_price}">
+<input type="hidden" name="item_qty[]" value="${i.quantity}">
+<input type="hidden" name="item_type[]" value="${i.item_type}">
+<input type="hidden" name="item_stock_id[]" value="${i.stock_id}">
+`);
+});
+
+}
+
+document.getElementById("chargeSelect").addEventListener("change", function(){
+
+  const opt = this.options[this.selectedIndex];
+
+  if(!opt.value) return;
+
+  const price = opt.dataset.price || 0;
+  const type = opt.dataset.type || "";
+
+  document.getElementById("itemRate").value = price;
+  document.getElementById("itemType").value = type;
+
+});
+function addItem(){
+
+  const select = document.getElementById("chargeSelect");
+  const rateInput = document.getElementById("itemRate");
+  const qtyInput = document.getElementById("itemQty");
+  const typeInput = document.getElementById("itemType");
+
+  if(!select.value){
+    alert("Select item");
+    return;
+  }
+
+  const opt = select.options[select.selectedIndex];
+
+  const name = opt.dataset.name;
+  const type = typeInput.value;
+  const price = parseFloat(rateInput.value) || 0;
+  const qty = parseFloat(qtyInput.value) || 1;
+
+  const subtotal = (price * qty);
+
+  items.push({
+    item_type: type,
+    item_name: name,
+    unit_price: price,
+    quantity: qty,
+    subtotal: subtotal,
+    stock_id: ""
+  });
+
+  // reset inputs
+  select.value = "";
+  rateInput.value = "";
+  qtyInput.value = 1;
+  typeInput.value = "";
+
+  renderItems();
+}
+
+function calcBalance(){
+
+  const total =
+    parseFloat(document.getElementById("grandTotal").textContent) || 0;
+
+  const oldAdvance =
+    parseFloat(document.getElementById("oldAdvance").value) || 0;
+
+  const newPayment =
+    parseFloat(document.getElementById("advancePayment").value) || 0;
+
+  const totalAdvance = oldAdvance + newPayment;
+
+  let balance = total - totalAdvance;
+
+  if(balance < 0){
+    balance = 0;
+  }
+
+  document.getElementById("balanceAmount").value =
+    balance.toFixed(2);
+
+  document.getElementById("balanceInput").value =
+    balance.toFixed(2);
+
+}
+</script>
+
+</body>
+</html>

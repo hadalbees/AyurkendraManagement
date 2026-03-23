@@ -156,6 +156,14 @@ table.bill-table th { background: #f2f2f2; }
     <td>SGST ({{ half_gst_percent }}%)</td>
     <td class="right">₹ {{ sgst }}</td>
   </tr>
+  <tr>
+    <td>Payment Mode</td>
+    <td class="right">{{ bill.payment_mode }}</td>
+  </tr>
+  <tr>
+    <td>Payment Status</td>
+    <td class="right">{{ bill.payment_status }}</td>
+  </tr>
 
   {% endif %}
 

@@ -5,6 +5,22 @@ from rolemgmt.models import Role
 from authentication.models import CustomUser
 from django.views import View
 from django.http import JsonResponse
+from django.http import HttpResponse
+from reportlab.platypus import (
+    SimpleDocTemplate, Table, TableStyle,
+    Paragraph, Spacer, Image
+)
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet,ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import Table
+from reportlab.platypus import SimpleDocTemplate
+from django.utils.timezone import now
+import os
+from billingmgmt.models import HospitalSetting
+from reportlab.lib.utils import ImageReader
 # from django.contrib.auth.decorators import login_required
 
 # @login_required
@@ -117,3 +133,144 @@ def toggle_staff_status(request, pk):
         staff.save()
         return JsonResponse({"success": True, "is_active": staff.is_active})
     return JsonResponse({"success": False}, status=400)
+
+
+def staff_export_pdf(request):
+
+    hospital = HospitalSetting.objects.first()
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="staff_list.pdf"'
+
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=A4,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=60,
+        bottomMargin=40
+    )
+
+    elements = []
+    styles = getSampleStyleSheet()
+
+    page_width, page_height = A4
+    usable_width = page_width - doc.leftMargin - doc.rightMargin
+
+    # ================= TITLE CENTER =================
+
+    title_style = ParagraphStyle(
+        name="TitleCenter",
+        parent=styles["Heading1"],
+        alignment=1,  # Center
+        fontSize=20,
+        spaceAfter=6,
+    )
+
+    date_style = ParagraphStyle(
+        name="DateSmallCenter",
+        parent=styles["Normal"],
+        alignment=1,  # Center
+        fontSize=9,
+        textColor=colors.grey,
+    )
+
+    generated_date = now().strftime("%d %B %Y %I:%M %p")
+
+    elements.append(Paragraph("Staff Report", title_style))
+    elements.append(Paragraph(f"{generated_date}", date_style))
+    elements.append(Spacer(1, 0.5 * inch))
+
+    # ================= TABLE =================
+
+    staffs = CustomUser.objects.filter(
+        is_superuser=False,
+        is_staff=False
+    ).order_by("id")
+
+    data = [["#", "Name", "Email", "Mobile", "Role", "Gender"]]
+
+    for i, s in enumerate(staffs, start=1):
+        data.append([
+            str(i),
+            s.username,
+            s.email,
+            s.mobile_number or "",
+            s.role.role_name if s.role else "No Role",
+            s.gender or "",
+        ])
+
+    col_widths = [
+        usable_width * 0.07,
+        usable_width * 0.18,
+        usable_width * 0.30,
+        usable_width * 0.15,
+        usable_width * 0.15,
+        usable_width * 0.15,
+    ]
+
+    table = Table(data, colWidths=col_widths, repeatRows=1)
+
+    table_style = TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1f2937")),
+        ('TEXTCOLOR',(0,0),(-1,0),colors.whitesmoke),
+        ('ALIGN',(0,0),(-1,-1),'CENTER'),
+        ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+        ('BOTTOMPADDING', (0,0), (-1,0), 10),
+    ])
+
+    # Zebra Striping
+    for row in range(1, len(data)):
+        if row % 2 == 0:
+            table_style.add('BACKGROUND', (0,row), (-1,row), colors.whitesmoke)
+
+    table.setStyle(table_style)
+    elements.append(table)
+
+    # ================= FOOTER + LOGO WATERMARK =================
+
+    def add_footer_and_watermark(canvas, doc):
+
+        # Page number
+        canvas.setFont("Helvetica", 9)
+        canvas.drawRightString(
+            page_width - 40,
+            20,
+            f"Page {doc.page}"
+        )
+
+        # Center Logo Watermark
+        if hospital and hospital.hospital_logo:
+
+            logo_path = hospital.hospital_logo.path
+            watermark = ImageReader(logo_path)
+
+            canvas.saveState()
+
+            # Very light opacity
+            canvas.setFillAlpha(0.07)
+
+            wm_width = page_width * 0.5
+            wm_height = wm_width
+
+            canvas.drawImage(
+                watermark,
+                (page_width - wm_width) / 2,
+                (page_height - wm_height) / 2,
+                width=wm_width,
+                height=wm_height,
+                preserveAspectRatio=True,
+                mask='auto'
+            )
+
+            canvas.restoreState()
+
+    doc.build(
+        elements,
+        onFirstPage=add_footer_and_watermark,
+        onLaterPages=add_footer_and_watermark
+    )
+
+    return response

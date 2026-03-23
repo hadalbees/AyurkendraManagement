@@ -22,72 +22,164 @@ User = settings.AUTH_USER_MODEL
 #         return self.name
 
 
+# models.py
+
 class Medicine(models.Model):
 
+    FORM_CHOICES = [
+        ('LIQUID', 'Liquid'),
+        ('POWDER', 'Powder'),
+        ('PIECE', 'Piece / Tablet'),
+    ]
+
     name = models.CharField(max_length=255)
-    hsn_code = models.CharField(max_length=255)
+
+    hsn_code = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="HSN code for GST billing"
+    )
+
+    form_type = models.CharField(
+        max_length=20,
+        choices=FORM_CHOICES
+    )
+
     ayurvedic_type = models.ForeignKey(
-        AyurvedicType,
+        "fieldmgmt.AyurvedicType",
         on_delete=models.SET_NULL,
         null=True,
-        blank=True,
-        related_name="medicines"
+        blank=True
     )
+
     description = models.TextField(blank=True, null=True)
 
-    reorder_level = models.IntegerField(
+    # ✅ GST Percentage
+    gst_percentage = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=0.00,
+        help_text="Enter GST % (Example: 5, 12, 18)"
+    )
+
+    # ✅ Stock Control
+    reorder_level = models.PositiveIntegerField(
         default=0,
-        validators=[MinValueValidator(0)]
+        help_text="Minimum stock level alert"
     )
-    expiry_days_alert = models.IntegerField(
+
+    # ✅ Expiry Alert
+    expiry_days_alert = models.PositiveIntegerField(
         default=30,
-        validators=[MinValueValidator(0)]
+        help_text="Alert before expiry (in days)"
     )
+
+    # ✅ Created Date (SAFE)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    # ✅ Updated Date (Recommended)
+    updated_at = models.DateTimeField(default=timezone.now)
+
     class Meta:
-        verbose_name = "Medicine / Item"
-        verbose_name_plural = "Medicines / Items"
+        ordering = ['name']
+        verbose_name = "Medicine"
+        verbose_name_plural = "Medicines"
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.form_type})"
 
 class Stock(models.Model):
-    UNIT_CHOICES = [
-        ('kg', 'Kilogram'),
-        ('g', 'Gram'),
-        ('mg', 'Milligram'),
-        ('l', 'Litre'),
-        ('ml', 'Millilitre'),
-        ('unit', 'Unit'),  # for pieces
+
+    BASE_UNIT_CHOICES = [
+        ('g', 'Gram (g)'),
+        ('ml', 'Millilitre (ml)'),
+        ('piece', 'Piece / Tablet'),
     ]
-    medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE, related_name='stocks')
+
+    medicine = models.ForeignKey(
+        "stockmgmt.Medicine",
+        on_delete=models.CASCADE,
+        related_name="stocks"
+    )
+
     batch_number = models.CharField(max_length=100)
-    unit = models.CharField(max_length=10, choices=UNIT_CHOICES)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])  # supports fractional units
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
-    selling_price = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0)])
-    price_per_single = models.DecimalField(max_digits=12, decimal_places=6, blank=True, null=True)
+
+    base_unit = models.CharField(
+        max_length=10,
+        choices=BASE_UNIT_CHOICES
+    )
+
+    # GST INCLUDED purchase price
+    unit_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text="Purchase price including GST"
+    )
+
+    # Selling price (editable)
+    selling_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2
+    )
+
+    # Extracted GST amount (calculated)
+    gst_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0
+    )
+
+    pack_size = models.DecimalField(max_digits=10, decimal_places=2)
+    number_of_packs = models.DecimalField(max_digits=10, decimal_places=2)
+
+    total_base_quantity = models.DecimalField(max_digits=12, decimal_places=2)
+
+    price_per_base_unit = models.DecimalField(
+        max_digits=12,
+        decimal_places=6,
+        blank=True,
+        null=True
+    )
+
     manufacture_date = models.DateField(blank=True, null=True)
     expiry_date = models.DateField(blank=True, null=True)
-    supplier = models.ForeignKey(SupplierMaster, on_delete=models.SET_NULL, null=True, blank=True)
-    manufacturer = models.ForeignKey(ManufacturerMaster, on_delete=models.SET_NULL, null=True, blank=True)
-    last_updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='stock_updates')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        verbose_name = "Stock / Batch"
-        verbose_name_plural = "Stock / Batches"
-        ordering = ['-expiry_date', 'medicine__name']
+    supplier = models.ForeignKey(
+        "fieldmgmt.SupplierMaster",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    manufacturer = models.ForeignKey(
+        "fieldmgmt.ManufacturerMaster",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    last_updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f"{self.medicine.name} — Batch {self.batch_number}"
+        return f"{self.medicine.name} - Batch {self.batch_number}"
+
 
     @property
     def is_low_stock(self):
         try:
-            return float(self.quantity) <= float(self.medicine.reorder_level)
+            return float(self.total_base_quantity) <= float(self.medicine.reorder_level)
         except Exception:
             return False
+
 
     @property
     def days_to_expiry(self):

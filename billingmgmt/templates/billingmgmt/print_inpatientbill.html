@@ -107,8 +107,33 @@ th { background:#f2f2f2; }
   SGST ({{ sgst_percent }}%): ₹ {{ sgst }}
 </p>
 
+{% if bill.discount > 0 %}
+<p class="right">
+  Discount ({{ bill.discount_percent }} %): ₹ {{ bill.discount }}
+</p>
+{% endif %}
 
 <h3 class="right">Grand Total: ₹ {{ grand_total }}</h3>
+
+{% if bill.advance_payment > 0 %}
+<p class="right">
+  Advance Payment: ₹ {{ bill.advance_payment }}
+</p>
+{% endif %}
+
+{% if bill.balance_amount > 0 %}
+<p class="right">
+  Balance Amount: ₹ {{ bill.balance_amount }}
+</p>
+{% endif %}
+
+<p class="right">
+  Payment Mode: {{ bill.payment_mode }}
+</p>
+
+<p class="right">
+  Payment Status: {{ bill.payment_status }}
+</p>
 
 <!-- ================= FOOTER ================= -->
 <div class="no-print">

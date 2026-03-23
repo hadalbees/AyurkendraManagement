@@ -6,15 +6,19 @@ app_name = "billingmgmt"
 
 urlpatterns = [
     path("inpatient_billing/", views.inpatient_billing_view, name="inpatientbilling"),
+    path("inpatient-bill/edit/<str:bill_no>/",views.edit_inpatient_bill_view,name="edit_inpatient_bill",),
     path("print-inpatient/<str:bill_no>/", views.print_inpatient_bill, name="print_inpatient_bill"),
     path("outpatient_billing/", views.outpatient_billing_view, name="outpatientbilling"),
+    path("outpatient-bill/edit/<str:bill_no>/",views.edit_outpatient_bill_view, name="edit_outpatient_bill"),
     path("print-outpatient/<str:bill_no>/", views.print_outpatient_bill, name="print_outpatient_bill"),
     path('medicalbilling/', views.medical_billing_view, name='medicalbilling'),
+    path("medicalbilling/edit/<str:bill_no>/",views.edit_medical_bill_view,name="edit_medical_bill",),
     path('get-patient/', views.get_patient, name='get_patient'),
     path('print/<str:bill_no>/', views.print_bill, name='print_bill'),
     path("get-prescription/", views.get_patient_prescription, name="get_prescription"),
     
     path("therapy_billing/", views.therapy_billing_view, name="therapybilling"),
+    path("therapybilling/edit/<str:bill_no>/",views.edit_therapy_bill_view,name="edit_therapy_bill"),
     path('therapy-bill-print/<str:bill_no>/', views.therapy_bill_print_view, name='therapy_bill_print'),
      path('get_patient_suggestions/', views.get_patient_suggestions, name='get_patient_suggestions'),
      path("patient/<int:patient_id>/bills/download/", views.download_all_bills_pdf,name="download_all_bills"),

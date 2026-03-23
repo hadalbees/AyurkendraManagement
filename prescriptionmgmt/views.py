@@ -10,6 +10,7 @@ from stockmgmt.models import Stock
 from patientmgmt.models import Patient
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
+from fieldmgmt.models import Adjuvant
 
 def generate_prescription_no():
     last = Prescription.objects.order_by('-id').first()
@@ -25,98 +26,75 @@ def generate_prescription_no():
 def create_prescription(request):
 
     if request.method == "POST":
+
         pres_no = request.POST.get("prescription_no")
         patient_id = request.POST.get("patient_id")
         notes = request.POST.get("notes", "")
         next_visit = request.POST.get("next_visit") or None
 
-        # Arrays from form
         stock_ids = request.POST.getlist("stock_id[]")
         medicine_names = request.POST.getlist("medicine_name[]")
         dosages = request.POST.getlist("dosage[]")
-        custom_dosages = request.POST.getlist("custom_dosage[]")
         durations = request.POST.getlist("duration[]")
         quantities = request.POST.getlist("quantity[]")
         food_timings = request.POST.getlist("food_timing[]")
+        adjuvants = request.POST.getlist("adjuvant[]")
 
-        # ✅ Validate patient
+        if not patient_id:
+            messages.error(request, "Patient ID required.")
+            return redirect("dashboard")
+
         try:
             patient = Patient.objects.get(patient_unique_id=patient_id)
         except Patient.DoesNotExist:
-            messages.error(request, "Invalid patient ID.")
-            return redirect("prescriptionmgmt:create_prescription")
-
-        try:
-            with transaction.atomic():
-
-                pres, created = Prescription.objects.get_or_create(
-                    prescription_no=pres_no,
-                    defaults={
-                        "patient": patient,
-                        "doctor": request.user,
-                        "notes": notes,
-                        "next_visit": next_visit,
-                    }
-                )
-
-                if not created:
-                    pres.patient = patient
-                    pres.doctor = request.user
-                    pres.notes = notes
-                    pres.next_visit = next_visit
-                    pres.save()
-
-                # ✅ ONLY SAVE DATA (NO STOCK CHANGES)
-                for sid, med_name, dose, custom_dose, dur, qty, food in zip(
-                    stock_ids, medicine_names, dosages,
-                    custom_dosages, durations, quantities, food_timings
-                ):
-
-                    if not med_name:
-                        continue
-
-                    final_dose = custom_dose if (dose == "Other" and custom_dose) else dose
-
-                    stock_obj = None
-                    if sid:
-                        try:
-                            stock_obj = Stock.objects.get(id=sid)
-                        except Stock.DoesNotExist:
-                            stock_obj = None
-
-                    PrescriptionItem.objects.create(
-                        prescription=pres,
-                        stock=stock_obj,
-                        medicine_name=med_name,
-                        dosage=final_dose or "",
-                        duration_days=int(dur or 0),
-                        quantity=Decimal(qty or "0"),   # ✅ SAVE AS USER ENTERED
-                        food_timing=food or "",
-                    )
-
-        except Exception as e:
-            messages.error(request, f"Error: {str(e)}")
+            messages.error(request, "Invalid Patient ID.")
             return redirect("dashboard")
 
-        messages.success(request, f"Prescription {pres.prescription_no} saved successfully!")
+        # Create prescription
+        prescription = Prescription.objects.create(
+            prescription_no=pres_no,
+            patient=patient,
+            doctor=request.user,
+            notes=notes,
+            next_visit=next_visit,
+        )
+
+        # Save medicines
+        for sid, med, dose, dur, qty, food, adj in zip(
+            stock_ids,
+            medicine_names,
+            dosages,
+            durations,
+            quantities,
+            food_timings,
+            adjuvants
+        ):
+
+            if not med:
+                continue
+
+            adjuvant_obj = None
+            if adj:
+                try:
+                    adjuvant_obj = Adjuvant.objects.get(id=adj)
+                except Adjuvant.DoesNotExist:
+                    pass
+
+            PrescriptionItem.objects.create(
+                prescription=prescription,
+                stock_id=sid if sid else None,
+                medicine_name=med,
+                dosage=dose or "",
+                duration_days=int(dur or 0),
+                quantity=Decimal(qty or "0"),
+                food_timing=food or "",
+                adjuvant=adjuvant_obj
+            )
+
+        messages.success(request, "Prescription saved successfully!")
         return redirect("dashboard")
 
-    # -------- GET REQUEST --------
-
-    prescription_no = generate_prescription_no()
-
-    stocks = Stock.objects.filter(
-        quantity__gt=0
-    ).select_related("medicine").order_by("medicine__name")
-
-    patients = Patient.objects.filter(is_active=True)
-
-    return render(request, "prescriptionmgmt/create_prescription.html", {
-        "prescription_no": prescription_no,
-        "stocks": stocks,
-        "patients": patients,
-        "today": timezone.localdate(),
-    })
+    return redirect("dashboard")
 
 @login_required
 def ajax_get_patient(request):

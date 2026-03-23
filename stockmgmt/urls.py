@@ -8,6 +8,7 @@ urlpatterns = [
     path('stock/add/', views.StockCreateView.as_view(), name='stock_add'),
     path('stock/<int:pk>/update/', views.StockUpdateView.as_view(), name='stock_update'),
     path('stock/dispense/', views.StockDispenseView.as_view(), name='dispense'),
-    path('add-medicine-ajax/', views.add_medicine_ajax, name='add_medicine_ajax'),
-
+    path("add-medicine-ajax/", views.add_medicine_ajax, name="add_medicine_ajax"),
+    path("medicine/update/", views.update_medicine, name="update_medicine"),
+    path("bulk-import/", views.bulk_import_stock, name="bulk_import_stock"),
 ]

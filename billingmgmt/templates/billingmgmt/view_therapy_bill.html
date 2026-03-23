@@ -125,7 +125,14 @@
             <span>Tax</span>
             <strong>₹{{ bill.tax }}</strong>
           </div>
-
+<div class="d-flex justify-content-between">
+            <span>Payment Mode</span>
+            <strong>{{ bill.payment_mode }}</strong>
+          </div>
+          <div class="d-flex justify-content-between">
+            <span>Payment Status</span>
+            <strong>₹{{ bill.payment_status }}</strong>
+          </div>
           <hr>
 
           <div class="d-flex justify-content-between fs-5">
@@ -139,7 +146,7 @@
 
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 
 {% include "includes/script.html" %}

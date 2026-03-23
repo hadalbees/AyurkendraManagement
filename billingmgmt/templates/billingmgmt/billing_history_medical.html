@@ -42,8 +42,8 @@
 
     <!-- Actions -->
     <div class="col-md-5 text-end">
-      <button class="btn btn-primary" onclick="loadBills()">Filter</button>
-      <button class="btn btn-success" onclick="printFilteredBills()">Print</button>
+      <button class="btn btn-success rounded-pill px-4" onclick="loadBills()">Filter</button>
+      <button class="btn btn-outline-success rounded-pill px-4" onclick="printFilteredBills()">Print</button>
     </div>
 
   </div>
@@ -75,7 +75,7 @@
 
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 
 {% include "includes/script.html" %}
@@ -129,6 +129,7 @@ function printFilteredBills() {
     "_blank"
   );
 }
+
 
 </script>
 

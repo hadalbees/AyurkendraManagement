@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from fieldmgmt.models import TherapyMaster
+from authentication.models import CustomUser
 
 User = settings.AUTH_USER_MODEL
 
@@ -184,20 +185,72 @@ class Appointment(models.Model):
         ('CANCELLED', 'Cancelled'),
     )
 
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="appointments")
-    appointment_type = models.CharField(max_length=10, choices=APPOINTMENT_TYPES)
-    therapy = models.ForeignKey(TherapyMaster, on_delete=models.SET_NULL, null=True, blank=True)
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name="appointments"
+    )
+
+    appointment_type = models.ForeignKey(
+        'fieldmgmt.AppointmentType',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
+    # 🔥 ADD THESE TWO FIELDS
+    doctor = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="doctor_appointments"
+    )
+
+    therapist = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="therapist_appointments"
+    )
+
+    therapy = models.ForeignKey(
+        TherapyMaster,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
 
     appointment_date = models.DateField()
     appointment_time = models.TimeField()
 
     notes = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="PENDING"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.patient.patient_name} - {self.appointment_date}"
+        return f"{self.patient.patient_name} - {self.appointment_date} - {self.appointment_time}"
+
+    # 🔥 DATABASE LEVEL PROTECTION (Very Important)
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['appointment_date', 'appointment_time', 'doctor'],
+                name='unique_doctor_slot'
+            ),
+            models.UniqueConstraint(
+                fields=['appointment_date', 'appointment_time', 'therapist'],
+                name='unique_therapist_slot'
+            )
+        ]
+
     
     
     

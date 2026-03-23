@@ -23,7 +23,7 @@
   <div class="card shadow-sm border-0">
     <div class="card-body">
 
-      <form role="form" method="post">
+      <form id="roleForm" role="form" method="post" novalidate>
         {% csrf_token %}
 
         <!-- ROLE NAME -->
@@ -32,11 +32,13 @@
             <label class="form-label">
               Role Name <span class="text-danger">*</span>
             </label>
+
             <input type="text"
-                   name="role_name"
-                   class="form-control"
-                   placeholder="Enter role name"
-                   required>
+                  name="role_name"
+                  class="form-control"
+                  placeholder="Enter role name">
+
+            <small class="text-danger error-msg"></small>
           </div>
         </div>
 
@@ -55,10 +57,48 @@
 
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 
 {% include "includes/script.html" %}
+<script>
 
+// helper
+function setError(input, message) {
+    const error = input.parentElement.querySelector(".error-msg");
+    input.classList.add("is-invalid");
+    if (error) error.innerText = message;
+}
+
+function clearError(input) {
+    const error = input.parentElement.querySelector(".error-msg");
+    input.classList.remove("is-invalid");
+    if (error) error.innerText = "";
+}
+
+
+// form validation
+document.getElementById("roleForm").addEventListener("submit", function(e) {
+
+    let isValid = true;
+
+    const roleName = document.querySelector('[name="role_name"]');
+
+    // clear previous
+    clearError(roleName);
+
+    // empty check
+    if (!roleName.value.trim()) {
+        setError(roleName, "Role name is required");
+        isValid = false;
+    }
+
+    if (!isValid) {
+        e.preventDefault();
+    }
+
+});
+
+</script>
 </body>
 </html>

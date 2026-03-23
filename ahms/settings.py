@@ -10,12 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-# from pathlib import Path
-# import os
 from pathlib import Path
-from decouple import config
 import os
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -24,15 +20,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-l3kbco78pw%4nl5-84h0l%c*t=w3h$!*3)3@^c#i2@ep#gv*vz'
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = 'django-insecure-l3kbco78pw%4nl5-84h0l%c*t=w3h$!*3)3@^c#i2@ep#gv*vz'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = True
-DEBUG = config('DEBUG', cast=bool)
+DEBUG = True
 
-# ALLOWED_HOSTS = []
-ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
+
+ALLOWED_HOSTS = ['rubanlesemp.pythonanywhere.com','*']
 
 
 
@@ -59,6 +53,7 @@ INSTALLED_APPS = [
     'prescriptionmgmt',
     'fieldmgmt',
     'accountmgmt',
+    'calendarmgmt',
 ]
 AUTH_USER_MODEL = 'authentication.CustomUser'
 
@@ -110,7 +105,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'hms',
         'USER': 'postgres',
-        'PASSWORD': '1881',
+        'PASSWORD': '230823',
         'HOST': 'localhost',
         'PORT': '5432',
  
@@ -174,16 +169,5 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-# WHATSAPP_PHONE_NUMBER_ID = "8098968767"
-# WHATSAPP_TOKEN = "YOUR_ACCESS_TOKEN"
-WHATSAPP_PHONE_NUMBER_ID = config('WHATSAPP_PHONE_NUMBER_ID')
-WHATSAPP_TOKEN = config('WHATSAPP_TOKEN')
-
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
-
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
-
-SECURE_SSL_REDIRECT = not DEBUG
+WHATSAPP_PHONE_NUMBER_ID = "8098968767"
+WHATSAPP_TOKEN = "YOUR_ACCESS_TOKEN"

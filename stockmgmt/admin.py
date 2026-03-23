@@ -18,9 +18,30 @@ class MedicineAdmin(admin.ModelAdmin):
 
 @admin.register(Stock)
 class StockAdmin(admin.ModelAdmin):
-    list_display = ('medicine','unit', 'batch_number', 'quantity', 'expiry_date', 'supplier','manufacturer', 'last_updated_by', 'updated_at')
-    list_filter = ('supplier', 'expiry_date')
-    search_fields = ('medicine__name', 'batch_number')
+
+    list_display = (
+        "medicine",
+        "batch_number",
+        "base_unit",
+        "pack_size",
+        "number_of_packs",
+        "selling_price",
+        "price_per_base_unit",
+        "expiry_date",
+    )
+
+    search_fields = (
+        "medicine__name",
+        "batch_number",
+    )
+
+    list_filter = (
+        "base_unit",
+        "expiry_date",
+        "supplier",
+    )
+
+    ordering = ("-expiry_date",)
 
 @admin.register(StockTransaction)
 class StockTransactionAdmin(admin.ModelAdmin):

@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from patientmgmt.models import Patient
 from .models import PatientReport
+from prescriptionmgmt.models import Prescription, PrescriptionItem
 
 # ---------- Home Page ----------
 from django.db.models import Q
@@ -57,23 +58,33 @@ class ReportHomeView(LoginRequiredMixin, View):
 #     from patientmgmt.models import Patient
 
 class AllReportsListView(LoginRequiredMixin, View):
-    def get(self, request):
-        q = request.GET.get("q", "")
-        ptype = request.GET.get("type", "")
 
+    def get(self, request):
+
+        q = request.GET.get("q", "").strip()
+        ptype = request.GET.get("type", "").strip()
+
+        # Base queryset
         patients = Patient.objects.filter(is_active=True)
 
+        # 🔎 Search filter
         if q:
             patients = patients.filter(
-                patient_name__icontains=q
-            ) | patients.filter(phone__icontains=q)
+                Q(patient_name__icontains=q) |
+                Q(phone__icontains=q)
+            )
 
+        # 🏥 Type filter
         if ptype:
             patients = patients.filter(patient_type=ptype)
 
-        patients = patients.order_by("-created_at")
+        # 🚀 IMPORTANT: Remove duplicates
+        patients = patients.distinct().order_by("-created_at")
 
-        paginator = Paginator(patients, 10)  # 10 per page
+        # ⚡ Performance optimization
+        patients = patients.prefetch_related("reports")
+
+        paginator = Paginator(patients, 10)
         page_number = request.GET.get("page")
         page_obj = paginator.get_page(page_number)
 
@@ -84,6 +95,7 @@ class AllReportsListView(LoginRequiredMixin, View):
             "q": q,
             "type": ptype,
         }
+
         return render(request, "reportmgmt/reportlist.html", context)
 
 
@@ -201,3 +213,99 @@ class EditReportView(LoginRequiredMixin, View):
 
         return redirect("reportmgmt:viewreport", report_id=report_id)
 
+# ================================
+# LIST
+# ================================
+def prescription_list(request):
+
+    prescriptions = Prescription.objects.select_related(
+        "patient", "doctor"
+    ).prefetch_related("items")
+
+    paginator = Paginator(prescriptions, 10)
+    page = request.GET.get("page")
+    prescriptions = paginator.get_page(page)
+
+    return render(request, "reportmgmt/prescription_list.html", {
+        "prescriptions": prescriptions
+    })
+
+
+# ================================
+# VIEW
+# ================================
+def prescription_view(request, pk):
+
+    prescription = get_object_or_404(
+        Prescription.objects.select_related("patient", "doctor")
+        .prefetch_related("items"),
+        pk=pk
+    )
+
+    return render(request, "reportmgmt/prescription_view.html", {
+        "prescription": prescription
+    })
+
+
+# ================================
+# EDIT
+# ================================
+def prescription_edit(request, pk):
+
+    prescription = get_object_or_404(
+        Prescription.objects.prefetch_related("items"),
+        pk=pk
+    )
+
+    if request.method == "POST":
+
+        # --- Update main fields ---
+        prescription.notes = request.POST.get("notes")
+        prescription.next_visit = request.POST.get("next_visit") or None
+        prescription.save()
+
+        # --- Clear old items ---
+        prescription.items.all().delete()
+
+        # --- Add new items ---
+        medicine_names = request.POST.getlist("medicine_name[]")
+        dosages = request.POST.getlist("dosage[]")
+        durations = request.POST.getlist("duration_days[]")
+        quantities = request.POST.getlist("quantity[]")
+        instructions = request.POST.getlist("instructions[]")
+        food_timings = request.POST.getlist("food_timing[]")
+
+        for name, dosage, dur, qty, inst, food in zip(
+            medicine_names, dosages, durations,
+            quantities, instructions, food_timings
+        ):
+
+            if not name:
+                continue
+
+            PrescriptionItem.objects.create(
+                prescription=prescription,
+                medicine_name=name,
+                dosage=dosage,
+                duration_days=int(dur or 0),
+                quantity=qty or 0,
+                instructions=inst,
+                food_timing=food
+            )
+
+        return redirect("reportmgmt:prescription_list")
+
+    return render(request, "reportmgmt/prescription_edit.html", {
+        "prescription": prescription
+    })
+
+
+# ================================
+# DELETE
+# ================================
+def prescription_delete(request, pk):
+
+    prescription = get_object_or_404(Prescription, pk=pk)
+    prescription.delete()
+
+    return redirect("reportmgmt:prescription_list")

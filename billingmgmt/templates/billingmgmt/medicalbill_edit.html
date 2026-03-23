@@ -1,0 +1,532 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+<div class="mb-4">
+<h4 class="mb-1">Edit Medical Bill</h4>
+<p class="text-sm text-muted mb-0">
+Update existing patient bill
+</p>
+</div>
+
+<form method="post" action="{% url 'billingmgmt:edit_medical_bill' bill.bill_no %}">
+{% csrf_token %}
+
+<!-- PATIENT DETAILS -->
+
+<div class="card shadow-sm mb-4">
+
+<div class="card-body">
+
+<h6 class="mb-3">Patient & Billing Details</h6>
+
+<div class="row g-3">
+
+<div class="col-md-3">
+<label class="form-label">Bill No</label>
+<input class="form-control" value="{{ bill.bill_no }}" readonly>
+</div>
+
+<div class="col-md-3">
+<label class="form-label">Customer Type</label>
+<input class="form-control" value="Registered Patient" readonly>
+</div>
+
+<div class="col-md-4">
+<label class="form-label">Patient</label>
+<input class="form-control"
+value="{{ bill.patient.patient_unique_id }} - {{ bill.patient.patient_name }}"
+readonly>
+
+<input type="hidden"
+name="patient_id"
+value="{{ bill.patient.patient_unique_id }}">
+</div>
+
+<div class="col-md-2">
+<label class="form-label">Age</label>
+<input class="form-control"
+value="{{ bill.patient.age }}"
+readonly>
+</div>
+
+<div class="col-md-2">
+<label class="form-label">Gender</label>
+<input class="form-control"
+value="{{ bill.patient.gender }}"
+readonly>
+</div>
+
+<div class="col-md-4">
+<label class="form-label">Doctor Name</label>
+<input class="form-control"
+name="doctor_name"
+value="{{ bill.doctor_name }}">
+</div>
+
+<div class="col-md-3">
+<label class="form-label">Billing Date</label>
+<input type="date"
+class="form-control"
+name="bill_date"
+value="{{ bill.bill_date|date:'Y-m-d' }}">
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- MEDICINES -->
+
+<div class="row">
+
+<div class="col-lg-8">
+
+<div class="card shadow-sm mb-4">
+
+<div class="card-body">
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+
+<h6 class="mb-0">Medicines</h6>
+
+<button type="button"
+class="btn btn-sm btn-success"
+onclick="renderManualBlankRow()">
+
++ Add Medicine
+
+</button>
+
+</div>
+
+<div id="prescriptionItemsContainer"></div>
+
+<div class="table-responsive mt-3">
+
+<table class="table align-items-center" id="itemsTable">
+
+<thead class="bg-light">
+
+<tr>
+<th>Medicine</th>
+<th>Unit</th>
+<th>Unit Price</th>
+<th>Quantity</th>
+<th>Subtotal</th>
+<th class="text-center">Action</th>
+</tr>
+
+</thead>
+
+<tbody></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- SUMMARY -->
+
+<div class="col-lg-4">
+
+<div class="card shadow-sm mb-4">
+
+<div class="card-body">
+
+<h6 class="mb-3">Billing Summary</h6>
+
+<div class="row mt-3">
+
+<div class="col-md-12 mb-2">
+
+<label class="form-label">Payment Status</label>
+
+<select class="form-select" name="payment_status">
+
+<option value="Pending"
+{% if bill.payment_status == "Pending" %}selected{% endif %}>
+Pending
+</option>
+
+<option value="Paid"
+{% if bill.payment_status == "Paid" %}selected{% endif %}>
+Paid
+</option>
+
+</select>
+
+</div>
+
+<div class="col-md-12 mb-3">
+
+<label class="form-label">Payment Mode</label>
+
+<select class="form-select" name="payment_mode">
+
+<option {% if bill.payment_mode == "Cash" %}selected{% endif %}>Cash</option>
+<option {% if bill.payment_mode == "Card" %}selected{% endif %}>Card</option>
+<option {% if bill.payment_mode == "UPI" %}selected{% endif %}>UPI</option>
+<option {% if bill.payment_mode == "NetBanking" %}selected{% endif %}>NetBanking</option>
+<option {% if bill.payment_mode == "Insurance" %}selected{% endif %}>Insurance</option>
+
+</select>
+
+</div>
+
+</div>
+
+<div class="d-flex justify-content-between mb-2">
+<span>Subtotal</span>
+<strong>₹ <span id="subtotalText">0.00</span></strong>
+</div>
+
+<div class="d-flex justify-content-between mb-2">
+<span>Total GST</span>
+<strong>₹ <span id="taxText">0.00</span></strong>
+</div>
+
+<hr>
+
+<div class="d-flex justify-content-between fs-5">
+<strong>Total</strong>
+<strong>₹ <span id="totalText">0.00</span></strong>
+</div>
+
+<input type="hidden" name="subtotal" id="subtotalVal">
+<input type="hidden" name="tax" id="taxVal">
+<input type="hidden" name="total" id="totalVal">
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- BUTTONS -->
+
+<div class="d-flex justify-content-end gap-2 mt-3">
+
+<a href="{% url 'billingmgmt:medicalbilling' %}"
+class="btn btn-outline-secondary">
+Cancel
+</a>
+
+<button class="btn btn-success px-4">
+Update Bill
+</button>
+
+</div>
+
+</form>
+
+</div>
+
+</main>
+
+{% include "includes/script.html" %}
+
+<script>
+
+/* ---------- Medicines ---------- */
+
+const allMedicines = [
+{% for m in medicines %}
+{
+id:"{{ m.id }}",
+name:"{{ m.medicine.name|escapejs }}",
+unit:"{{ m.base_unit|escapejs }}",
+available:{{ m.total_base_quantity }},
+selling_price:{{ m.selling_price }},
+price_per_unit:{{ m.price_per_base_unit }},
+gst:{{ m.medicine.gst_percentage|default:0 }}
+}{% if not forloop.last %},{% endif %}
+{% endfor %}
+];
+
+
+/* ---------- Existing Medicines ---------- */
+
+let items = [
+{% for i in items %}
+{
+id:"{{ i.id }}",
+name:"{{ i.medicine_name }}",
+unit:"",
+qty:{{ i.quantity }},
+selling_price:{{ i.unit_price }},
+subtotal:{{ i.subtotal }},
+gst_percent: getMedicineGST("{{ i.medicine_name }}"),
+gst_amount: 0
+}{% if not forloop.last %},{% endif %}
+{% endfor %}
+];
+
+
+function num(v){
+return parseFloat(v)||0;
+}
+
+function getMedicineGST(medicineName){
+
+const med = allMedicines.find(m => m.name === medicineName);
+
+if(med){
+return parseFloat(med.gst) || 0;
+}
+
+return 0;
+
+}
+/* ---------- Add Medicine Row ---------- */
+
+function renderManualBlankRow(){
+
+const c=document.getElementById("prescriptionItemsContainer");
+
+let options=`<option value="">-- Select Medicine --</option>`;
+
+allMedicines.forEach(m=>{
+options+=`
+<option value="${m.id}"
+data-unit="${m.unit}"
+data-single="${m.price_per_unit}"
+data-available="${m.available}"
+data-gst="${m.gst}">
+${m.name} (${m.unit})
+</option>`;
+});
+
+const div=document.createElement("div");
+
+div.className="row g-2 align-items-end mb-2";
+
+div.innerHTML=`
+
+<div class="col-md-3">
+<label class="form-label">Medicine</label>
+<select class="form-control medSelect">${options}</select>
+</div>
+
+<div class="col-md-2">
+<label class="form-label">Unit</label>
+<input class="form-control unitField" readonly>
+</div>
+
+<div class="col-md-2">
+<label class="form-label">Unit Price</label>
+<input class="form-control priceField" readonly>
+</div>
+
+<div class="col-md-2">
+<label class="form-label">Qty</label>
+<input class="form-control qtyField" type="number">
+</div>
+
+<div class="col-md-2">
+<label class="form-label">Subtotal</label>
+<input class="form-control subField" readonly>
+</div>
+
+<div class="col-md-1">
+<label>&nbsp;</label>
+<button type="button" class="btn btn-dark w-100 addBtn">+</button>
+</div>
+`;
+
+c.appendChild(div);
+
+const select=div.querySelector(".medSelect");
+const qty=div.querySelector(".qtyField");
+
+select.onchange=()=>updateRow(div);
+qty.oninput=()=>updateRow(div);
+
+div.querySelector(".addBtn").onclick=()=>addRowToTable(div);
+}
+
+
+/* ---------- Update Row ---------- */
+
+function updateRow(div){
+
+const opt=div.querySelector(".medSelect").selectedOptions[0];
+if(!opt) return;
+
+const qty=num(div.querySelector(".qtyField").value);
+
+const price=num(opt.dataset.single);
+const gstPercent=num(opt.dataset.gst);
+
+div.querySelector(".unitField").value=opt.dataset.unit;
+div.querySelector(".priceField").value=price.toFixed(2);
+
+const subtotal=qty*price;
+const gstAmount=subtotal*gstPercent/100;
+
+div.querySelector(".subField").value=subtotal.toFixed(2);
+
+div.dataset.gstAmount=gstAmount;
+div.dataset.gstPercent=gstPercent;
+
+}
+
+
+/* ---------- Add Row ---------- */
+
+function addRowToTable(div){
+
+const opt=div.querySelector(".medSelect").selectedOptions[0];
+
+const qty=num(div.querySelector(".qtyField").value);
+const price=num(opt.dataset.single);
+const gstPercent=num(opt.dataset.gst);
+
+const subtotal=qty*price;
+const gstAmount=subtotal*gstPercent/100;
+
+items.push({
+
+id:opt.value,
+name:opt.textContent.split("(")[0].trim(),
+unit:opt.dataset.unit,
+qty:qty,
+selling_price:price,
+subtotal:subtotal,
+gst_percent:gstPercent,
+gst_amount:gstAmount
+
+});
+
+renderItems();
+
+div.remove();
+}
+
+
+/* ---------- Render Table ---------- */
+
+function renderItems(){
+
+const tb=document.querySelector("#itemsTable tbody");
+
+tb.innerHTML="";
+
+let subtotal = 0;
+let gst = 0;
+
+items.forEach((it,i)=>{
+
+subtotal += it.subtotal;
+
+const gstAmount = it.subtotal * (it.gst_percent || 0) / 100;
+
+gst += gstAmount;
+
+it.gst_amount = gstAmount;
+
+tb.innerHTML+=`
+
+<tr>
+
+<td>
+${it.name}
+<input type="hidden" name="stock_id[]" value="${it.id}">
+<input type="hidden" name="quantity[]" value="${it.qty}">
+<input type="hidden" name="subtotal[]" value="${it.subtotal}">
+</td>
+
+<td>${it.unit}</td>
+
+<td>₹${it.selling_price}</td>
+
+<td>
+<input type="number"
+value="${it.qty}"
+class="form-control"
+onchange="updateQty(${i},this.value)">
+</td>
+
+<td>₹${it.subtotal}</td>
+
+<td>
+<button type="button"
+class="btn btn-danger btn-sm"
+onclick="removeItem(${i})">
+X
+</button>
+</td>
+
+</tr>
+
+`;
+
+});
+
+const total=subtotal+gst;
+
+document.getElementById("subtotalText").innerText=subtotal.toFixed(2);
+document.getElementById("taxText").innerText=gst.toFixed(2);
+document.getElementById("totalText").innerText=total.toFixed(2);
+
+document.getElementById("subtotalVal").value=subtotal;
+document.getElementById("taxVal").value=gst;
+document.getElementById("totalVal").value=total;
+
+}
+
+
+/* ---------- Update Qty ---------- */
+
+function updateQty(i,v){
+
+items[i].qty=num(v);
+
+items[i].subtotal=items[i].qty*items[i].selling_price;
+
+renderItems();
+
+}
+
+
+/* ---------- Remove ---------- */
+
+function removeItem(i){
+
+items.splice(i,1);
+
+renderItems();
+
+}
+
+
+document.addEventListener("DOMContentLoaded",function(){
+
+renderItems();
+
+});
+
+</script>
+
+</body>
+</html>

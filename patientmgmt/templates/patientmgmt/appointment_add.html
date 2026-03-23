@@ -78,15 +78,33 @@
         <h6 class="fw-semibold mb-3">Appointment Details</h6>
 
         <div class="row g-3">
-          <div class="col-md-4">
+         <div class="col-md-4">
             <label class="form-label">Appointment Type</label>
-            <select id="apptType" name="appointment_type" class="form-select" required>
+
+            <select id="apptType"
+                    name="appointment_type"
+                    class="form-select"
+                    required>
+
               <option value="">Select</option>
-              <option value="CONSULT">Consultation</option>
-              <option value="THERAPY">Therapy</option>
-              <option value="BOTH">Both</option>
+
+              {% for a in appointment_types %}
+              <option value="{{ a.id }}">
+                {{ a.name }}
+              </option>
+              {% endfor %}
+
+            </select>
+
+          </div>
+          <div class="col-md-4" id="doctorDiv" style="display:none;">
+            <label class="form-label">Doctor</label>
+            <select name="doctor" id="doctorSelect" class="form-select">
+              <option value="">Select Doctor</option>
             </select>
           </div>
+
+
 
           <div class="col-md-4" id="therapyDiv" style="display:none;">
             <label class="form-label">Therapy</label>
@@ -95,6 +113,13 @@
               {% for t in therapies %}
               <option value="{{ t.id }}">{{ t.name }}</option>
               {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-4" id="therapistDiv" style="display:none;">
+            <label class="form-label">Therapist</label>
+            <select name="therapist" id="therapistSelect" class="form-select">
+              <option value="">Select Therapist</option>
             </select>
           </div>
 
@@ -130,14 +155,14 @@
         </div>
 
         <!-- ================= ACTION BUTTONS ================= -->
-        <div class="d-flex justify-content-end gap-2 mt-4">
+        <div class="d-flex gap-2 mt-4">
           <button type="button"
                   class="btn btn-outline-primary"
                   onclick="openSlotModal()">
             📅 Check Slot
           </button>
 
-          <button type="submit" class="btn btn-success">
+          <button type="submit" class="btn bg-gradient-dark px-4">
             Save Appointment
           </button>
         </div>
@@ -153,7 +178,7 @@
 <div class="modal fade" id="slotModal" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
-
+      <div id="slotMessage" class="mt-3 text-danger fw-semibold"></div>
       <div class="modal-header">
         <h5 class="modal-title">Select Appointment Slot</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -173,7 +198,7 @@
   </div>
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 
 {% include "includes/script.html" %}
@@ -181,17 +206,89 @@
 <!-- ================= YOUR SCRIPT (UNCHANGED) ================= -->
 <script>
 document.getElementById("apptType").addEventListener("change", function () {
-  document.getElementById("therapyDiv").style.display =
-    (this.value === "THERAPY" || this.value === "BOTH") ? "block" : "none";
+
+  const value = this.value;
+
+  const doctorDiv = document.getElementById("doctorDiv");
+  const therapistDiv = document.getElementById("therapistDiv");
+  const therapyDiv = document.getElementById("therapyDiv");
+
+  // Reset visibility
+  doctorDiv.style.display = "none";
+  therapistDiv.style.display = "none";
+  therapyDiv.style.display = "none";
+
+  if (value === "CONSULT") {
+
+    doctorDiv.style.display = "block";
+    loadDoctors("Doctor", "doctorSelect");
+
+  }
+
+  else if (value === "THERAPY") {
+
+    therapyDiv.style.display = "block";
+    therapistDiv.style.display = "block";
+    loadDoctors("Therapist", "therapistSelect");
+
+  }
+
+  else if (value === "BOTH") {
+
+    doctorDiv.style.display = "block";
+    therapistDiv.style.display = "block";
+    therapyDiv.style.display = "block";
+
+    loadDoctors("Doctor", "doctorSelect");
+    loadDoctors("Therapist", "therapistSelect");
+
+  }
+
 });
 
 let bookedSlots = [];
 let selectedDate = "";
 
+/* ================= OPEN MODAL ================= */
 function openSlotModal() {
+
+  const type = document.getElementById("apptType").value;
+  const doctor = document.getElementById("doctorSelect")?.value;
+  const therapist = document.getElementById("therapistSelect")?.value;
+
+  if (!type) {
+    alert("Select Appointment Type first");
+    return;
+  }
+
+  if (type === "CONSULT" && !doctor) {
+    alert("Select Doctor first");
+    return;
+  }
+
+  if (type === "THERAPY" && !therapist) {
+    alert("Select Therapist first");
+    return;
+  }
+
+  if (type === "BOTH" && (!doctor || !therapist)) {
+    alert("Select Doctor and Therapist first");
+    return;
+  }
+
+  // 🔥 RESET EVERYTHING
+  document.getElementById("slotMessage").textContent = "";
+  document.getElementById("slotsContainer").innerHTML = "";
+  document.getElementById("slotDate").value = "";
+  bookedSlots = [];
+  selectedDate = "";
+
   new bootstrap.Modal(document.getElementById("slotModal")).show();
 }
 
+
+
+/* ================= CONVERT TIME ================= */
 function to12Hour(time24) {
   let [h, m] = time24.split(":");
   h = parseInt(h);
@@ -200,33 +297,55 @@ function to12Hour(time24) {
   return `${h}:${m} ${ampm}`;
 }
 
+/* ================= LOAD SLOTS ================= */
 function loadSlots() {
-  selectedDate = document.getElementById("slotDate").value;
-  if (!selectedDate) return;
 
-  fetch("{% url 'patientmgmt:booked_slots' %}?date=" + selectedDate)
+  selectedDate = document.getElementById("slotDate").value;
+  const doctor = document.getElementById("doctorSelect")?.value || "";
+  const therapist = document.getElementById("therapistSelect")?.value || "";
+
+  if (!selectedDate) {
+    alert("Select date first");
+    return;
+  }
+
+  fetch("{% url 'patientmgmt:booked_slots' %}?date="
+        + selectedDate
+        + "&doctor=" + doctor
+        + "&therapist=" + therapist)
+
     .then(res => res.json())
     .then(data => {
+
       bookedSlots = data.booked || [];
       renderSlots();
-    });
+
+    })
+    .catch(err => console.error(err));
 }
 
+
+/* ================= RENDER SLOT BUTTONS ================= */
 function renderSlots() {
+
   const box = document.getElementById("slotsContainer");
   box.innerHTML = "";
 
   for (let hour = 9; hour <= 18; hour++) {
+
     const time24 = String(hour).padStart(2, "0") + ":00";
     const time12 = to12Hour(time24);
 
     const btn = document.createElement("button");
 
     if (bookedSlots.includes(time24)) {
+
       btn.className = "btn btn-secondary btn-sm";
       btn.textContent = time12 + " (Booked)";
       btn.disabled = true;
+
     } else {
+
       btn.className = "btn btn-outline-success btn-sm";
       btn.textContent = time12;
       btn.onclick = () => selectSlot(time24, time12);
@@ -235,20 +354,89 @@ function renderSlots() {
     box.appendChild(btn);
   }
 }
-
+  
+/* ================= SELECT SLOT ================= */
 function selectSlot(time24, time12) {
-  document.getElementById("appointment_date").value = selectedDate;
-  document.getElementById("appointment_time").value = time24;
 
-  document.getElementById("display_date").value = selectedDate;
-  document.getElementById("display_time").value = time12;
+  const doctor = document.getElementById("doctorSelect")?.value || "";
+  const therapist = document.getElementById("therapistSelect")?.value || "";
 
-  document.getElementById("selectedSlotRow").style.display = "flex";
+  if (!selectedDate) return;
 
-  bootstrap.Modal.getInstance(
-    document.getElementById("slotModal")
-  ).hide();
+  fetch("{% url 'patientmgmt:check_availability' %}?date="
+        + selectedDate
+        + "&time=" + time24
+        + "&doctor=" + doctor
+        + "&therapist=" + therapist)
+
+    .then(res => res.json())
+    .then(data => {
+
+      const msgBox = document.getElementById("slotMessage");
+
+      if (!data.available) {
+
+        msgBox.textContent = data.message;
+        msgBox.classList.remove("text-success");
+        msgBox.classList.add("text-danger");
+        return;
+
+      }
+
+      // Clear message
+      msgBox.textContent = "";
+      
+      // Set values
+      document.getElementById("appointment_date").value = selectedDate;
+      document.getElementById("appointment_time").value = time24;
+
+      document.getElementById("display_date").value = selectedDate;
+      document.getElementById("display_time").value = time12;
+
+      document.getElementById("selectedSlotRow").style.display = "flex";
+
+      bootstrap.Modal.getInstance(
+        document.getElementById("slotModal")
+      ).hide();
+
+    })
+    .catch(error => {
+      console.error("Availability error:", error);
+    });
 }
+
+
+function loadDoctors(roleName, selectId) {
+
+  fetch("{% url 'patientmgmt:get_doctors_by_role' %}?role=" + roleName)
+    .then(res => res.json())
+    .then(data => {
+
+      const select = document.getElementById(selectId);
+      select.innerHTML = `<option value="">Select ${roleName}</option>`;
+
+      if (data.doctors && data.doctors.length > 0) {
+
+        data.doctors.forEach(person => {
+          const opt = document.createElement("option");
+          opt.value = person.id;
+          opt.textContent = person.name;
+          select.appendChild(opt);
+        });
+
+      } else {
+
+        select.innerHTML += `<option disabled>No ${roleName} found</option>`;
+
+      }
+
+    })
+    .catch(error => {
+      console.error("Error loading", roleName, error);
+    });
+}
+
+
 </script>
 
 </body>

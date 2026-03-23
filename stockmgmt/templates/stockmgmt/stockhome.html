@@ -33,6 +33,14 @@
               data-bs-target="#addMedicineModal">
         + Add Medicine
       </button>
+
+       <button type="button"
+              class="btn btn-success rounded-pill px-4"
+              style="background:#c1e7d2;color:#065f46;"
+              data-bs-toggle="modal"
+              data-bs-target="#bulkImportModal">
+        + Bulk Import
+      </button>
     </div>
   </div>
 
@@ -94,87 +102,130 @@
     <div class="card-body p-0">
 
       <div class="table-responsive">
-        <table class="table align-items-center mb-0">
-          <thead>
-            <tr>
-              <th>Batch No</th>
-              <th>Medicine</th>
-              <th>Unit</th>
-              <th>Quantity</th>
-              <th>Unit Price</th>
-              <th>Selling Price</th>
-              <th>Expiry</th>
-              <th>Alerts</th>
-              <th class="text-center">Action</th>
-            </tr>
-          </thead>
+       <table class="table align-items-center mb-0">
+        <thead>
+          <tr>
+            <th>Batch No</th>
+            <th>Medicine</th>
+            <th>Base Unit</th>
+            <th>Pack Size</th>
+            <th>No. of Packs</th>
+            <th>Total Qty</th>
+            <th>Purchase Price</th>
+            <th>Selling Price</th>
+            <th>Expiry</th>
+            <th>Alerts</th>
+            <th class="text-center">Action</th>
+            <th class="text-center">Edit Medicine</th>
+          </tr>
+        </thead>
 
-          <tbody>
-            {% for stock in stocks %}
-            <tr>
+        <tbody>
+          {% for stock in stocks %}
+          <tr>
 
-              <td class="fw-semibold">{{ stock.batch_number }}</td>
-              <td>{{ stock.medicine.name }}</td>
-              <td>{{ stock.unit }}</td>
+            <td class="fw-semibold">{{ stock.batch_number }}</td>
+            <td>
+              {{ stock.medicine.name }}
+            </td>
+            <!-- Base Unit -->
+            <td>{{ stock.get_base_unit_display }}</td>
 
-              <td>
-                {{ stock.quantity }}
-                {% if stock.is_low_stock %}
-                  <span class="badge bg-danger ms-1">Low</span>
-                {% endif %}
-              </td>
+            <!-- Pack Size -->
+            <td>
+              {{ stock.pack_size }}
+              {{ stock.get_base_unit_display|lower }}
+            </td>
 
-              <td>{{ stock.unit_price }}</td>
-              <td>{{ stock.selling_price }}</td>
+            <!-- Number of Packs -->
+            <td>{{ stock.number_of_packs }}</td>
 
-              <td>
-                {% if stock.expiry_date %}
-                  {{ stock.expiry_date|date:"Y-m-d" }}
-                {% else %}
-                  N/A
-                {% endif %}
-              </td>
+            <!-- Total Base Quantity -->
+            <td>
+              {{ stock.total_base_quantity }}
+              {{ stock.get_base_unit_display|lower }}
+              {% if stock.is_low_stock %}
+                <span class="badge bg-danger ms-1">Low</span>
+              {% endif %}
+            </td>
 
-              <td>
-                {% if stock.is_low_stock %}
-                  <span class="badge bg-danger">Low Stock</span>
-                {% endif %}
-                {% if stock.is_near_expiry %}
-                  <span class="badge bg-warning text-dark">Near Expiry</span>
-                {% endif %}
-              </td>
+            <!-- Purchase Price -->
+            <td>₹ {{ stock.unit_price }}</td>
 
-              <!-- ACTIONS (MATCH STAFF LIST UI) -->
-              <td class="text-center">
-                <a href="{% url 'stockmgmt:stock_update' stock.pk %}"
-                   class="icon-btn edit"
-                   title="Edit">
-                  <i class="material-symbols-rounded edit-icon-color"
-                     style="font-variation-settings:'FILL' 1,'wght' 500;">
-                    edit
-                  </i>
-                </a>
+            <!-- Selling Price -->
+            <td>₹ {{ stock.selling_price }}</td>
 
-                <a href="#"
-                   class="icon-btn delete"
-                   title="Delete">
-                  <i class="material-symbols-rounded text-danger"
-                     style="font-variation-settings:'FILL' 1,'wght' 500;">
-                    delete
-                  </i>
-                </a>
-              </td>
+            <!-- Expiry -->
+            <td>
+              {% if stock.expiry_date %}
+                {{ stock.expiry_date|date:"Y-m-d" }}
+              {% else %}
+                N/A
+              {% endif %}
+            </td>
 
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="9" class="text-center text-muted py-4">
-                No stock records found.
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+            <!-- Alerts -->
+            <td>
+              {% if stock.is_low_stock %}
+                <span class="badge bg-danger">Low Stock</span>
+              {% endif %}
+              {% if stock.is_near_expiry %}
+                <span class="badge bg-warning text-dark">Near Expiry</span>
+              {% endif %}
+            </td>
+
+            <!-- Actions -->
+            <td class="text-center">
+              <a href="{% url 'stockmgmt:stock_update' stock.pk %}"
+                class="icon-btn edit"
+                title="Edit">
+                <i class="material-symbols-rounded edit-icon-color"
+                  style="font-variation-settings:'FILL' 1,'wght' 500;">
+                  edit
+                </i>
+              </a>
+
+              <a href="#"
+                class="icon-btn delete"
+                title="Delete">
+                <i class="material-symbols-rounded text-danger"
+                  style="font-variation-settings:'FILL' 1,'wght' 500;">
+                  delete
+                </i>
+              </a>
+            </td>
+            <td class="text-center">
+               <div class="" style="margin:0 auto;display:block;">
+                <i class="material-symbols-rounded icon-btn edit"
+                  data-bs-toggle="modal"
+                  data-bs-target="#editMedicineModal"
+                  onclick="loadMedicineData(
+                      '{{ stock.medicine.id }}',
+                      '{{ stock.medicine.name|escapejs }}',
+                      '{{ stock.medicine.hsn_code|escapejs }}',
+                      '{{ stock.medicine.form_type }}',
+                      '{{ stock.medicine.gst_percentage }}',
+                      '{{ stock.medicine.reorder_level }}',
+                      '{{ stock.medicine.expiry_days_alert }}',
+                      '{{ stock.medicine.description|escapejs }}'
+                  )">
+                  edit
+                </i>
+
+              </div>
+            </td>
+
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="11" class="text-center text-muted py-4">
+              No stock records found.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
       </div>
 
       <!-- PAGINATION -->
@@ -230,50 +281,352 @@
 </div>
 
 <!-- ADD MEDICINE MODAL (UNCHANGED) -->
-<div class="modal fade" id="addMedicineModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form method="post" action="{% url 'stockmgmt:add_medicine_ajax' %}">
+<!-- ADD MEDICINE MODAL -->
+<div class="modal fade " id="addMedicineModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content p-4">
+
+      <form method="post" action="{% url 'stockmgmt:add_medicine_ajax' %}" novalidate>
         {% csrf_token %}
-        <div class="modal-header bg-success text-white">
-          <h5 class="modal-title">Add New Medicine</h5>
-          <button type="button" class="btn-close btn-close-white"
-                  data-bs-dismiss="modal"></button>
+
+        <div class="row g-3">
+
+          <!-- Medicine Name -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">
+              Medicine Name <span class="text-danger">*</span>
+            </label>
+            <input type="text" name="name" class="form-control">
+            <small class="text-danger error-msg"></small>
+          </div>
+
+          <!-- HSN Code -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">HSN Code <span class="text-danger">*</span></label>
+            <input type="text" name="hsn_code" class="form-control">
+            <small class="text-danger error-msg"></small>
+          </div>
+
+          <!-- Form Type -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">
+              Form Type <span class="text-danger">*</span>
+            </label>
+            <select name="form_type" class="form-select">
+              <option value="">Select Type</option>
+              <option value="LIQUID">Liquid</option>
+              <option value="POWDER">Powder</option>
+              <option value="PIECE">Piece / Tablet</option>
+            </select>
+            <small class="text-danger error-msg"></small>
+          </div>
+
+          <!-- GST Percentage -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">
+              GST % <span class="text-danger">*</span>
+            </label>
+            <input type="number" step="0.01" name="gst_percentage"
+                   class="form-control" placeholder="Example: 5, 12, 18">
+                   <small class="text-danger error-msg"></small>
+          </div>
+
+          <!-- Ayurvedic Type -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Ayurvedic Type <span class="text-danger">*</span></label>
+            <select name="ayurvedic_type" class="form-select">
+              <option value="">Select Ayurvedic Type</option>
+              {% for type in ayurvedic_forms %}
+                <option value="{{ type.id }}">{{ type.name }}</option>
+              {% endfor %}
+            </select>
+            <small class="text-danger error-msg"></small>
+          </div>
+
+          <!-- Reorder Level -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Reorder Level</label>
+            <input type="number" name="reorder_level"
+                   class="form-control" placeholder="Minimum stock alert level">
+          </div>
+
+          <!-- Expiry Alert Days -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Expiry Alert (Days) <span class="text-danger">*</span></label>
+            <input type="number" name="expiry_days_alert"
+                   class="form-control" value="30">
+                   <small class="text-danger error-msg"></small>
+          </div>
+
+          <!-- Description -->
+          <div class="col-12">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea name="description" class="form-control" rows="3"></textarea>
+          </div>
+
         </div>
 
-        <div class="modal-body">
-          <input type="text" name="name" class="form-control mb-3"
-                 placeholder="Medicine Name" required>
-
-          <input type="text" name="hsn_code" class="form-control mb-3"
-                 placeholder="HSN Code" required>
-
-          <select name="ayurvedic_type" class="form-select mb-3" required>
-            <option value="">Select Ayurvedic Type</option>
-            {% for t in ayurvedic_forms %}
-              <option value="{{ t.id }}">{{ t.name }}</option>
-            {% endfor %}
-          </select>
-
-          <textarea name="description"
-                    class="form-control"
-                    rows="2"
-                    placeholder="Description"></textarea>
-        </div>
-
-        <div class="modal-footer">
+        <div class="text-end mt-4">
           <button type="submit" class="btn btn-success px-4">
-            Save
+            Save Medicine
           </button>
         </div>
+
       </form>
+
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="editMedicineModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content p-4">
+
+      <form method="post" action="{% url 'stockmgmt:update_medicine' %}" novalidate>
+        {% csrf_token %}
+
+        <input type="hidden" name="medicine_id" id="edit_medicine_id">
+
+        <div class="row g-3">
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Medicine Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" id="edit_name" class="form-control">
+            <small class="text-danger error-msg"></small>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">HSN Code <span class="text-danger">*</span></label>
+            <input type="text" name="hsn_code" id="edit_hsn" class="form-control">
+            <small class="text-danger error-msg"></small>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Form Type <span class="text-danger">*</span></label>
+            <select name="form_type" id="edit_form_type" class="form-select">
+              
+              <option value="LIQUID">Liquid</option>
+              <option value="POWDER">Powder</option>
+              <option value="PIECE">Piece / Tablet</option>
+            </select>
+            <small class="text-danger error-msg"></small>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">GST % <span class="text-danger">*</span></label>
+            <input type="number" step="0.01" name="gst_percentage"
+                   id="edit_gst" class="form-control">
+                   <small class="text-danger error-msg"></small>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Reorder Level</label>
+            <input type="number" name="reorder_level"
+                   id="edit_reorder" class="form-control">
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Expiry Alert (Days) <span class="text-danger">*</span></label>
+            <input type="number" name="expiry_days_alert"
+                   id="edit_expiry_alert" class="form-control">
+                   <small class="text-danger error-msg"></small>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea name="description"
+                      id="edit_description"
+                      class="form-control"
+                      rows="3"></textarea>
+          </div>
+
+        </div>
+
+        <div class="text-end mt-4">
+          <button type="submit" class="btn btn-primary px-4">
+            Update Medicine
+          </button>
+        </div>
+
+      </form>
+
     </div>
   </div>
 </div>
 
-{% include "includes/footer.html" %}
+
+<!-- BULK IMPORT MODAL -->
+<div class="modal fade" id="bulkImportModal" tabindex="-1">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content p-4">
+
+      <h5 class="fw-bold mb-3">Bulk Import Stock</h5>
+      <p class="text-muted small mb-3">
+        Upload Excel (.xlsx) or CSV file
+      </p>
+
+      <form method="post"
+            action="{% url 'stockmgmt:bulk_import_stock' %}"
+            enctype="multipart/form-data">
+
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">
+            Select File
+          </label>
+          <input type="file"
+                 name="file"
+                 class="form-control"
+                 accept=".xlsx,.csv"
+                 required>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button type="button"
+                  class="btn btn-outline-secondary"
+                  data-bs-dismiss="modal">
+            Cancel
+          </button>
+
+          <button type="submit"
+                  class="btn btn-success">
+            Import
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
 </main>
 
 {% include "includes/script.html" %}
+<script>
+function loadMedicineData(
+    id,
+    name,
+    hsn,
+    formType,
+    gst,
+    ayurvedicType,
+    reorder,
+    expiryAlert,
+    description
+){
+    document.getElementById("edit_medicine_id").value = id;
+    document.getElementById("edit_name").value = name;
+    document.getElementById("edit_hsn").value = hsn;
+    document.getElementById("edit_form_type").value = formType;
+    document.getElementById("edit_gst").value = gst;
+    document.getElementById("edit_reorder").value = reorder;
+    document.getElementById("edit_expiry_alert").value = expiryAlert;
+    document.getElementById("edit_description").value = description;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    function setError(input, message) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.add("is-invalid");
+        if (error) error.innerText = message;
+    }
+
+    function clearError(input) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.remove("is-invalid");
+        if (error) error.innerText = "";
+    }
+
+    function validateMedicineForm(form) {
+
+        let isValid = true;
+
+        const name = form.querySelector('[name="name"]');
+        const hsn = form.querySelector('[name="hsn_code"]');
+        const formType = form.querySelector('[name="form_type"]');
+        const gst = form.querySelector('[name="gst_percentage"]');
+        const ayurvedic = form.querySelector('[name="ayurvedic_type"]');
+        const expiry = form.querySelector('[name="expiry_days_alert"]');
+
+        // clear errors
+        form.querySelectorAll(".form-control, .form-select").forEach(el => {
+            clearError(el);
+        });
+
+        // ✅ NAME
+        if (!name.value.trim()) {
+            setError(name, "Medicine name is required");
+            isValid = false;
+        }
+
+        // ✅ HSN
+        if (!hsn.value.trim()) {
+            setError(hsn, "HSN code is required");
+            isValid = false;
+        }
+
+        // ✅ FORM TYPE
+        if (!formType.value) {
+            setError(formType, "Select form type");
+            isValid = false;
+        }
+
+        // ✅ GST
+        if (!gst.value.trim()) {
+            setError(gst, "GST is required");
+            isValid = false;
+        } else if (parseFloat(gst.value) < 0) {
+            setError(gst, "Invalid GST value");
+            isValid = false;
+        }
+
+        // ✅ AYURVEDIC TYPE
+        if (!ayurvedic.value) {
+            setError(ayurvedic, "Select ayurvedic type");
+            isValid = false;
+        }
+
+        // ✅ EXPIRY DAYS
+        if (!expiry.value.trim()) {
+            setError(expiry, "Expiry alert days required");
+            isValid = false;
+        } else if (parseInt(expiry.value) <= 0) {
+            setError(expiry, "Must be greater than 0");
+            isValid = false;
+        }
+
+        // 🔥 focus first error
+        if (!isValid) {
+            form.querySelector(".is-invalid")?.focus();
+        }
+
+        return isValid;
+    }
+
+    // ADD FORM
+    const addForm = document.getElementById("addMedicineModal");
+    if (addForm) {
+        addForm.addEventListener("submit", function(e) {
+            if (!validateMedicineForm(addForm)) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    // EDIT FORM
+    const editForm = document.getElementById("editMedicineModal");
+    if (editForm) {
+        editForm.addEventListener("submit", function(e) {
+            if (!validateMedicineForm(editForm)) {
+                e.preventDefault();
+            }
+        });
+    }
+
+});
+
+</script>
 </body>
 </html>

@@ -95,65 +95,98 @@
   <!-- ================= TOP DASHBOARD CARDS ================= -->
   <h4 class="page-title mb-3">Patient Management Dashboard</h4>
 
-  <div class="row g-3 mb-4">
+<div class="row g-3 mb-4">
 
-    <div class="col-xl-3 col-sm-6">
-      <div class="card stat-card">
-        <div class="card-body d-flex justify-content-between align-items-center">
+  <!-- Today Patients -->
+  <div class="col-xl-3 col-md-6 col-12">
+    <div class="card dashboard-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
           <div>
-            <p class="text-muted mb-1">Today Patients</p>
-            <h4 class="fw-bold">{{ total_patients }}</h4>
+            <p class="card-title">Today Patients</p>
+            <h4 class="card-value">{{ total_patients }}</h4>
           </div>
-          <div class="stat-icon">
-            <i class="material-symbols-rounded">person</i>
+          <div class="icon-box bg-primary-soft">
+            <i class="material-symbols-rounded text-primary">group</i>
           </div>
         </div>
-      </div>
-    </div>
-
-    <div class="col-xl-3 col-sm-6">
-      <div class="card stat-card">
-        <div class="card-body d-flex justify-content-between align-items-center">
-          <div>
-            <p class="text-muted mb-1">Inpatients</p>
-            <h4 class="fw-bold">{{ inpatients }}</h4>
-          </div>
-          <div class="stat-icon">
-            <i class="material-symbols-rounded">local_hospital</i>
-          </div>
+        <div class="progress mt-3 card-progress">
+          <div class="progress-bar bg-primary"
+               style="width:{% if total_patients %}70{% else %}10{% endif %}%"></div>
         </div>
+        <small class="text-muted">New registrations today</small>
       </div>
     </div>
-
-    <div class="col-xl-3 col-sm-6">
-      <div class="card stat-card">
-        <div class="card-body d-flex justify-content-between align-items-center">
-          <div>
-            <p class="text-muted mb-1">Outpatients</p>
-            <h4 class="fw-bold">{{ outpatients }}</h4>
-          </div>
-          <div class="stat-icon">
-            <i class="material-symbols-rounded">groups</i>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-xl-3 col-sm-6">
-      <div class="card stat-card">
-        <div class="card-body d-flex justify-content-between align-items-center">
-          <div>
-            <p class="text-muted mb-1">Discharged</p>
-            <h4 class="fw-bold">{{ discharged }}</h4>
-          </div>
-          <div class="stat-icon">
-            <i class="material-symbols-rounded">logout</i>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
+
+  <!-- Inpatients -->
+  <div class="col-xl-3 col-md-6 col-12">
+    <div class="card dashboard-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <p class="card-title">Inpatients</p>
+            <h4 class="card-value">{{ inpatients }}</h4>
+          </div>
+          <div class="icon-box bg-success-soft">
+            <i class="material-symbols-rounded text-success">local_hospital</i>
+          </div>
+        </div>
+        <div class="progress mt-3 card-progress">
+          <div class="progress-bar bg-success"
+               style="width:60%"></div>
+        </div>
+        <small class="text-muted">Currently admitted patients</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Outpatients -->
+  <div class="col-xl-3 col-md-6 col-12">
+    <div class="card dashboard-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <p class="card-title">Outpatients</p>
+            <h4 class="card-value">{{ outpatients }}</h4>
+          </div>
+          <div class="icon-box bg-info-soft">
+            <i class="material-symbols-rounded text-info">groups</i>
+          </div>
+        </div>
+        <div class="progress mt-3 card-progress">
+          <div class="progress-bar bg-info"
+               style="width:65%"></div>
+        </div>
+        <small class="text-muted">Visited today</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Discharged -->
+  <div class="col-xl-3 col-md-6 col-12">
+    <div class="card dashboard-card">
+      <div class="card-body">
+        <div class="d-flex justify-content-between">
+          <div>
+            <p class="card-title">Discharged</p>
+            <h4 class="card-value">{{ discharged }}</h4>
+          </div>
+          <div class="icon-box bg-danger-soft">
+            <i class="material-symbols-rounded text-danger">logout</i>
+          </div>
+        </div>
+        <div class="progress mt-3 card-progress">
+          <div class="progress-bar bg-danger"
+               style="width:50%"></div>
+        </div>
+        <small class="text-muted">Patients discharged today</small>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 
   <!-- ================= PAGE HEADER ================= -->
   <div class="d-flex justify-content-between align-items-center mb-3">
@@ -164,15 +197,23 @@
 
     <div class="d-flex gap-2">
       <a href="{% url 'patientmgmt:patient_register' %}"
-         class="btn btn-success rounded-pill px-4">
+         class="btn btn-success rounded-pill px-4"
+         style="background:#c1e7d2;color:#065f46;">
         + Add Patient
       </a>
+
       <button class="btn btn-outline-success rounded-pill px-4"
               data-bs-toggle="modal"
               data-bs-target="#whatsappModal">
         Send Reminder
       </button>
+
+      <a href="{% url 'patientmgmt:patient_export_pdf' %}"
+        class="btn btn-outline-success rounded-pill px-4">
+        Export
+      </a>
     </div>
+   
   </div>
 
   <!-- ================= PATIENT TABLE ================= -->
@@ -200,11 +241,11 @@
               <td class="fw-semibold">{{ forloop.counter }}</td>
 
               <td>
-                <div class="d-flex align-items-center gap-2">
+                {% comment %} <div class="d-flex align-items-center gap-2">
                   <div class="avatar-circle">
                     {{ p.patient_name|slice:":1"|upper }}
                   </div>
-                  <div>
+                  <div> {% endcomment %}
                     <div class="fw-semibold text-sm">{{ p.patient_name }}</div>
                     <div class="text-muted text-xs">{{ p.patient_unique_id }}</div>
                   </div>
@@ -316,7 +357,7 @@
 
 </div>
 
-{% include "includes/footer.html" %}
+
 
 <!-- ================= WHATSAPP MODAL ================= -->
 <div class="modal fade" id="whatsappModal" tabindex="-1">

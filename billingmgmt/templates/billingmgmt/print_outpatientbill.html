@@ -95,10 +95,6 @@ th { background:#f2f2f2; }
 <!-- ================= TOTALS ================= -->
 <p class="right">Subtotal: ₹ {{ bill.subtotal }}</p>
 
-{% if bill.discount > 0 %}
-<p class="right">Discount: ₹ {{ bill.discount }}</p>
-{% endif %}
-
 {% if gst_percent > 0 %}
 <p class="right">
   CGST ({{ cgst_percent }}%): ₹ {{ cgst }}
@@ -108,7 +104,15 @@ th { background:#f2f2f2; }
   SGST ({{ sgst_percent }}%): ₹ {{ sgst }}
 </p>
 {% endif %}
-
+<p class="right">
+  Discount({{ bill.discount_percent }} %): {{ bill.discount }}
+</p>
+<p class="right">
+  Payment Mode: {{ bill.payment_mode }}
+</p>
+<p class="right">
+  Payment Status: {{ bill.payment_status }}
+</p>
 <h3 class="right">Total: ₹ {{ grand_total }}</h3>
 
 <!-- ================= ACTION ================= -->

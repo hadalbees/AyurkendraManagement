@@ -68,11 +68,23 @@
         <div class="row g-3">
           <div class="col-md-4">
             <label class="form-label">Appointment Type</label>
-            <select class="form-select" name="appointment_type" id="apptType">
-              <option value="CONSULT" {% if appt.appointment_type == "CONSULT" %}selected{% endif %}>Consultation</option>
-              <option value="THERAPY" {% if appt.appointment_type == "THERAPY" %}selected{% endif %}>Therapy</option>
-              <option value="BOTH" {% if appt.appointment_type == "BOTH" %}selected{% endif %}>Both</option>
+
+            <select id="apptType"
+                    name="appointment_type"
+                    class="form-select"
+                    required>
+
+              <option value="">Select</option>
+
+              {% for a in appointment_types %}
+             <option value="{{ a.id }}"
+              {% if a.name == appointment.appointment_type %}selected{% endif %}>
+              {{ a.name }}
+              </option>
+              {% endfor %}
+
             </select>
+
           </div>
 
           <div class="col-md-4" id="therapyDiv" style="display:none;">
@@ -190,7 +202,7 @@
 </div>
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 {% include "includes/script.html" %}
 

@@ -134,29 +134,53 @@
             <h6 class="mb-3">Billing Summary</h6>
 
             <div class="row g-3">
+
               <div class="col-md-3">
                 <label>Subtotal</label>
                 <input type="number" id="subtotalTotal"
-                       class="form-control" name="subtotal" readonly>
+                      class="form-control" name="subtotal" readonly>
               </div>
 
               <div class="col-md-3">
-                <label>Discount</label>
+                <label>Discount (%)</label>
                 <input type="number" id="discountInput"
-                       class="form-control" name="discount" value="0">
+                      class="form-control"
+                      name="discount_percent"
+                      value="0">
               </div>
 
               <div class="col-md-3">
                 <label>GST ({{ settings.therapy_gst }}%)</label>
                 <input type="number" id="taxInput"
-                       class="form-control" name="tax" readonly>
+                      class="form-control" name="tax" readonly>
               </div>
 
               <div class="col-md-3">
                 <label>Total</label>
                 <input type="number" id="totalAmount"
-                       class="form-control" name="total" readonly>
+                      class="form-control" name="total" readonly>
               </div>
+
+            </div>
+
+            <div class="row g-3 mt-3">
+
+              <div class="col-md-4">
+                <label>Advance Payment</label>
+                <input type="number" id="advanceInput"
+                      class="form-control"
+                      name="advance_payment"
+                      value="0">
+              </div>
+
+              <div class="col-md-4">
+                <label>Balance Amount</label>
+                <input type="number" id="balanceInput"
+                      class="form-control"
+                      name="balance_amount"
+                      readonly>
+              </div>
+
             </div>
 
             <div class="row mt-3">
@@ -197,7 +221,7 @@
   </div>
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 {% include "includes/script.html" %}
 
@@ -212,29 +236,64 @@ document.addEventListener("DOMContentLoaded", function () {
     row.querySelector(".subtotalInput").value = (qty * price).toFixed(2);
   }
 
-  function recalcTotal() {
+  function recalcTotal(){
+
     let subtotal = 0;
-    document.querySelectorAll(".subtotalInput").forEach(el => {
+
+    document.querySelectorAll(".subtotalInput").forEach(el=>{
       subtotal += parseFloat(el.value) || 0;
     });
 
-    subtotalTotal.value = subtotal.toFixed(2);
+    document.getElementById("subtotalTotal").value = subtotal.toFixed(2);
 
-    const discount = parseFloat(discountInput.value) || 0;
-    const taxable = subtotal - discount;
-    const tax = taxable * gstPercent / 100;
+    // GST calculated ONLY from subtotal
+    const tax = subtotal * gstPercent / 100;
 
-    taxInput.value = tax.toFixed(2);
-    totalAmount.value = (taxable + tax).toFixed(2);
+    document.getElementById("taxInput").value = tax.toFixed(2);
+
+    const subtotalWithGST = subtotal + tax;
+
+    const discountPercent =
+      parseFloat(document.getElementById("discountInput").value) || 0;
+
+    const discountAmount =
+      subtotalWithGST * discountPercent / 100;
+
+    const total = subtotalWithGST - discountAmount;
+
+    document.getElementById("totalAmount").value = total.toFixed(2);
+
+    calcBalance();
+  }
+
+  function calcBalance(){
+
+    const total =
+      parseFloat(document.getElementById("totalAmount").value) || 0;
+
+    let advance =
+      parseFloat(document.getElementById("advanceInput").value) || 0;
+
+    if(advance > total){
+      advance = total;
+      document.getElementById("advanceInput").value = total;
+    }
+
+    const balance = total - advance;
+
+    document.getElementById("balanceInput").value = balance.toFixed(2);
   }
 
   function attach(row) {
+
     row.querySelector(".therapySelect").addEventListener("change", function () {
+
       const opt = this.options[this.selectedIndex];
       if (!opt.value) return;
 
       row.querySelector(".unitPrice").value = opt.dataset.price;
       row.querySelector(".serial_no").value = opt.dataset.serial;
+
       recalcRow(row);
       recalcTotal();
     });
@@ -252,18 +311,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
   attach(document.querySelector(".therapyRow"));
 
-  addTherapyRow.addEventListener("click", () => {
+  document.getElementById("addTherapyRow").addEventListener("click", () => {
+
     const row = document.querySelector(".therapyRow").cloneNode(true);
+
     row.querySelectorAll("input").forEach(i => i.value = "");
     row.querySelector(".quantityInput").value = 1;
     row.querySelector("select").selectedIndex = 0;
-    therapyTable.querySelector("tbody").appendChild(row);
+
+    document.querySelector("#therapyTable tbody").appendChild(row);
+
     attach(row);
   });
 
-  discountInput.addEventListener("input", recalcTotal);
+  document.getElementById("discountInput")
+    .addEventListener("input", recalcTotal);
+
+  document.getElementById("advanceInput")
+    .addEventListener("input", calcBalance);
+
 });
 </script>
-
 </body>
 </html>

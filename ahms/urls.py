@@ -35,6 +35,7 @@ urlpatterns = [
     path('prescription/', include('prescriptionmgmt.urls')),
     path('fieldmanagement/', include('fieldmgmt.urls')),
     path('accountmanagement/', include('accountmgmt.urls')),
+    path('calendarmanagement/', include('calendarmgmt.urls')),
 ]
 
 if settings.DEBUG:

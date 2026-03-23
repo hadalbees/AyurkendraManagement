@@ -118,8 +118,13 @@
 </div>
 </div>
 
-<!-- ================= ITEMS TABLE ================= -->
-<div class="card mb-4">
+
+
+<!-- ================= SUMMARY ================= -->
+<div class="row mb-4">
+<div class="col-md-8">
+  <!-- ================= ITEMS TABLE ================= -->
+<div class="card mb-4" style="background: #fff;padding: 15px;">
 <div class="card-body p-0">
 <table class="table mb-0" id="itemTable">
 <thead class="bg-light">
@@ -131,10 +136,7 @@
 </table>
 </div>
 </div>
-
-<!-- ================= SUMMARY ================= -->
-<div class="row mb-4">
-<div class="col-md-8"></div>
+</div>
 <div class="col-md-4">
 <div class="card">
 <div class="card-body">
@@ -166,7 +168,7 @@ Registration Fee: ₹ <span id="regFee">50</span>
 
 <p>
 Discount (%)
-<input id="discount" type="number" value="0"
+<input id="discountPercent" type="number" name="discount" value="0"
        style="width:60px" oninput="calcTotal()">
 </p>
 
@@ -186,7 +188,7 @@ Discount (%)
 </form>
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 {% include "includes/script.html" %}
 
@@ -272,31 +274,40 @@ function renderItems() {
 
 /* ================= TOTAL ================= */
 function calcTotal() {
+
   const itemSubtotal = parseFloat(subTotal.textContent) || 0;
+
   const gross = itemSubtotal + registrationFee;
 
-  const discountPct = parseFloat(discount.value) || 0;
-  const discountAmt = gross * discountPct / 100;
-  const afterDiscount = gross - discountAmt;
+  const discountPct = parseFloat(discountPercent.value) || 0;
 
-  // 🔥 GST FROM SETTINGS
-  const gstPercent = parseFloat(
-    document.getElementById("gstPercent").value
-  ) || 0;
+  const discountAmount = gross * discountPct / 100;
 
-  const taxAmt = (afterDiscount * gstPercent / 100);
+  const afterDiscount = gross - discountAmount;
+
+  const gstPercent =
+      parseFloat(document.getElementById("gstPercent").value) || 0;
+
+  const taxAmt = afterDiscount * gstPercent / 100;
 
   tax.textContent = taxAmt.toFixed(2);
-  grandTotal.textContent = (afterDiscount + taxAmt).toFixed(2);
+
+  grandTotal.textContent =
+      (afterDiscount + taxAmt).toFixed(2);
 }
 
 /* ================= SUBMIT ================= */
 function submitBill() {
   subtotalInput.value = subTotal.textContent;
-  discountInput.value = discount.value;
+
+  const discountPercent = document.getElementById("discountPercent").value;
+
+  discountInput.value = discountPercent;
+
   taxInput.value = tax.textContent;
   totalInput.value = grandTotal.textContent;
   regFeeInput.value = registrationFee;
+
   billForm.submit();
 }
 </script>

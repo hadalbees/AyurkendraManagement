@@ -4,6 +4,7 @@ from django.db import models
 from django.utils import timezone
 from patientmgmt.models import Patient
 from django.conf import settings
+from fieldmgmt.models import Adjuvant
 
 User = settings.AUTH_USER_MODEL
 
@@ -31,5 +32,11 @@ class PrescriptionItem(models.Model):
     quantity = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # units to dispense
     instructions = models.CharField(max_length=255, blank=True, null=True)
     food_timing = models.CharField(max_length=50, blank=True, null=True)
+    adjuvant = models.ForeignKey(
+        Adjuvant,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
     def __str__(self):
         return f"{self.medicine_name} ({self.prescription.prescription_no})"

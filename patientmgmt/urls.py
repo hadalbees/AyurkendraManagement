@@ -57,4 +57,16 @@ urlpatterns = [
     
     path("whatsapp/send/", views.whatsapp_broadcast_view, name="whatsapp_send"),
     path("whatsapp/logs/", views.whatsapp_logs_view, name="whatsapp_logs"),
+    
+    path(
+    "get-doctors-by-role/",
+    views.get_doctors_by_role,
+    name="get_doctors_by_role"
+    ),
+    
+    path("check-availability/", views.check_availability, name="check_availability"),
+    path("patients/export/pdf/",views.patient_export_pdf,name="patient_export_pdf"),
+
+
+
 ]

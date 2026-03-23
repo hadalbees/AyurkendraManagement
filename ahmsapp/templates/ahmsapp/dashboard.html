@@ -122,57 +122,71 @@
 
       <!-- LEFT CONTENT -->
       <div class="col-lg-9 col-12">
-
         {% if request.user.is_superuser or "prescription" in user_permissions %}
 
-        <!-- Patient Details -->
+        <form id="presForm" method="post" action="{% url 'prescriptionmgmt:create' %}">
+        {% csrf_token %}
+        <input type="hidden" name="prescription_no" value="{{ prescription_no }}">
+
+        <!-- ================= PATIENT DETAILS ================= -->
         <div class="card mb-4">
           <div class="card-body">
             <h5 class="mb-3">Patient Details</h5>
 
-            <form id="presForm" method="post" action="{% url 'prescriptionmgmt:create' %}">
-              {% csrf_token %}
-
-              <div class="row g-3">
-                <div class="col-md-3 col-6">
-                  <label>Prescription No</label>
-                  <input type="text" class="form-control" value="{{ prescription_no }}" readonly>
-                </div>
-
-                <div class="col-md-3 col-6">
-                  <label>Patient ID</label>
-                  <input type="text" id="patient_id" class="form-control" onblur="fetchPatientById()">
-                </div>
-
-                <div class="col-md-3 col-12">
-                  <label>Patient Name</label>
-                  <input list="patientList" id="patient_name" class="form-control" onblur="fetchPatientByName()">
-                  <datalist id="patientList">
-                    {% for p in patients %}
-                    <option value="{{ p.patient_name }}"></option>
-                    {% endfor %}
-                  </datalist>
-                </div>
-
-                <div class="col-md-1 col-6">
-                  <label>Age</label>
-                  <input type="text" id="p_age" class="form-control" readonly>
-                </div>
-
-                <div class="col-md-2 col-6">
-                  <label>Gender</label>
-                  <input type="text" id="p_gender" class="form-control" readonly>
-                </div>
+            <div class="row g-3">
+              <div class="col-md-3 col-6">
+                <label>Prescription No</label>
+                <input type="text" class="form-control"
+                      value="{{ prescription_no }}" readonly>
               </div>
+
+              <div class="col-md-3 col-6">
+                <label>Patient ID</label>
+                <input type="text" id="patient_id"
+                      name="patient_id"
+                      class="form-control"
+                      onblur="fetchPatientById()">
+              </div>
+
+              <div class="col-md-3 col-12">
+                <label>Patient Name</label>
+                <input list="patientList"
+                      id="patient_name"
+                      class="form-control"
+                      onblur="fetchPatientByName()">
+                <datalist id="patientList">
+                  {% for p in patients %}
+                  <option value="{{ p.patient_name }}"></option>
+                  {% endfor %}
+                </datalist>
+              </div>
+
+              <div class="col-md-1 col-6">
+                <label>Age</label>
+                <input type="text"
+                      name="age"
+                      id="p_age"
+                      class="form-control"
+                      readonly>
+              </div>
+
+              <div class="col-md-2 col-6">
+                <label>Gender</label>
+                <input type="text"
+                      name="gender"
+                      id="p_gender"
+                      class="form-control"
+                      readonly>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Medicine Allocation -->
+        <!-- ================= MEDICINE ALLOCATION ================= -->
         <div class="card mb-4">
           <div class="card-body">
             <h5 class="mb-3">Medicine Allocation</h5>
 
-            <!-- Desktop header -->
             <div class="row fw-bold text-sm mb-2 d-none d-md-flex">
               <div class="col-md-3">Medicine</div>
               <div class="col-md-2">Name</div>
@@ -181,33 +195,42 @@
               <div class="col-md-1">Duration</div>
               <div class="col-md-1">Qty</div>
               <div class="col-md-1">Food</div>
+              <div class="col-md-1">Adjuvant</div>
               <div class="col-md-1">Action</div>
             </div>
 
+            <!-- IMPORTANT: THIS MUST BE INSIDE FORM -->
             <div id="medContainer"></div>
 
-            <button type="button" class="btn btn-outline-secondary mt-3" id="addMedBtn">
+            <button type="button"
+                    class="btn btn-outline-secondary mt-3"
+                    id="addMedBtn">
               + Add Medicine
             </button>
           </div>
         </div>
 
-        <!-- Notes -->
+        <!-- ================= NOTES ================= -->
         <div class="card mb-4">
           <div class="card-body">
             <div class="row g-3">
               <div class="col-md-6">
                 <label>Notes</label>
-                <textarea class="form-control"></textarea>
+                <textarea name="notes"
+                          class="form-control"></textarea>
               </div>
 
               <div class="col-md-3 col-6">
                 <label>Next Visit</label>
-                <input type="date" class="form-control" value="{{ today }}">
+                <input type="date"
+                      name="next_visit"
+                      class="form-control"
+                      value="{{ today }}">
               </div>
 
               <div class="col-md-3 col-6 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
+                <button type="submit"
+                        class="btn btn-primary w-100">
                   Save Prescription
                 </button>
               </div>
@@ -216,50 +239,40 @@
         </div>
 
         </form>
+
         {% endif %}
       </div>
 
       <!-- RIGHT ACTIVITY PANEL -->
       <div class="col-lg-3 col-12">
-        <div class="card">
-          <div class="card-body">
-            <h6 class="mb-3">Recent Activity</h6>
+  <div class="card">
+    <div class="card-body">
+      <h6 class="mb-3">Recent Activity</h6>
 
-            <div class="activity-panel">
-              <div class="activity-item">
-                <span class="activity-icon bg-primary">
-                  <i class="material-symbols-rounded">person_add</i>
-                </span>
-                <div>
-                  <strong>New Patient Registered</strong>
-                  <div class="text-muted text-sm">10 mins ago</div>
-                </div>
-              </div>
+      <div class="activity-panel">
 
-              <div class="activity-item">
-                <span class="activity-icon bg-warning">
-                  <i class="material-symbols-rounded">warning</i>
-                </span>
-                <div>
-                  <strong>Stock Alert</strong>
-                  <div class="text-muted text-sm">Ashwagandha running low</div>
-                </div>
-              </div>
-
-              <div class="activity-item">
-                <span class="activity-icon bg-success">
-                  <i class="material-symbols-rounded">receipt_long</i>
-                </span>
-                <div>
-                  <strong>Bill Generated</strong>
-                  <div class="text-muted text-sm">Invoice #4023</div>
-                </div>
-              </div>
-
+        {% for activity in activities %}
+        <div class="activity-item">
+          <span class="activity-icon bg-{{ activity.color }}">
+            <i class="material-symbols-rounded">{{ activity.icon }}</i>
+          </span>
+          <div>
+            <strong>{{ activity.title }}</strong>
+            <div class="text-muted text-sm">
+              {{ activity.description }}<br>
+              {{ activity.time }}
             </div>
           </div>
         </div>
+        {% empty %}
+        <div class="text-muted">No recent activity</div>
+        {% endfor %}
+
       </div>
+    </div>
+  </div>
+</div>
+
 
     </div>
   </div>
@@ -273,6 +286,12 @@
 
 <!-- ===== YOUR ORIGINAL SCRIPT (UNCHANGED) ===== -->
 <script>
+
+  const ADJUVANTS = {
+{% for a in adjuvants %}
+  "{{ a.id }}": "{{ a.name|escapejs }}",
+{% endfor %}
+};
 // === FETCH PATIENT USING ID === //
   function fetchPatientById() {
     const pid = document.getElementById("patient_id").value;
@@ -315,9 +334,9 @@ const STOCKS = {
   "{{ s.id }}": {
     id: "{{ s.id }}",
     name: "{{ s.medicine.name|escapejs }}",
-    unit: "{{ s.unit }}",
+    unit: "{{ s.base_unit  }}",
     price: "{{ s.selling_price }}",
-    qty: "{{ s.quantity }}"
+    qty: "{{ s.total_base_quantity  }}"
   },
   {% endfor %}
 };
@@ -448,6 +467,28 @@ const STOCKS = {
   `;
   foodCol.appendChild(foodSel);
   row.appendChild(foodCol);
+  // Adjuvant
+const adjCol = document.createElement("div");
+adjCol.className = "col-md-1";
+
+const adjSel = document.createElement("select");
+adjSel.name = "adjuvant[]";
+adjSel.className = "form-control";
+
+const adjDefault = document.createElement("option");
+adjDefault.value = "";
+adjDefault.text = "Adjuvant";
+adjSel.appendChild(adjDefault);
+
+for (const id in ADJUVANTS) {
+  const opt = document.createElement("option");
+  opt.value = id;
+  opt.text = ADJUVANTS[id];
+  adjSel.appendChild(opt);
+}
+
+adjCol.appendChild(adjSel);
+row.appendChild(adjCol);
 
 // Remove (dashboard-style delete icon with soft background)
 const remCol = document.createElement("div");

@@ -13,25 +13,40 @@
   <td>₹{{ bill.total }}</td>
    <td>{{ bill.payment_status }}</td>
   <td>{{ bill.payment_mode }}</td>
-  <td>
-    <a href="{% url 'billingmgmt:inpatient_bill_view' bill.id %}"
-        class="icon-btn edit"
-        title="View">
-        <i class="material-symbols-rounded edit-icon-color"
-            style="font-variation-settings:'FILL' 1,'wght' 500;">
-        visibility
-        </i>
-    </a>
+  <td class="bill-action-cell">
 
-    <a href="{% url 'billingmgmt:print_inpatient_bill' bill.bill_no %}"
-        class="icon-btn delete"
-        title="Print">
-        <i class="material-symbols-rounded text-danger"
-            style="font-variation-settings:'FILL' 1,'wght' 500;">
-        print
-        </i>
-    </a>
-  </td>
+  <div class="bill-action-wrapper">
+
+    <!-- Three dots -->
+    <button class="bill-action-btn" onclick="toggleBillMenu(this)">
+      <i class="material-symbols-rounded">more_vert</i>
+    </button>
+
+    <!-- Dropdown -->
+    <div class="bill-action-menu">
+
+      <a href="{% url 'billingmgmt:inpatient_bill_view' bill.id %}" class="bill-action-item">
+        <i class="material-symbols-rounded">visibility</i> View
+      </a>
+
+      <a href="{% url 'billingmgmt:print_inpatient_bill' bill.bill_no %}" class="bill-action-item">
+        <i class="material-symbols-rounded">print</i> Print
+      </a>
+
+      <a href="{% url 'billingmgmt:edit_inpatient_bill' bill.bill_no %}" class="bill-action-item">
+        <i class="material-symbols-rounded">edit</i> Edit
+      </a>
+
+      <a href="#" class="bill-action-item">
+        <i class="material-symbols-rounded">share</i> Share
+      </a>
+
+    </div>
+
+  </div>
+
+</td>
+
 </tr>
 {% empty %}
 <tr>

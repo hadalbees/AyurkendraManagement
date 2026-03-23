@@ -59,20 +59,65 @@ class MedicineItem(models.Model):
 
 
 class InpatientBill(models.Model):
+
     bill_no = models.CharField(max_length=30, unique=True)
-    patient = models.ForeignKey('patientmgmt.Patient', on_delete=models.CASCADE)
+
+    patient = models.ForeignKey(
+        'patientmgmt.Patient',
+        on_delete=models.CASCADE
+    )
+
     doctor_name = models.CharField(max_length=150, blank=True)
+
     admit_date = models.DateField(null=True, blank=True)
     discharge_date = models.DateField(null=True, blank=True)
 
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
-    discount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
-    tax = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
-    total = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    # -------- BILL AMOUNTS --------
+    subtotal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00')
+    )
 
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
-    created_at = models.DateTimeField(auto_now_add=True)
-    remarks = models.TextField(blank=True, null=True)
+    # Discount %
+    discount_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('0.00')
+    )
+
+    # Discount amount
+    discount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00')
+    )
+
+    tax = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00')
+    )
+
+    total = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00')
+    )
+    
+    advance_payment = models.DecimalField(
+    max_digits=12,
+    decimal_places=2,
+    default=Decimal("0.00")
+    )
+
+    balance_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00")
+    )
+
+    # -------- PAYMENT --------
     payment_mode = models.CharField(
         max_length=20,
         choices=(
@@ -84,10 +129,30 @@ class InpatientBill(models.Model):
         ),
         default="Cash"
     )
-    payment_status = models.CharField(max_length=20, choices=[('Paid','Paid'),('Pending','Pending')], default='Pending')
+
+    payment_status = models.CharField(
+        max_length=20,
+        choices=[
+            ('Paid', 'Paid'),
+            ('Pending', 'Pending')
+        ],
+        default='Pending'
+    )
+
+    # -------- AUDIT --------
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    remarks = models.TextField(blank=True, null=True)
+
     def __str__(self):
         return f"{self.bill_no} ({self.patient})"
-
 
 class InpatientItem(models.Model):
     ITEM_TYPES = (
@@ -116,7 +181,19 @@ class OutpatientBill(models.Model):
     visit_date = models.DateField()
 
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+        # Discount %
+    discount_percent = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('0.00')
+    )
+
+    # Discount amount
+    discount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00')
+    )
     tax = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     payment_mode = models.CharField(
@@ -154,7 +231,10 @@ class TherapyBill(models.Model):
     bill_no = models.CharField(max_length=20, unique=True)
     bill_date = models.DateField(default=timezone.localdate)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    discount_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0)
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    advance_payment = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    balance_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
 
@@ -195,6 +275,7 @@ class HospitalSetting(models.Model):
 
     address = models.TextField()
     phone = models.CharField(max_length=50)
+    landline = models.CharField(max_length=50)
     email = models.EmailField(blank=True, null=True)
 
     registration_number = models.CharField(max_length=100)

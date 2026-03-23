@@ -1,0 +1,458 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  {% include "includes/head.html" %}
+
+  <body class="g-sidenav-show bg-gray-100">
+    {% include "includes/sidebar.html" %}
+
+    <main
+      class="main-content position-relative max-height-vh-100 h-100 border-radius-lg"
+    >
+      {% include "includes/header.html" %}
+
+      <div class="container-fluid py-4">
+        <h4 class="mb-4">Edit Therapy Bill</h4>
+
+        <form method="post">
+          {% csrf_token %}
+
+          <input
+            type="hidden"
+            id="gstPercent"
+            value="{{ settings.therapy_gst|default:0 }}"
+          />
+
+          <!-- PATIENT -->
+
+          <div class="card mb-4">
+            <div class="card-body">
+              <label>Patient</label>
+
+              <select class="form-select" name="patient_id">
+                {% for p in patients %}
+
+                <option
+                  value="{{p.id}}"
+                  {%
+                  if
+                  p.id=""
+                  ="bill.patient.id"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  {{p.patient_name}}
+                </option>
+
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <!-- TABLE -->
+
+          <div class="card mb-4">
+            <div class="card-body">
+              <button
+                type="button"
+                class="btn btn-success btn-sm mb-3"
+                id="addTherapyRow"
+              >
+                + Add Therapy
+              </button>
+
+              <table class="table" id="therapyTable">
+                <thead>
+                  <tr>
+                    <th>Therapy</th>
+                    <th>Serial</th>
+                    <th>Price</th>
+                    <th>Qty</th>
+                    <th>Subtotal</th>
+                    <th></th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {% for item in items %}
+
+                  <tr class="therapyRow">
+                    <td>
+                      <select
+                        class="form-select therapySelect"
+                        name="therapy_id[]"
+                      >
+                        {% for therapy in therapies %}
+
+                        <option
+                          value="{{therapy.id}}"
+                          data-price="{{therapy.charges}}"
+                          data-serial="{{therapy.serial_no}}"
+                          {%
+                          if
+                          therapy.id=""
+                          ="item.therapy.id"
+                          %}selected{%
+                          endif
+                          %}
+                        >
+                          {{therapy.name}}
+                        </option>
+
+                        {% endfor %}
+                      </select>
+                    </td>
+
+                    <td>
+                      <input
+                        class="form-control serial_no"
+                        value="{{item.therapy.serial_no}}"
+                        readonly
+                      />
+                    </td>
+
+                    <td>
+                      <input
+                        class="form-control unitPrice"
+                        name="unit_price[]"
+                        value="{{item.unit_price}}"
+                        readonly
+                      />
+                    </td>
+
+                    <td>
+                      <input
+                        class="form-control quantityInput"
+                        name="quantity[]"
+                        value="{{item.quantity}}"
+                      />
+                    </td>
+
+                    <td>
+                      <input
+                        class="form-control subtotalInput"
+                        name="subtotal[]"
+                        value="{{item.subtotal}}"
+                        readonly
+                      />
+                    </td>
+
+                    <td>
+                      <button
+                        type="button"
+                        class="btn btn-danger btn-sm removeTherapyRow"
+                      >
+                        X
+                      </button>
+                    </td>
+                  </tr>
+
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SUMMARY -->
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+
+    <h6 class="mb-3">Billing Summary</h6>
+
+    <div class="row g-3">
+
+      <div class="col-md-3">
+        <label>Subtotal</label>
+        <input type="number" id="subtotalTotal"
+               class="form-control"
+               name="subtotal"
+               value="{{ bill.subtotal }}"
+               readonly>
+      </div>
+
+      <div class="col-md-3">
+        <label>Discount (%)</label>
+        <input type="number"
+               id="discountInput"
+               class="form-control"
+               name="discount_percent"
+               value="{{ bill.discount_percent }}">
+      </div>
+
+      <div class="col-md-3">
+        <label>GST ({{ settings.therapy_gst }}%)</label>
+        <input type="number"
+               id="taxInput"
+               class="form-control"
+               name="tax"
+               value="{{ bill.tax }}"
+               readonly>
+      </div>
+
+      <div class="col-md-3">
+        <label>Total</label>
+        <input type="number"
+               id="totalAmount"
+               class="form-control"
+               name="total"
+               value="{{ bill.total }}"
+               readonly>
+      </div>
+
+    </div>
+
+
+<div class="row g-3 mt-3">
+
+  <!-- OLD ADVANCE -->
+  <input type="hidden" id="oldAdvance" value="{{ bill.advance_payment }}">
+  <input type="hidden" name="old_advance" value="{{ bill.advance_payment }}">
+
+  <div class="col-md-4">
+    <label>Previous Advance</label>
+    <input type="number"
+           class="form-control"
+           value="{{ bill.advance_payment }}"
+           readonly>
+  </div>
+
+  <div class="col-md-4">
+    <label>New Payment</label>
+    <input type="number"
+           id="advanceInput"
+           class="form-control"
+           name="advance_payment"
+           value="0">
+  </div>
+
+  <div class="col-md-4">
+    <label>Balance Amount</label>
+    <input type="number"
+           id="balanceInput"
+           class="form-control"
+           name="balance_amount"
+           value="{{ bill.balance_amount }}"
+           readonly>
+  </div>
+
+</div>
+
+
+    <div class="row mt-3">
+
+      <div class="col-md-4">
+        <label>Payment Status</label>
+        <select class="form-select" name="payment_status">
+          <option value="Pending"
+          {% if bill.payment_status == "Pending" %}selected{% endif %}>
+          Pending</option>
+
+          <option value="Paid"
+          {% if bill.payment_status == "Paid" %}selected{% endif %}>
+          Paid</option>
+        </select>
+      </div>
+
+
+      <div class="col-md-4">
+        <label>Payment Mode</label>
+        <select class="form-select" name="payment_mode">
+
+          <option {% if bill.payment_mode == "Cash" %}selected{% endif %}>
+          Cash</option>
+
+          <option {% if bill.payment_mode == "Card" %}selected{% endif %}>
+          Card</option>
+
+          <option {% if bill.payment_mode == "UPI" %}selected{% endif %}>
+          UPI</option>
+
+          <option {% if bill.payment_mode == "NetBanking" %}selected{% endif %}>
+          NetBanking</option>
+
+          <option {% if bill.payment_mode == "Insurance" %}selected{% endif %}>
+          Insurance</option>
+
+        </select>
+      </div>
+
+    </div>
+
+    <div class="mt-3">
+      <label>Remarks</label>
+      <textarea class="form-control"
+                name="remarks">{{ bill.remarks }}</textarea>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-3">
+
+  <a href="{% url 'billingmgmt:therapybilling' %}"
+     class="btn btn-outline-secondary">
+     Cancel
+  </a>
+
+  <button type="submit"
+          class="btn btn-success px-4">
+      Update Bill
+  </button>
+
+</div>
+
+  </div>
+</div>
+    </main>
+
+    {% include "includes/script.html" %}
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const gstPercent = parseFloat(
+          document.getElementById("gstPercent")?.value || 0,
+        );
+
+        const tableBody = document.querySelector("#therapyTable tbody");
+
+        /* ---------- ROW CALCULATION ---------- */
+
+        function recalcRow(row) {
+          const qty =
+            parseFloat(row.querySelector(".quantityInput").value) || 0;
+
+          const price = parseFloat(row.querySelector(".unitPrice").value) || 0;
+
+          const subtotal = qty * price;
+
+          row.querySelector(".subtotalInput").value = subtotal.toFixed(2);
+
+          recalcTotal();
+        }
+
+        /* ---------- TOTAL CALCULATION ---------- */
+
+        function recalcTotal() {
+          let subtotal = 0;
+
+          document.querySelectorAll(".subtotalInput").forEach((el) => {
+            subtotal += parseFloat(el.value) || 0;
+          });
+
+          document.getElementById("subtotalTotal").value = subtotal.toFixed(2);
+
+          const tax = (subtotal * gstPercent) / 100;
+
+          document.getElementById("taxInput").value = tax.toFixed(2);
+
+          const subtotalWithGST = subtotal + tax;
+
+          const discountPercent =
+            parseFloat(document.getElementById("discountInput").value) || 0;
+
+          const discountAmount = (subtotalWithGST * discountPercent) / 100;
+
+          const total = subtotalWithGST - discountAmount;
+
+          document.getElementById("totalAmount").value = total.toFixed(2);
+
+          calcBalance();
+        }
+
+        /* ---------- BALANCE ---------- */
+function calcBalance(){
+
+  const total =
+    parseFloat(document.getElementById("totalAmount").value) || 0;
+
+  const oldAdvance =
+    parseFloat(document.getElementById("oldAdvance").value) || 0;
+
+  const newPayment =
+    parseFloat(document.getElementById("advanceInput").value) || 0;
+
+  const totalAdvance = oldAdvance + newPayment;
+
+  let balance = total - totalAdvance;
+
+  if(balance < 0){
+    balance = 0;
+  }
+
+  document.getElementById("balanceInput").value =
+    balance.toFixed(2);
+
+}
+
+document.getElementById("advanceInput")
+  .addEventListener("input", calcBalance);
+
+        /* ---------- EVENT ATTACH ---------- */
+
+        function attachEvents(row) {
+          const therapySelect = row.querySelector(".therapySelect");
+          const qtyInput = row.querySelector(".quantityInput");
+          const removeBtn = row.querySelector(".removeTherapyRow");
+
+          therapySelect.addEventListener("change", function () {
+            const opt = this.options[this.selectedIndex];
+
+            if (!opt.value) return;
+
+            row.querySelector(".unitPrice").value = opt.dataset.price;
+            row.querySelector(".serial_no").value = opt.dataset.serial;
+
+            recalcRow(row);
+          });
+
+          qtyInput.addEventListener("input", () => recalcRow(row));
+
+          removeBtn.addEventListener("click", () => {
+            row.remove();
+            recalcTotal();
+          });
+        }
+
+        /* ---------- INITIAL ROW ---------- */
+
+        document.querySelectorAll(".therapyRow").forEach((row) => {
+          attachEvents(row);
+        });
+
+        /* ---------- ADD THERAPY BUTTON ---------- */
+
+        document
+          .getElementById("addTherapyRow")
+          .addEventListener("click", function () {
+            const firstRow = document.querySelector(".therapyRow");
+
+            const newRow = firstRow.cloneNode(true);
+
+            newRow.querySelectorAll("input").forEach((i) => (i.value = ""));
+
+            newRow.querySelector(".quantityInput").value = 1;
+
+            newRow.querySelector(".therapySelect").selectedIndex = 0;
+
+            tableBody.appendChild(newRow);
+
+            attachEvents(newRow);
+          });
+
+        /* ---------- DISCOUNT / ADVANCE ---------- */
+
+        document
+          .getElementById("discountInput")
+          .addEventListener("input", recalcTotal);
+
+        document
+          .getElementById("advanceInput")
+          .addEventListener("input", calcBalance);
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+
+        recalcTotal();
+
+        });
+        document.getElementById("advanceInput").addEventListener("input", calcBalance);
+    </script>
+  </body>
+</html>

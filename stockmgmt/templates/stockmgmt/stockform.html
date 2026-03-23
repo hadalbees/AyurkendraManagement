@@ -4,7 +4,6 @@
 {% include "includes/head.html" %}
 
 <body class="g-sidenav-show bg-gray-100">
-
 {% include "includes/sidebar.html" %}
 
 <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
@@ -19,7 +18,7 @@
         {% if form.instance.pk %}Edit Stock{% else %}Add Stock{% endif %}
       </h4>
       <p class="text-muted text-sm mb-0">
-        Manage medicine stock, batch, pricing and expiry details
+        Manage medicine stock, pack size and pricing
       </p>
     </div>
 
@@ -33,7 +32,7 @@
   <div class="card shadow-sm border-0">
     <div class="card-body px-4 py-4">
 
-      <form method="post" novalidate>
+      <form id="stockForm" method="post" novalidate>
         {% csrf_token %}
 
         <div class="row g-4">
@@ -48,57 +47,110 @@
               {% endif %}
             </label>
 
-            {% if field.name == "manufacture_date" or field.name == "expiry_date" %}
-              <input type="date"
-                     name="{{ field.name }}"
-                     value="{{ field.value|default:'' }}"
-                     class="form-control">
+            <!-- SELECT FIELDS -->
+            {% if field.field.widget.input_type == "select" %}
 
-            {% elif field.name == "unit" %}
-              <select name="unit" class="form-control" required>
-                <option value="">Select Unit</option>
-                {% for code, label in field.field.choices %}
-                  <option value="{{ code }}"
-                    {% if field.value == code %}selected{% endif %}>
-                    {{ label }}
-                  </option>
-                {% endfor %}
-              </select>
+                {% if field.name == "medicine" %}
+                <select name="medicine" class="form-select" id="medicineSelect">
+                    <option value="">Select Medicine</option>
+                    {% for med in field.field.queryset %}
+                        <option value="{{ med.id }}"
+                                data-gst="{{ med.gst_percentage }}"
+                                {% if field.value|stringformat:"s" == med.id|stringformat:"s" %}selected{% endif %}>
+                            {{ med.name }} ({{ med.form_type }})
+                        </option>
+                    {% endfor %}
+                </select>
+                <small class="text-danger error-msg"></small>
+                {% elif field.name == "base_unit" %}
+                <select name="base_unit" class="form-select">
+                    <option value="">Select Base Unit</option>
+                    {% for key, value in field.field.choices %}
+                        <option value="{{ key }}"
+                            {% if field.value == key %}selected{% endif %}>
+                            {{ value }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <small class="text-danger error-msg"></small>
 
+                {% else %}
+                <select name="{{ field.name }}" class="form-select">
+                    {% for obj in field.field.queryset %}
+                        <option value="{{ obj.id }}"
+                            {% if field.value|stringformat:"s" == obj.id|stringformat:"s" %}selected{% endif %}>
+                            {{ obj }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <small class="text-danger error-msg"></small>
+
+                {% endif %}
+
+            <!-- DATE FIELDS -->
+            {% elif field.name == "manufacture_date" or field.name == "expiry_date" %}
+                <input type="date"
+                       name="{{ field.name }}"
+                       value="{% if field.value %}{{ field.value|date:'Y-m-d' }}{% endif %}"
+                       class="form-control">
+
+            <!-- OTHER INPUT FIELDS -->
             {% else %}
-              {{ field }}
-              <script>
-                document.addEventListener("DOMContentLoaded", function () {
-                  const el = document.querySelector('[name="{{ field.name }}"]');
-                  if (el) {
-                    el.classList.add("form-control");
-                    el.setAttribute("placeholder", "{{ field.label }}");
-                  }
-                });
-              </script>
+                <input type="{{ field.field.widget.input_type|default:'text' }}"
+                       name="{{ field.name }}"
+                       value="{{ field.value|default:'' }}"
+                       class="form-control"
+                       placeholder="{{ field.label }}">
+
+                       <small class="text-danger error-msg"></small>
+
             {% endif %}
 
             {% if field.help_text %}
-              <small class="text-muted">{{ field.help_text }}</small>
+              <small class="text-muted d-block mt-1">
+                {{ field.help_text }}
+              </small>
             {% endif %}
 
             {% for error in field.errors %}
-              <div class="text-danger small">{{ error }}</div>
+              <div class="text-danger small mt-1">
+                {{ error }}
+              </div>
             {% endfor %}
 
           </div>
           {% endfor %}
 
+          <!-- GST Preview Section -->
+          <div class="col-md-6">
+            <label class="form-label fw-semibold mb-1">GST %</label>
+            <input type="text" id="gst_percentage_preview"
+                   class="form-control bg-light" readonly>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold mb-1">GST Amount (Extracted)</label>
+            <input type="text" id="gst_amount_preview"
+                   class="form-control bg-light" readonly>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-semibold mb-1">Auto Selling Price (GST Included)</label>
+            <input type="text" id="auto_selling_preview"
+                   class="form-control bg-light" readonly>
+          </div>
+
         </div>
 
-        <!-- ACTIONS -->
-        <div class="d-flex justify-content-end gap-2 mt-4">
+        <!-- ACTION BUTTONS -->
+        <div class="d-flex justify-content-end gap-3 mt-5">
           <a href="{% url 'stockmgmt:stock_list' %}"
              class="btn btn-outline-secondary px-4">
             Cancel
           </a>
 
-          <button type="submit" class="btn bg-gradient-dark px-4">
+          <button type="submit"
+                  class="btn bg-gradient-dark px-4">
             {% if form.instance.pk %}Update Stock{% else %}Save Stock{% endif %}
           </button>
         </div>
@@ -109,24 +161,134 @@
   </div>
 
 </div>
-
-{% include "includes/footer.html" %}
 </main>
 
 {% include "includes/script.html" %}
 
-<!-- EXISTING DATE VALIDATION (UNCHANGED) -->
+<!-- GST + Selling Auto Logic -->
 <script>
-document.addEventListener("DOMContentLoaded", () => {
-  let mfg = document.querySelector('[name="manufacture_date"]');
-  let exp = document.querySelector('[name="expiry_date"]');
+document.addEventListener("DOMContentLoaded", function () {
 
-  if (mfg && exp) {
-    mfg.addEventListener("change", () => {
-      exp.min = mfg.value;
-    });
-  }
+    const unitPriceInput = document.querySelector('[name="unit_price"]');
+    const sellingInput = document.querySelector('[name="selling_price"]');
+    const medicineSelect = document.getElementById("medicineSelect");
+
+    const gstPercentPreview = document.getElementById("gst_percentage_preview");
+    const gstAmountPreview = document.getElementById("gst_amount_preview");
+    const autoSellingPreview = document.getElementById("auto_selling_preview");
+
+    let userEditedSelling = false;
+
+    if (sellingInput) {
+        sellingInput.addEventListener("input", function () {
+            userEditedSelling = true;
+        });
+    }
+
+    function calculateGST() {
+
+        if (!medicineSelect || !unitPriceInput) return;
+
+        let selectedOption = medicineSelect.options[medicineSelect.selectedIndex];
+        let gstPercent = parseFloat(selectedOption.dataset.gst) || 0;
+        let unitPrice = parseFloat(unitPriceInput.value) || 0;
+
+        let gstAmount = 0;
+
+        if (gstPercent > 0) {
+            gstAmount = (unitPrice * gstPercent) / (100 + gstPercent);
+        }
+
+        gstPercentPreview.value = gstPercent + " %";
+        gstAmountPreview.value = gstAmount.toFixed(2);
+
+        // Auto fill selling price if not edited
+        if (!userEditedSelling && sellingInput) {
+            sellingInput.value = unitPrice.toFixed(2);
+        }
+
+        autoSellingPreview.value = sellingInput ? sellingInput.value : unitPrice.toFixed(2);
+    }
+
+    if (medicineSelect) medicineSelect.addEventListener("change", calculateGST);
+    if (unitPriceInput) unitPriceInput.addEventListener("input", calculateGST);
+
+    calculateGST();
 });
+
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("stockForm");
+
+    if (!form) {
+        console.error("Form not found ❌");
+        return;
+    }
+
+    function setError(input, message) {
+        const wrapper = input.closest(".col-md-6");
+        const error = wrapper ? wrapper.querySelector(".error-msg") : null;
+
+        input.classList.add("is-invalid");
+
+        if (error) error.innerText = message;
+    }
+
+    function clearError(input) {
+        const wrapper = input.closest(".col-md-6");
+        const error = wrapper ? wrapper.querySelector(".error-msg") : null;
+
+        input.classList.remove("is-invalid");
+
+        if (error) error.innerText = "";
+    }
+
+    form.addEventListener("submit", function(e) {
+
+        let isValid = true;
+
+        const fields = form.querySelectorAll("input, select");
+
+        fields.forEach(field => {
+
+            clearError(field);
+
+            const label = field.closest(".col-md-6")?.querySelector("label");
+
+            const isRequired =
+                field.hasAttribute("required") ||
+                (label && label.innerText.includes("*"));
+
+            if (isRequired) {
+                if (!field.value || field.value.trim() === "") {
+                    setError(field, "This field is required");
+                    isValid = false;
+                }
+            }
+
+        });
+
+        // 🚨 FORCE STOP SUBMIT
+        if (!isValid) {
+            e.preventDefault();
+            e.stopPropagation();   // 🔥 IMPORTANT
+            console.log("Form blocked ❌");
+
+            // focus first error
+            form.querySelector(".is-invalid")?.focus();
+
+            return false;  // 🔥 EXTRA SAFETY
+        }
+
+        console.log("Form allowed ✅");
+
+    });
+
+});
+
+
+
 </script>
 
 </body>

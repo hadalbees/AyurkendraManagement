@@ -1,0 +1,165 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">Departments</h4>
+      <p class="text-muted text-sm mb-0">
+        Manage hospital departments
+      </p>
+    </div>
+
+    <a href="{% url 'fieldmgmt:department_add' %}"
+       class="btn btn-success rounded-pill px-4"
+       style="background:#c1e7d2;color:#065f46;">
+      + Add Department
+    </a>
+  </div>
+
+  <!-- TABLE CARD -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Department Name</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for d in departments %}
+            <tr>
+              <td class="fw-semibold">{{ forloop.counter }}</td>
+
+              <td>
+                <div class="fw-semibold text-sm">
+                  {{ d.department_name }}
+                </div>
+              </td>
+
+              <td>
+                <div class="text-sm text-muted">
+                  {{ d.description|default:"-" }}
+                </div>
+              </td>
+
+              <td>
+                {% if d.status %}
+                  <span class="badge bg-success">Active</span>
+                {% else %}
+                  <span class="badge bg-danger">Inactive</span>
+                {% endif %}
+              </td>
+
+              <!-- ACTIONS -->
+              <td class="text-center">
+                <a href="{% url 'fieldmgmt:department_edit' d.id %}"
+                   class="icon-btn edit"
+                   title="Edit">
+                  <i class="material-symbols-rounded edit-icon-color"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    edit
+                  </i>
+                </a>
+
+                <a href="{% url 'fieldmgmt:department_delete' d.id %}"
+                   class="icon-btn delete"
+                   title="Delete"
+                   onclick="return confirm('Delete this Department?')">
+                  <i class="material-symbols-rounded text-danger"
+                     style="font-variation-settings:'FILL' 1,'wght' 500;">
+                    delete
+                  </i>
+                </a>
+              </td>
+            </tr>
+
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-4">
+                No Departments found
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION -->
+      {% if departments.paginator.num_pages > 1 %}
+      <div class="d-flex justify-content-between align-items-center p-3 border-top">
+
+        <div class="text-muted text-sm">
+          Showing
+          <strong>{{ departments.start_index }}</strong>
+          to
+          <strong>{{ departments.end_index }}</strong>
+          of
+          <strong>{{ departments.paginator.count }}</strong>
+          records
+        </div>
+
+        <nav>
+          <ul class="pagination mb-0">
+
+            {% if departments.has_previous %}
+              <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ departments.previous_page_number }}">
+                  Previous
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Previous</span>
+              </li>
+            {% endif %}
+
+            {% if departments.has_next %}
+              <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ departments.next_page_number }}">
+                  Next
+                </a>
+              </li>
+            {% else %}
+              <li class="page-item disabled">
+                <span class="page-link">Next</span>
+              </li>
+            {% endif %}
+
+          </ul>
+        </nav>
+
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+
+
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

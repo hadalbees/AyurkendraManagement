@@ -56,21 +56,28 @@
                       required>{{ settings.address|default:'' }}</textarea>
           </div>
 
-          <div class="col-md-4 mb-3">
+          <div class="col-md-3 mb-3">
             <label class="form-label">Phone</label>
             <input type="text" class="form-control"
                    name="phone"
                    value="{{ settings.phone|default:'' }}">
           </div>
+          <div class="col-md-3 mb-3">
+            <label class="form-label">Land Line</label>
+            <input type="text" class="form-control"
+                   name="landline"
+                   value="{{ settings.landline|default:'' }}">
+          </div>
 
-          <div class="col-md-4 mb-3">
+
+          <div class="col-md-3 mb-3">
             <label class="form-label">Email</label>
             <input type="email" class="form-control"
                    name="email"
                    value="{{ settings.email|default:'' }}">
           </div>
 
-          <div class="col-md-4 mb-3">
+          <div class="col-md-3 mb-3">
             <label class="form-label">Registration Number</label>
             <input type="text" class="form-control"
                    name="registration_number"
@@ -91,15 +98,15 @@
                    value="{{ settings.gst_number|default:'' }}">
           </div>
 
-          <div class="col-md-3 mb-3">
+          {% comment %} <div class="col-md-3 mb-3">
             <label class="form-label">Consultation GST (%)</label>
             <input type="number" step="0.01" class="form-control"
                    name="consultation_gst"
                    value="{{ settings.consultation_gst|default:'0' }}">
             <small class="text-muted">Split as CGST + SGST</small>
-          </div>
+          </div> {% endcomment %}
 
-          <div class="col-md-3 mb-3">
+          <div class="col-md-6 mb-3">
             <label class="form-label">Therapy GST (%)</label>
             <input type="number" step="0.01" class="form-control"
                    name="therapy_gst"
@@ -124,7 +131,7 @@
 
 </div>
 
-{% include "includes/footer.html" %}
+
 </main>
 
 {% include "includes/script.html" %}

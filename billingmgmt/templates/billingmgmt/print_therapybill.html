@@ -114,7 +114,27 @@ th { background:#f2f2f2; }
 </p>
 {% endif %}
 
-<h3 class="right">Total: ₹ {{ grand_total }}</h3>
+<h3 class="right">Grand Total: ₹ {{ grand_total }}</h3>
+
+{% if bill.advance_payment > 0 %}
+<p class="right">
+  Advance Payment: ₹ {{ bill.advance_payment }}
+</p>
+{% endif %}
+
+{% if bill.balance_amount > 0 %}
+<h3 class="right">
+  Balance Amount: ₹ {{ bill.balance_amount }}
+</h3>
+{% endif %}
+
+<p class="right">
+  Payment Mode: {{ bill.payment_mode }}
+</p>
+
+<p class="right">
+  Payment Status: {{ bill.payment_status }}
+</p>
 
 <!-- ================= ACTION ================= -->
 <div class="no-print">

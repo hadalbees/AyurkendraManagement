@@ -1,0 +1,101 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <div class="mb-4">
+    <h4 class="fw-bold mb-1">Edit Prescription</h4>
+    <p class="text-muted text-sm mb-0">
+      Update prescription details.
+    </p>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Notes -->
+        <div class="mb-3">
+          <label class="form-label">Notes</label>
+          <textarea name="notes"
+                    class="form-control"
+                    rows="3">{{ prescription.notes }}</textarea>
+        </div>
+
+        <!-- Next Visit -->
+        <div class="mb-4">
+          <label class="form-label">Next Visit</label>
+          <input type="date"
+                 name="next_visit"
+                 class="form-control"
+                 value="{{ prescription.next_visit|date:'Y-m-d' }}">
+        </div>
+
+        <h6 class="mb-3">Medicines</h6>
+
+        <div id="medicineContainer">
+
+          {% for item in prescription.items.all %}
+          <div class="row g-3 mb-2 medicineRow">
+            <div class="col-md-3">
+              <input type="text"
+                     name="medicine_name[]"
+                     class="form-control"
+                     value="{{ item.medicine_name }}">
+            </div>
+            <div class="col-md-2">
+              <input type="text"
+                     name="dosage[]"
+                     class="form-control"
+                     value="{{ item.dosage }}">
+            </div>
+            <div class="col-md-2">
+              <input type="number"
+                     name="duration_days[]"
+                     class="form-control"
+                     value="{{ item.duration_days }}">
+            </div>
+            <div class="col-md-2">
+              <input type="number"
+                     name="quantity[]"
+                     class="form-control"
+                     value="{{ item.quantity }}">
+            </div>
+            <div class="col-md-3">
+              <input type="text"
+                     name="instructions[]"
+                     class="form-control"
+                     value="{{ item.instructions }}">
+            </div>
+          </div>
+          {% endfor %}
+
+        </div>
+
+        <div class="mt-4">
+          <button type="submit"
+                  class="btn bg-gradient-dark px-5">
+            Update Prescription
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+</main>
+{% include "includes/script.html" %}
+</body>
+</html>

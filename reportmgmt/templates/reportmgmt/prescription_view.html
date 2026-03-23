@@ -1,0 +1,81 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <div class="mb-4">
+    <h4 class="fw-bold mb-1">Prescription Details</h4>
+    <p class="text-muted text-sm mb-0">
+      View prescription information.
+    </p>
+  </div>
+
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <strong>Prescription No:</strong> {{ prescription.prescription_no }}
+        </div>
+        <div class="col-md-6">
+          <strong>Date:</strong> {{ prescription.created_at|date:"d M Y" }}
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <strong>Patient:</strong> {{ prescription.patient.patient_name }}
+        </div>
+        <div class="col-md-6">
+          <strong>Doctor:</strong> {{ prescription.doctor }}
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Medicine</th>
+              <th>Dosage</th>
+              <th>Days</th>
+              <th>Qty</th>
+              <th>Instructions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in prescription.items.all %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ item.medicine_name }}</td>
+              <td>{{ item.dosage }}</td>
+              <td>{{ item.duration_days }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>{{ item.instructions }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mt-3">
+        <strong>Notes:</strong>
+        <p>{{ prescription.notes }}</p>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</main>
+{% include "includes/script.html" %}
+</body>
+</html>

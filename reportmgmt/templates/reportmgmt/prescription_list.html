@@ -1,0 +1,102 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">Prescription Management</h4>
+      <p class="text-muted text-sm mb-0">
+        Manage patient prescriptions and records.
+      </p>
+    </div>
+  </div>
+
+  <!-- TABLE CARD -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead>
+            <tr>
+              <th style="width:80px;">#</th>
+              <th>Prescription No</th>
+              <th>Patient</th>
+              <th>Doctor</th>
+              <th>Date</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% if prescriptions %}
+            {% for p in prescriptions %}
+            <tr>
+              <td class="fw-semibold">
+                {{ forloop.counter0|add:prescriptions.start_index }}
+              </td>
+
+              <td>{{ p.prescription_no }}</td>
+              <td>{{ p.patient.patient_name }}</td>
+              <td>{{ p.doctor }}</td>
+              <td>{{ p.created_at|date:"d M Y" }}</td>
+
+              <td class="text-center">
+
+                <a href="{% url 'reportmgmt:prescription_view' p.id %}"
+                   class="icon-btn edit"
+                   title="View">
+                  <i class="material-symbols-rounded">visibility</i>
+                </a>
+
+                <a href="{% url 'reportmgmt:prescription_edit' p.id %}"
+                   class="icon-btn edit"
+                   title="Edit">
+                  <i class="material-symbols-rounded"
+                     style="font-variation-settings:'FILL' 1;">
+                    edit
+                  </i>
+                </a>
+
+                <a href="{% url 'reportmgmt:prescription_delete' p.id %}"
+                   class="icon-btn delete"
+                   title="Delete">
+                  <i class="material-symbols-rounded text-danger"
+                     style="font-variation-settings:'FILL' 1;">
+                    delete
+                  </i>
+                </a>
+
+              </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+              <td colspan="6" class="text-center text-muted py-4">
+                No prescriptions found.
+              </td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</main>
+{% include "includes/script.html" %}
+</body>
+</html>

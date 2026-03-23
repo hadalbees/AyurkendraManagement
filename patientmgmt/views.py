@@ -15,10 +15,25 @@ from django.http import HttpResponse, JsonResponse
 from django.utils.encoding import smart_str
 from datetime import date, timedelta
 from django.shortcuts import redirect
+from authentication.models import CustomUser
 from billingmgmt.models import InpatientBill, MedicalBill, OutpatientBill, TherapyBill
 from patientmgmt.models import Patient
 from utils.whatsapp import send_whatsapp_template, format_phone
 from fieldmgmt.models import TherapyMaster
+from rolemgmt.models import Role
+from fieldmgmt.models import Department
+from reportlab.platypus import (
+    SimpleDocTemplate, Table, TableStyle,
+    Paragraph, Spacer
+)
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import inch
+from reportlab.lib.utils import ImageReader
+from django.utils.timezone import now
+from billingmgmt.models import HospitalSetting
+from fieldmgmt.models import AppointmentType
 
 from .models import (
     Appointment,
@@ -27,7 +42,7 @@ from .models import (
     InpatientAdmission,
     BillingInvoice,
     InvoiceItem,
-    WhatsAppLog
+    WhatsAppLog,
 )
 from utils.whatsapp import (
     send_whatsapp_text,
@@ -90,38 +105,83 @@ def generate_patient_id():
 class PatientRegistrationView(LoginRequiredMixin, View):
     template_name = "patientmgmt/addpatient.html"
 
+    # ==========================
+    # GET METHOD
+    # ==========================
     def get(self, request, *args, **kwargs):
+
         current_time = timezone.localtime().strftime("%I:%M %p")
+
+        # Get Doctor Role
+        doctor_role = Role.objects.filter(role_name__iexact="Doctor").first()
+
+        # Get all active doctors
+        doctors = CustomUser.objects.filter(
+            role=doctor_role,
+            is_active=True
+        ) if doctor_role else []
+        
+        # ✅ Get Active Departments
+        departments = Department.objects.filter(status=True).order_by("department_name")
+
+        # Active patients (for referred_by dropdown if needed)
+        patients = Patient.objects.filter(is_active=True)
+
         return render(request, self.template_name, {
-            "current_time": current_time
+            "current_time": current_time,
+            "doctors": doctors,
+            "patients": patients,
+            "departments": departments
         })
 
+    # ==========================
+    # POST METHOD
+    # ==========================
     def post(self, request, *args, **kwargs):
 
         new_patient_id = generate_patient_id()
 
-        # ===== REFERRED BY (SAFE HANDLING) =====
+        # ------------------------
+        # REFERRED BY (SAFE)
+        # ------------------------
         referred_by_id = request.POST.get("refered_by", "").strip()
 
         if referred_by_id in ("", "undefined", "null"):
             referred_by_patient = None
         elif referred_by_id.isdigit():
-            referred_by_patient = Patient.objects.filter(id=int(referred_by_id)).first()
+            referred_by_patient = Patient.objects.filter(
+                id=int(referred_by_id)
+            ).first()
         else:
             referred_by_patient = None
 
-        print("REFERRED BY ID:", referred_by_id)
-        print("REFERRED BY PATIENT:", referred_by_patient)
+        # ------------------------
+        # CONSULTANT & ASSIGNED DOCTOR
+        # ------------------------
+        consultant_id = request.POST.get("consultant_doctor")
+        assigned_id = request.POST.get("assigned_doctor")
 
+        consultant_user = CustomUser.objects.filter(
+            id=consultant_id
+        ).first() if consultant_id else None
 
+        assigned_user = CustomUser.objects.filter(
+            id=assigned_id
+        ).first() if assigned_id else None
+
+        # ------------------------
+        # CREATE PATIENT
+        # ------------------------
         patient = Patient.objects.create(
             patient_unique_id=new_patient_id,
 
-            consultant_doctor=request.POST.get("consultant_doctor"),
+            consultant_doctor=consultant_user,
+            assigned_doctor=assigned_user,
             department=request.POST.get("department"),
-            assigned_doctor=request.POST.get("assigned_doctor"),
+
             prefix=request.POST.get("prefix"),
             patient_name=request.POST.get("patient_name"),
+
             age=int(request.POST.get("age") or 0),
             gender=request.POST.get("gender"),
             dob=request.POST.get("dob") or None,
@@ -140,7 +200,6 @@ class PatientRegistrationView(LoginRequiredMixin, View):
 
             notes=request.POST.get("notes"),
 
-            # ✅ THIS IS THE ONLY CORRECT WAY
             refered_by=referred_by_patient,
 
             registered_by=request.user
@@ -152,7 +211,6 @@ class PatientRegistrationView(LoginRequiredMixin, View):
         )
 
         return redirect("patientmgmt:patient_list")
-
 
 
 class PatientEditView(LoginRequiredMixin, View):
@@ -718,6 +776,7 @@ def appointment_list(request):
 # APPOINMENT ADD
 def appointment_add(request):
     therapies = TherapyMaster.objects.filter(status=True)
+    appointment_types = AppointmentType.objects.filter(status=True)
 
     if request.method == "POST":
         # Patient details
@@ -728,11 +787,25 @@ def appointment_add(request):
         gender = request.POST.get("gender")
 
         # Appointment details
-        appt_type  = request.POST.get("appointment_type")
+        appt_type_id = request.POST.get("appointment_type")
         therapy_id = request.POST.get("therapy")
+        appt_type = AppointmentType.objects.filter(id=appt_type_id).first()
         date  = request.POST.get("appointment_date")
         time  = request.POST.get("appointment_time")
         notes = request.POST.get("notes")
+        
+        doctor_id = request.POST.get("doctor")
+        therapist_id = request.POST.get("therapist")
+
+        doctor = None
+        therapist = None
+
+        if doctor_id:
+            doctor = CustomUser.objects.filter(id=doctor_id).first()
+
+        if therapist_id:
+            therapist = CustomUser.objects.filter(id=therapist_id).first()
+
 
         # ✅ Find existing patient by combination (Name+Age+Phone+Place)
         patient = Patient.objects.filter(
@@ -765,7 +838,7 @@ def appointment_add(request):
 
         # ✅ Therapy selection
         therapy = None
-        if appt_type in ['THERAPY', 'BOTH'] and therapy_id:
+        if appt_type and appt_type.name in ['Therapy', 'Both'] and therapy_id:
             therapy = TherapyMaster.objects.get(id=therapy_id)
 
         # ✅ Create Appointment
@@ -773,6 +846,8 @@ def appointment_add(request):
             patient=patient,
             appointment_type=appt_type,
             therapy=therapy,
+            doctor=doctor,
+            therapist=therapist,
             appointment_date=date,
             appointment_time=time,
             notes=notes,
@@ -782,7 +857,8 @@ def appointment_add(request):
         return redirect("patientmgmt:appointment_list")
 
     return render(request, "patientmgmt/appointment_add.html", {
-        "therapies": therapies
+        "therapies": therapies,
+        "appointment_types":appointment_types
     })
 
 
@@ -790,6 +866,7 @@ def appointment_add(request):
 def appointment_edit(request, pk):
     appt = get_object_or_404(Appointment, id=pk)
     therapies = TherapyMaster.objects.filter(status=True)
+    appointment_types = AppointmentType.objects.filter(status=True)
 
     if request.method == "POST":
         appt.appointment_type = request.POST.get("appointment_type")
@@ -812,7 +889,8 @@ def appointment_edit(request, pk):
 
     return render(request, "patientmgmt/appointment_edit.html", {
         "appt": appt,
-        "therapies": therapies
+        "therapies": therapies,
+        "appointment_types":appointment_types
     })
 
 
@@ -897,15 +975,99 @@ def get_patient_suggestions(request):
 
 
 def booked_slots(request):
+
     date = request.GET.get("date")
-    slots = Appointment.objects.filter(
-        appointment_date=date
-    ).values_list("appointment_time", flat=True)
+    doctor_id = request.GET.get("doctor")
+    therapist_id = request.GET.get("therapist")
+
+    if not date:
+        return JsonResponse({"booked": []})
+
+    # Only active appointments should block
+    appointments = Appointment.objects.filter(
+        appointment_date=date,
+        status__in=["PENDING", "CONFIRMED"]
+    )
+
+    # If doctor selected → filter only that doctor
+    if doctor_id:
+        appointments = appointments.filter(doctor_id=doctor_id)
+
+    # If therapist selected → filter only that therapist
+    if therapist_id:
+        appointments = appointments.filter(therapist_id=therapist_id)
+
+    booked_times = appointments.values_list("appointment_time", flat=True)
 
     return JsonResponse({
-        "booked": [s.strftime("%H:%M") for s in slots]
+        "booked": [t.strftime("%H:%M") for t in booked_times]
     })
 
+def get_doctors_by_role(request):
+
+    role_name = request.GET.get("role")
+
+    if not role_name:
+        return JsonResponse({"doctors": []})
+
+    try:
+        role = Role.objects.get(role_name__iexact=role_name)
+    except Role.DoesNotExist:
+        return JsonResponse({"doctors": []})
+
+    doctors = CustomUser.objects.filter(
+        role=role,
+        is_active=True
+    )
+
+    data = [
+        {
+            "id": d.id,
+            "name": d.get_full_name() or d.username
+        }
+        for d in doctors
+    ]
+
+    return JsonResponse({"doctors": data})
+
+
+def check_availability(request):
+
+    date = request.GET.get("date")
+    time = request.GET.get("time")
+    doctor_id = request.GET.get("doctor")
+    therapist_id = request.GET.get("therapist")
+
+    if not date or not time:
+        return JsonResponse({
+            "available": False,
+            "message": "Invalid date or time"
+        })
+
+    # Only consider active appointments
+    appointments = Appointment.objects.filter(
+        appointment_date=date,
+        appointment_time=time,
+        status__in=["PENDING", "CONFIRMED"]  # ignore cancelled
+    )
+
+    # ✅ Doctor check
+    if doctor_id:
+        if appointments.filter(doctor_id=doctor_id).exists():
+            return JsonResponse({
+                "available": False,
+                "message": "Doctor already booked at this time."
+            })
+
+    # ✅ Therapist check
+    if therapist_id:
+        if appointments.filter(therapist_id=therapist_id).exists():
+            return JsonResponse({
+                "available": False,
+                "message": "Therapist already booked at this time."
+            })
+
+    return JsonResponse({"available": True})
 
 def whatsapp_broadcast_view(request):
     patients = Patient.objects.filter(is_active=True)
@@ -984,3 +1146,153 @@ def whatsapp_logs_view(request):
     return render(request, "patientmgmt/whatsapp_logs.html", {
         "logs": logs
     })
+    
+def patient_export_pdf(request):
+
+    hospital = HospitalSetting.objects.first()
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = 'attachment; filename="patient_list.pdf"'
+
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=A4,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=60,
+        bottomMargin=40
+    )
+
+    elements = []
+    styles = getSampleStyleSheet()
+
+    page_width, page_height = A4
+    usable_width = page_width - doc.leftMargin - doc.rightMargin
+
+    # ================= TITLE =================
+
+    title_style = ParagraphStyle(
+        name="TitleCenter",
+        parent=styles["Heading1"],
+        alignment=1,
+        fontSize=20,
+        spaceAfter=6,
+    )
+
+    date_style = ParagraphStyle(
+        name="DateSmallCenter",
+        parent=styles["Normal"],
+        alignment=1,
+        fontSize=9,
+        textColor=colors.grey,
+    )
+
+    generated_date = now().strftime("%d %B %Y %I:%M %p")
+
+    elements.append(Paragraph("Patient Management Report", title_style))
+    elements.append(Paragraph(f"Generated on: {generated_date}", date_style))
+    elements.append(Spacer(1, 0.5 * inch))
+
+    # ================= TABLE DATA =================
+
+    patients = Patient.objects.filter(is_active=True).order_by("-created_at")
+
+    data = [[
+        "#",
+        "Patient",
+        "Gender",
+        "Type",
+        "Phone",
+        "Referred By",
+        "Registered"
+    ]]
+
+    for i, p in enumerate(patients, start=1):
+
+        referred = "-"
+        if p.refered_by:
+            referred = f"{p.refered_by.patient_name}"
+
+        data.append([
+            str(i),
+            f"{p.patient_name}\n{p.patient_unique_id}",
+            p.get_gender_display(),
+            p.get_patient_type_display(),
+            p.phone,
+            referred,
+            p.created_at.strftime("%d %b %Y")
+        ])
+
+    col_widths = [
+        usable_width * 0.06,
+        usable_width * 0.22,
+        usable_width * 0.10,
+        usable_width * 0.10,
+        usable_width * 0.15,
+        usable_width * 0.17,
+        usable_width * 0.20,
+    ]
+
+    table = Table(data, colWidths=col_widths, repeatRows=1)
+
+    table_style = TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1f2937")),
+        ('TEXTCOLOR',(0,0),(-1,0),colors.whitesmoke),
+        ('ALIGN',(0,0),(-1,-1),'CENTER'),
+        ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+        ('FONTSIZE', (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,0), 10),
+    ])
+
+    # Zebra rows
+    for row in range(1, len(data)):
+        if row % 2 == 0:
+            table_style.add('BACKGROUND', (0,row), (-1,row), colors.whitesmoke)
+
+    table.setStyle(table_style)
+    elements.append(table)
+
+    # ================= FOOTER + WATERMARK =================
+
+    def add_footer_and_watermark(canvas, doc):
+
+        # Page number
+        canvas.setFont("Helvetica", 9)
+        canvas.drawRightString(
+            page_width - 40,
+            20,
+            f"Page {doc.page}"
+        )
+
+        # Logo watermark
+        if hospital and hospital.hospital_logo:
+
+            logo_path = hospital.hospital_logo.path
+            watermark = ImageReader(logo_path)
+
+            canvas.saveState()
+            canvas.setFillAlpha(0.07)
+
+            wm_width = page_width * 0.5
+            wm_height = wm_width
+
+            canvas.drawImage(
+                watermark,
+                (page_width - wm_width) / 2,
+                (page_height - wm_height) / 2,
+                width=wm_width,
+                height=wm_height,
+                preserveAspectRatio=True,
+                mask='auto'
+            )
+
+            canvas.restoreState()
+
+    doc.build(
+        elements,
+        onFirstPage=add_footer_and_watermark,
+        onLaterPages=add_footer_and_watermark
+    )
+
+    return response

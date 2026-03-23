@@ -14,5 +14,11 @@ urlpatterns = [
     path("view/<int:report_id>/", views.ViewReportDetail.as_view(), name="viewreport"),
     path("delete/<int:report_id>/", views.DeleteReportView.as_view(), name="deletereport"),
     path("edit/<int:report_id>/", views.EditReportView.as_view(), name="editreport"),
+    
+    
+    path("prescriptions/", views.prescription_list, name="prescription_list"),
+    path("prescriptions/view/<int:pk>/", views.prescription_view, name="prescription_view"),
+    path("prescriptions/edit/<int:pk>/", views.prescription_edit, name="prescription_edit"),
+    path("prescriptions/delete/<int:pk>/", views.prescription_delete, name="prescription_delete"),
 
 ]
