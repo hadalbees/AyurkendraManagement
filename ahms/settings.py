@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+from logging import config
 from pathlib import Path
 import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,12 +21,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-l3kbco78pw%4nl5-84h0l%c*t=w3h$!*3)3@^c#i2@ep#gv*vz'
+SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
+DEBUG = config('DEBUG', cast=bool)
 
-ALLOWED_HOSTS = []
+#ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS').split(',')
+
 
 
 # Application definition
@@ -92,22 +97,33 @@ WSGI_APPLICATION = 'ahms.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 # DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'hospital_db',
-#     }
+#      'default': {
+#          'ENGINE': 'django.db.backends.sqlite3',
+#  #        'NAME': BASE_DIR / 'db.sqlite3',
+#    	 'NAME': config('DB_NAME', default=BASE_DIR / 'db.sqlite3'),
+#      }
 # }
 
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'hospital_db',
+#         'USER': 'postgres',
+#         'PASSWORD': '1881',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'onlinehms',
-        'USER': 'postgres',
-        'PASSWORD': '230823',
-        'HOST': 'localhost',
-        'PORT': '5432',
- 
-    }
+   'default': {
+       'ENGINE': 'django.db.backends.postgresql',
+       'NAME': config('DB_NAME'),
+       'USER': config('DB_USER'),
+       'PASSWORD': config('DB_PASSWORD'),
+       'HOST': config('DB_HOST'),
+       'PORT': config('DB_PORT'),
+   }
 }
 
 # Password validation
