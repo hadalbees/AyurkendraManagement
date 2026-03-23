@@ -22,6 +22,7 @@ from billingmgmt.models import (
     OutpatientBill
 )
 from accountmgmt.models import Expense
+from fieldmgmt.models import ActivityHistory
 
 from billingmgmt.models import MedicalBill, InpatientBill, OutpatientBill, TherapyBill
 # from accountmgmt.models import Expense  # create this model if not exists
@@ -270,7 +271,7 @@ def export_expense_pdf(expenses, from_date, to_date, total_expense):
 
 def expense_add(request):
     if request.method == "POST":
-        Expense.objects.create(
+        expense = Expense.objects.create(
             expense_date=request.POST.get("expense_date"),
             category=request.POST.get("category"),
             description=request.POST.get("description"),
@@ -278,6 +279,14 @@ def expense_add(request):
             attachment=request.FILES.get("attachment"),
             payment_mode=request.POST.get("payment_mode"),
             paid_by=request.user,
+        )
+        # Save Activity History
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="EXPENSE",
+            record_id=expense.id,
+            description=f"Expense #{expense.id} created by {request.user}"
         )
         messages.success(request,"Expense added successfully")
         return redirect("accountmgmt:expense_list")

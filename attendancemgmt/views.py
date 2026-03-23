@@ -18,6 +18,7 @@ CustomUser = get_user_model()
 
 from .models import Attendance
 from datetime import date
+from fieldmgmt.models import ActivityHistory
 
 # Helper: today
 def today_date():
@@ -93,6 +94,15 @@ def employee_mark(request):
                     'marked_by': request.user
                 }
             )
+            # Activity History
+            ActivityHistory.objects.create(
+                user=request.user,
+                action="CREATE" if created else "UPDATE",
+                module="ATTENDANCE",
+                record_id=obj.id,
+                description=f"{request.user.username} marked attendance as {status} for {the_date}"
+            )
+
     except IntegrityError:
         messages.error(request, "Could not save attendance. Please try again.")
         return JsonResponse({"error": "Could not save attendance"}, status=500)
@@ -127,7 +137,14 @@ def admin_mark_user(request, user_id):
             "marked_by": request.user,
         }
     )
-
+     # Activity History
+    ActivityHistory.objects.create(
+        user=request.user,
+        action="CREATE" if created else "UPDATE",
+        module="ATTENDANCE",
+        record_id=obj.id,
+        description=f"Admin {request.user.username} marked {user.username}'s attendance as {status} for {date_val}"
+    )
     return JsonResponse({
         "ok": True,
         "status": status,

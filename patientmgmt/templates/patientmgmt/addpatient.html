@@ -90,7 +90,7 @@
   <div class="card form-card">
 
     <div class="card-body">
-      <form id="patientForm" method="post" action="{% url 'patientmgmt:patient_register' %}" enctype="multipart/form-data" novalidate> 
+      <form method="post" action="{% url 'patientmgmt:patient_register' %}" enctype="multipart/form-data"> 
         {% csrf_token %}
 
         <!-- ================= CLINICAL INFO ================= -->
@@ -165,13 +165,12 @@
                     class="form-control"
                     placeholder="Search existing patient..."
                     autocomplete="off"
-                    >
+                    required>
           </div>
-<small class="text-danger error-msg"></small>
+
           <!-- Suggestions -->
           <div id="suggestionsBox" class="suggestions shadow-sm"></div>
-          
-        </div>
+      </div>
 
           <div class="col-md-3">
             <label class="form-label">DOB</label>
@@ -180,20 +179,17 @@
 
           <div class="col-md-3">
             <label class="form-label">Age <span class="required">*</span></label>
-            <input id="ageField" name="age" type="number" class="form-control">
-            <small class="text-danger error-msg"></small>
+            <input id="ageField" name="age" type="number" class="form-control" required readonly>
           </div>
 
 
           <div class="col-md-3">
             <label class="form-label">Gender <span class="required">*</span></label>
-            <select name="gender" class="form-select">
-              <option value="">Select Gender</option>
+            <select name="gender" class="form-select" required>
               <option value="M">Male</option>
               <option value="F">Female</option>
               <option value="O">Other</option>
             </select>
-            <small class="text-danger error-msg"></small>
           </div>
 
           <div class="col-md-3">
@@ -258,21 +254,21 @@
           </div>
 
           <div class="col-md-12">
-              <label class="form-label">Notes</label>
-              <textarea name="notes" rows="2" class="form-control"></textarea>
-            </div>
+            <label class="form-label">Notes</label>
+            <textarea name="notes" rows="2" class="form-control"></textarea>
           </div>
-          <!-- ================= ACTIONS ================= -->
-          <div class="form-footer d-flex justify-content-end gap-2">
-            <a href="{% url 'patientmgmt:patient_list' %}"
-              class="btn btn-light px-4">
-              Cancel
-            </a>
-            <button type="submit"
-                    class="btn bg-gradient-dark px-4">
-              Register Patient
-            </button>
-          </div>
+        </div>
+        <!-- ================= ACTIONS ================= -->
+        <div class="form-footer d-flex justify-content-end gap-2">
+          <a href="{% url 'patientmgmt:patient_list' %}"
+             class="btn btn-light px-4">
+            Cancel
+          </a>
+          <button type="submit"
+                  class="btn bg-gradient-dark px-4">
+            Register Patient
+          </button>
+        </div>
 
       </form>
     </div>
@@ -442,68 +438,7 @@ document.getElementById("dobField").addEventListener("change", function () {
     document.getElementById("ageField").value = age;
 });
 </script>
-<script>
 
-document.addEventListener("DOMContentLoaded", function () {
-
-    const form = document.getElementById("patientForm");
-
-    function setError(input, message) {
-        const error = input.closest(".col-md-6, .col-md-3").querySelector(".error-msg");
-        input.classList.add("is-invalid");
-        if (error) error.innerText = message;
-    }
-
-    function clearError(input) {
-        const error = input.closest(".col-md-6, .col-md-3").querySelector(".error-msg");
-        input.classList.remove("is-invalid");
-        if (error) error.innerText = "";
-    }
-
-    const nameInput = document.getElementById("patient_name");
-    const ageInput = document.getElementById("ageField");
-    const genderInput = document.querySelector('[name="gender"]');
-
-    form.addEventListener("submit", function(e) {
-
-        let isValid = true;
-
-        // clear errors
-        clearError(nameInput);
-        clearError(ageInput);
-        clearError(genderInput);
-
-        // ✅ PATIENT NAME
-        if (!nameInput.value.trim()) {
-            setError(nameInput, "Patient name is required");
-            isValid = false;
-        }
-
-        // ✅ AGE
-        if (!ageInput.value || parseInt(ageInput.value) <= 0) {
-            setError(ageInput, "Valid age is required");
-            isValid = false;
-        }
-
-        // ✅ GENDER
-        if (!genderInput.value) {
-            setError(genderInput, "Please select gender");
-            isValid = false;
-        }
-
-        // ❌ STOP SUBMIT
-        if (!isValid) {
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            form.querySelector(".is-invalid")?.focus();
-            return false;
-        }
-
-    });
-
-});
-
-</script>
 
 </body>
 </html>

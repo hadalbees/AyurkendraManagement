@@ -4,6 +4,7 @@ from .models import Role
 from django.core.paginator import Paginator
 from django.views import View
 from django.http import JsonResponse
+from fieldmgmt.models import ActivityHistory
 
 def roledashboardview(request):
     role_qs = Role.objects.all().order_by('-created_at')
@@ -26,7 +27,14 @@ class RoleFormView(View):
     def post(self, request, *args, **kwargs):
         role_name = request.POST.get("role_name")
         if role_name:
-            Role.objects.create(role_name=role_name)
+            role = Role.objects.create(role_name=role_name)
+            ActivityHistory.objects.create(
+                user=request.user,
+                action="CREATE",
+                module="ROLE",
+                record_id=role.id,
+                description=f"Role #{role.id} created by {request.user}"
+            )
             messages.success(request, f"Role '{role_name}' added successfully!")
             return redirect("roledashboard")
         else:
@@ -40,6 +48,13 @@ def roleeditform(request, pk):
         if role_name:
             role.role_name = role_name
             role.save()
+            ActivityHistory.objects.create(
+                user=request.user,
+                action="UPDATE",
+                module="ROLE",
+                record_id=role.id,
+                description=f"Role #{role.id} updated by {request.user}"
+            )
             messages.success(request, f"Role '{role_name}' updated successfully!")
             return redirect("roledashboard")
         else:
@@ -49,6 +64,13 @@ def roleeditform(request, pk):
 def roledelete(request, pk):
     role = get_object_or_404(Role, pk=pk)
     role.delete()
+    ActivityHistory.objects.create(
+        user=request.user,
+        action="DELETE",
+        module="ROLE",
+        record_id=role.id,
+        description=f"Role #{role.id} deleted by {request.user}"
+    )
     messages.success(request, f"Role '{role.role_name}' deleted successfully!")
     return redirect("roledashboard")
 def toggle_role_status(request, pk):

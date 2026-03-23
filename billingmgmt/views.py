@@ -24,7 +24,8 @@ from django.http import JsonResponse
 from django.db.models import Value, CharField
 from datetime import date
 from .models import HospitalSetting
-from fieldmgmt.models import IPOtherCharge
+from fieldmgmt.models import IPOtherCharge,ActivityHistory
+
 
 
 
@@ -152,7 +153,7 @@ def get_patient_prescription(request):
         return JsonResponse({"error": str(e)})
 # ----------------------------
 # MEDICAL BILLING
-# ----------------------------
+# ---------------------------- 
 @transaction.atomic
 def medical_billing_view(request):
 
@@ -222,6 +223,14 @@ def medical_billing_view(request):
                     payment_status=payment_status,
                     remarks=remarks,
                 )
+                 # Activity History
+                ActivityHistory.objects.create(
+                    user=request.user,
+                    action="CREATE",
+                    module="MEDICAL BILL",
+                    record_id=bill.id,
+                    description=f"Medical Bill #{bill.id} created by {request.user}"
+                )
 
                 for i in range(len(stock_ids)):
 
@@ -250,7 +259,7 @@ def medical_billing_view(request):
                     # reduce stock
                     stock.total_base_quantity -= qty
                     stock.save()
-
+            
             return redirect("billingmgmt:print_bill", bill_no=bill.bill_no)
 
         # except Exception as e:
@@ -376,6 +385,13 @@ def edit_medical_bill_view(request, bill_no):
                 bill.payment_status = payment_status
 
                 bill.save()
+                ActivityHistory.objects.create(
+                    user=request.user,
+                    action="UPDATE",
+                    module="MEDICAL BILL",
+                    record_id=bill.id,
+                    description=f"Medical Bill #{bill.id} updated by {request.user}"
+                )
 
             return redirect("billingmgmt:print_bill", bill_no=bill.bill_no)
 
@@ -492,7 +508,13 @@ def inpatient_billing_view(request):
                 discount_percent=discount_percent,
                 created_by=request.user
             )
-
+            ActivityHistory.objects.create(
+                user=request.user,
+                action="CREATE",
+                module="INPATIENT BILL",
+                record_id=bill.id,
+                description=f"Inpatient Bill #{bill.id} created by {request.user}"
+            )
             for name, rate, qty, itype, stock_id in zip(
                 item_names, item_rates, item_qtys, item_types, item_stock_ids
             ):
@@ -650,7 +672,6 @@ def edit_inpatient_bill_view(request, bill_no):
                     subtotal=sub,
                     medical_stock=stock_obj
                 )
-
             # ---------- BILL CALCULATION ----------
 
             discount_amount = (
@@ -693,7 +714,13 @@ def edit_inpatient_bill_view(request, bill_no):
             bill.discount_percent = discount_percent
 
             bill.save()
-
+            ActivityHistory.objects.create(
+                user=request.user,
+                action="UPDATE",
+                module="INPATIENT BILL",
+                record_id=bill.id,
+                description=f"Inpatient Bill #{bill.id} updated by {request.user}"
+            )
         return redirect(
             "billingmgmt:print_inpatient_bill",
             bill_no=bill.bill_no
@@ -899,7 +926,13 @@ def outpatient_billing_view(request):
             payment_status=payment_status,
             created_by=request.user,
         )
-
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="OUTPATIENT BILL",
+            record_id=bill.id,
+            description=f"Outpatient Bill #{bill.id} created by {request.user}"
+        )
         # -------- SAVE ITEMS --------
         for name, rate, qty in zip(item_names, item_rates, item_qtys):
 
@@ -1016,7 +1049,13 @@ def edit_outpatient_bill_view(request, bill_no):
             bill.payment_status = payment_status
 
             bill.save()
-
+            ActivityHistory.objects.create(
+                user=request.user,
+                action="UPDATE",
+                module="INPATIENT BILL",
+                record_id=bill.id,
+                description=f"Inpatient Bill #{bill.id} updated by {request.user}"
+            )
         return redirect(
             "billingmgmt:print_outpatient_bill",
             bill_no=bill.bill_no
@@ -1163,6 +1202,13 @@ def therapy_billing_view(request):
                 payment_status=payment_status,
                 remarks=remarks
             )
+            ActivityHistory.objects.create(
+                user=request.user,
+                action="CREATE",
+                module="THERAPY BILL",
+                record_id=bill.id,
+                description=f"Therapy Bill #{bill.id} created by {request.user}"
+            )
 
             # ---------- SAVE ITEMS ----------
             for t_id, qty, price, sub in zip(
@@ -1252,7 +1298,13 @@ def edit_therapy_bill_view(request, bill_no):
         bill.remarks = request.POST.get("remarks")
 
         bill.save()
-
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="THERAPY BILL",
+            record_id=bill.id,
+            description=f"Therapy Bill #{bill.id} updated by {request.user}"
+        )
         return redirect("billingmgmt:therapy_bill_print", bill_no=bill.bill_no)
 
     return render(request, "billingmgmt/therapybill_edit.html", {

@@ -1,32 +1,113 @@
 {% load static %}
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-  {% include "includes/head.html" %}
-  <style>
-    @media print { .no-print { display:none } }
-    .pres-head { text-align:center; margin-bottom:10px; }
-    table { width:100%; border-collapse: collapse; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-  </style>
+<meta charset="utf-8">
+<title>Prescription — {{ prescription.prescription_no }}</title>
+
+<style>
+@page { size: A4; margin: 15mm; }
+body { font-family: "Times New Roman", serif; font-size: 14px; color: #000; }
+
+.header { text-align: center; border-bottom: 1px solid #000; padding-bottom: 6px; }
+.logo { width: 180px; margin-bottom: 6px; }
+.address { font-size: 12px; line-height: 1.4; }
+.gst { font-size: 12px; font-weight: bold; margin-top: 3px; }
+
+.info-table { width: 100%; margin-top: 10px; font-size: 13px; }
+.info-table td { padding: 4px; }
+
+table.bill-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  font-size: 13px;
+}
+table.bill-table th,
+table.bill-table td {
+  border: 1px solid #000;
+  padding: 6px;
+  text-align: center;
+}
+table.bill-table th { background: #f2f2f2; }
+
+.totals {
+  width: 45%;
+  float: right;
+  margin-top: 10px;
+  font-size: 14px;
+}
+.totals td { padding: 5px; }
+
+.footer {
+  clear: both;
+  margin-top: 60px;
+  font-size: 12px;
+  text-align: center;
+  border-top: 1px solid #000;
+  padding-top: 5px;
+}
+
+@media print { .no-print { display: none; } }
+</style>
 </head>
+
 <body>
-  <div class="container py-4">
-    <div class="pres-head">
-      <h2>Ayurvedic Hospital</h2>
-      <p>Prescription — {{ prescription.prescription_no }}</p>
+
+<!-- ================= HEADER ================= -->
+<div class="header">
+  {% if settings.hospital_logo %}
+    <img src="{{ settings.hospital_logo.url }}" class="logo">
+  {% endif %}
+
+  {% comment %} <strong>{{ settings.hospital_name }}</strong> {% endcomment %}
+
+  <div class="address">
+    {{ settings.address }}<br>
+    Ph: {{ settings.phone }} | Email: {{ settings.email }}
+  </div>
+
+  {% if settings.gst_number %}
+  <div class="gst">
+    GST Reg No : {{ settings.gst_number }}
+  </div>
+  {% endif %}
+
+  {% if settings.registration_number %}
+    <div style="font-size:12px;">
+      Registration No : {{ settings.registration_number }}
     </div>
+  {% endif %}
+</div>
 
-    <p><strong>Patient:</strong> {{ prescription.patient.patient_name }} ({{ prescription.patient.patient_unique_id }})</p>
-    <p><strong>Doctor:</strong> {{ prescription.doctor.get_full_name }}</p>
-    <p><strong>Date:</strong> {{ prescription.created_at|date:"Y-m-d H:i" }}</p>
+<!-- ================= PATIENT INFO ================= -->
+<table class="info-table">
+  <tr>
+    <td>
+      <strong>Patient Name:</strong>
+      {% if prescription.patient %}
+        {{ prescription.patient.patient_name }}
+      {% else %}
+        Walk-in Customer
+      {% endif %}
+    </td>
+    <td>
+      <strong>Age / Sex:</strong>
+      {% if prescription.patient %}
+        {{ prescription.patient.age }} / {{ prescription.patient.get_gender_display }}
+      {% endif %}
+    </td>
+    <td><strong>Date:</strong> {{ prescription.created_at|date:"d-m-Y" }}</td>
+  </tr>
+</table>
 
-    <table>
-      <thead>
-        <tr><th>#</th><th>Medicine</th><th>Dosage</th><th>Duration (days)</th><th>Qty</th><th>Instructions</th></tr>
-      </thead>
-      <tbody>
-        {% for it in items %}
+<!-- ================= MEDICINE TABLE ================= -->
+<table class="bill-table">
+  <thead>
+    <tr><th>#</th><th>Medicine</th><th>Dosage</th><th>Duration (days)</th><th>Qty</th><th>Instructions</th></tr>
+  </thead>
+  <tbody>
+     {% for it in items %}
           <tr>
             <td>{{ forloop.counter }}</td>
             <td>{{ it.medicine_name }}</td>
@@ -36,15 +117,23 @@
             <td>{{ it.instructions }}</td>
           </tr>
         {% endfor %}
-      </tbody>
-    </table>
+  </tbody>
+  <p><strong>Notes:</strong> {{ prescription.notes }}</p>
+</table>
+<!-- ================= FOOTER ================= -->
+<div class="footer">
+  Thank you for visiting {{ settings.hospital_name }}<br>
+  Get Well Soon 🙏
+</div>
 
-    <p><strong>Notes:</strong> {{ prescription.notes }}</p>
+<!-- ================= PRINT ================= -->
+<div class="no-print" style="text-align:center; margin-top:20px;">
+  <button onclick="window.print()">🖨 Print</button>
+  <a href="{% url 'billingmgmt:medicalbilling' %}"
+     style="padding:6px 12px;border:1px solid #000;text-decoration:none;color:#000;">
+     ⬅ Back
+  </a>
+</div>
 
-    <div class="no-print" style="margin-top:10px;">
-      <button onclick="window.print()">Print</button>
-      <a href="{% url 'prescriptionmgmt:create' %}">New Prescription</a>
-    </div>
-  </div>
 </body>
 </html>

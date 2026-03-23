@@ -19,7 +19,7 @@ from authentication.models import CustomUser
 from billingmgmt.models import InpatientBill, MedicalBill, OutpatientBill, TherapyBill
 from patientmgmt.models import Patient
 from utils.whatsapp import send_whatsapp_template, format_phone
-from fieldmgmt.models import TherapyMaster
+from fieldmgmt.models import TherapyMaster,ActivityHistory
 from rolemgmt.models import Role
 from fieldmgmt.models import Department
 from reportlab.platypus import (
@@ -204,6 +204,13 @@ class PatientRegistrationView(LoginRequiredMixin, View):
 
             registered_by=request.user
         )
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="PATIENT",
+            record_id=patient.id,
+            description=f"Patient #{patient.id} created by {request.user}"
+        )
 
         messages.success(
             request,
@@ -240,6 +247,13 @@ class PatientEditView(LoginRequiredMixin, View):
         patient.notes = request.POST.get("notes")
 
         patient.save()
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="PATIENT",
+            record_id=patient.id,
+            description=f"Patient #{patient.id} updated by {request.user}"
+        )
         messages.success(request, "Patient updated successfully.")
         return redirect("patientmgmt:patient_detail", pk=patient.pk)
 
@@ -249,6 +263,13 @@ class PatientDeactivateView(LoginRequiredMixin, View):
         patient = get_object_or_404(Patient, pk=pk)
         patient.is_active = False
         patient.save()
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="DEACTIVATE",
+            module="PATIENT",
+            record_id=patient.id,
+            description=f"Patient #{patient.id} deactivated by {request.user}"
+        )
         messages.success(request, "Patient deactivated (record preserved).")
         return redirect("patientmgmt:patient_list")
 
@@ -842,7 +863,7 @@ def appointment_add(request):
             therapy = TherapyMaster.objects.get(id=therapy_id)
 
         # ✅ Create Appointment
-        Appointment.objects.create(
+        appoinment = Appointment.objects.create(
             patient=patient,
             appointment_type=appt_type,
             therapy=therapy,
@@ -852,6 +873,13 @@ def appointment_add(request):
             appointment_time=time,
             notes=notes,
             status="PENDING"
+        )
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+             module="PATIENT APPOINMENT",
+            record_id=appoinment.id,
+            description=f"Appoinment #{appoinment.id} created by {request.user}"
         )
 
         return redirect("patientmgmt:appointment_list")
@@ -884,6 +912,13 @@ def appointment_edit(request, pk):
             appt.therapy = None  # Clear therapy if type is CONSULT
 
         appt.save()
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+             module="PATIENT APPOINMENT",
+            record_id=appt.id,
+            description=f"Appoinment #{appt.id} updated by {request.user}"
+        )
 
         return redirect("patientmgmt:appointment_list")
 
@@ -898,6 +933,13 @@ def appointment_edit(request, pk):
 def appointment_delete(request, pk):
     appt = get_object_or_404(Appointment, id=pk)
     appt.delete()
+    ActivityHistory.objects.create(
+        user=request.user,
+        action="DELETE",
+            module="PATIENT APPOINMENT",
+        record_id=appt.id,
+        description=f"Appoinment #{appt.id} deleted by {request.user}"
+    )
     return redirect("patientmgmt:appointment_list")
 
 

@@ -6,6 +6,7 @@ from django.core.paginator import Paginator
 from patientmgmt.models import Patient
 from .models import PatientReport
 from prescriptionmgmt.models import Prescription, PrescriptionItem
+from fieldmgmt.models import ActivityHistory
 
 # ---------- Home Page ----------
 from django.db.models import Q
@@ -130,7 +131,7 @@ class PatientReportCreateView(LoginRequiredMixin, View):
     def post(self, request, pk):
         patient = get_object_or_404(Patient, pk=pk)
 
-        PatientReport.objects.create(
+        patientreport = PatientReport.objects.create(
             patient=patient,
             report_title=request.POST.get("report_title"),
             report_type=request.POST.get("report_type"),
@@ -138,6 +139,13 @@ class PatientReportCreateView(LoginRequiredMixin, View):
             uploaded_file=request.FILES.get("uploaded_file"),
             notes=request.POST.get("notes"),
             uploaded_by=request.user
+        )
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="PATIENT REPORT",
+            record_id=patientreport.id,
+            description=f"Patient report #{patientreport.id} created by {request.user}"
         )
 
         messages.success(request, "Report uploaded successfully.")
@@ -179,6 +187,13 @@ class DeleteReportView(LoginRequiredMixin, View):
         report = get_object_or_404(PatientReport, pk=report_id)
         pid = report.patient.pk
         report.delete()
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="DELETE",
+            module="PATIENT REPORT",
+            record_id=report.id,
+            description=f"Patient report #{report.id} deleted by {request.user}"
+        )
         messages.success(request, "Report deleted.")
         return redirect("reportmgmt:patientreports", pk=pid)
     
@@ -209,6 +224,13 @@ class EditReportView(LoginRequiredMixin, View):
             report.uploaded_file = new_file
 
         report.save()
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="PATIENT REPORT",
+            record_id=report.id,
+            description=f"Patient report #{report.id} updated by {request.user}"
+        )
         messages.success(request, "Report updated successfully.")
 
         return redirect("reportmgmt:viewreport", report_id=report_id)
@@ -263,6 +285,13 @@ def prescription_edit(request, pk):
         prescription.notes = request.POST.get("notes")
         prescription.next_visit = request.POST.get("next_visit") or None
         prescription.save()
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="PRESCRIPTION",
+            record_id=prescription.id,
+            description=f"prescription #{prescription.id} updated by {request.user}"
+        )
 
         # --- Clear old items ---
         prescription.items.all().delete()
@@ -307,5 +336,11 @@ def prescription_delete(request, pk):
 
     prescription = get_object_or_404(Prescription, pk=pk)
     prescription.delete()
-
+    ActivityHistory.objects.create(
+            user=request.user,
+            action="DELETE",
+            module="PRESCRIPTION",
+            record_id=prescription.id,
+            description=f"prescription #{prescription.id} deleted by {request.user}"
+        )
     return redirect("reportmgmt:prescription_list")

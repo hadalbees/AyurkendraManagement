@@ -11,4 +11,5 @@ urlpatterns = [
     path("add-medicine-ajax/", views.add_medicine_ajax, name="add_medicine_ajax"),
     path("medicine/update/", views.update_medicine, name="update_medicine"),
     path("bulk-import/", views.bulk_import_stock, name="bulk_import_stock"),
+    path("medicine-check/",views.medicine_check,name="medicine_check"),
 ]

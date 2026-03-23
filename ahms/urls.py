@@ -36,6 +36,7 @@ urlpatterns = [
     path('fieldmanagement/', include('fieldmgmt.urls')),
     path('accountmanagement/', include('accountmgmt.urls')),
     path('calendarmanagement/', include('calendarmgmt.urls')),
+    
 ]
 
 if settings.DEBUG:

@@ -17,8 +17,12 @@ henv/
 
 # Django stuff
 db.sqlite3
+data.json
+db.hospital_db
+hospital_db
 /staticfiles/
 media/
+fieldmgmt/migrations/0008_activityhistory.py
 *.log
 
 # VSCode / IDEs

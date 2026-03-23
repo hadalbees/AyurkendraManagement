@@ -25,9 +25,7 @@ SECRET_KEY = 'django-insecure-l3kbco78pw%4nl5-84h0l%c*t=w3h$!*3)3@^c#i2@ep#gv*vz
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-
-ALLOWED_HOSTS = ['rubanlesemp.pythonanywhere.com','*']
-
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -96,14 +94,14 @@ WSGI_APPLICATION = 'ahms.wsgi.application'
 # DATABASES = {
 #     'default': {
 #         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
+#         'NAME': BASE_DIR / 'hospital_db',
 #     }
 # }
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'hms',
+        'NAME': 'onlinehms',
         'USER': 'postgres',
         'PASSWORD': '230823',
         'HOST': 'localhost',

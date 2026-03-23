@@ -31,25 +31,34 @@
   <div class="card shadow-sm border-0">
     <div class="card-body px-4 py-4">
 
-      <form id="therapyForm" method="POST" novalidate>
+      <form method="POST">
         {% csrf_token %}
 
         <div class="row g-4">
 
+          <!-- Therapy Name -->
           <div class="col-md-6">
             <label class="form-label fw-semibold">
               Therapy Name <span class="text-danger">*</span>
             </label>
-            <input type="text" name="name" class="form-control">
-            <small class="text-danger error-msg"></small>
+            <input type="text"
+                   name="name"
+                   class="form-control"
+                   placeholder="Enter therapy name"
+                   required>
           </div>
 
+          <!-- Charges -->
           <div class="col-md-6">
             <label class="form-label fw-semibold">
               Charges <span class="text-danger">*</span>
             </label>
-            <input type="number" name="charges" class="form-control">
-            <small class="text-danger error-msg"></small>
+            <input type="number"
+                   step="0.01"
+                   name="charges"
+                   class="form-control"
+                   placeholder="Enter charges"
+                   required>
           </div>
 
           <!-- Description -->
@@ -102,74 +111,5 @@
 </main>
 
 {% include "includes/script.html" %}
-<script>
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    const form = document.getElementById("therapyForm");
-
-    function setError(input, message) {
-        const error = input.parentElement.querySelector(".error-msg");
-        input.classList.add("is-invalid");
-        if (error) error.innerText = message;
-    }
-
-    function clearError(input) {
-        const error = input.parentElement.querySelector(".error-msg");
-        input.classList.remove("is-invalid");
-        if (error) error.innerText = "";
-    }
-
-    // 🔥 real-time number validation
-    const chargesInput = document.querySelector('[name="charges"]');
-
-    chargesInput.addEventListener("input", function () {
-        this.value = this.value.replace(/[^0-9.]/g, ""); // allow only numbers + dot
-    });
-
-    form.addEventListener("submit", function(e) {
-
-        let isValid = true;
-
-        const name = document.querySelector('[name="name"]');
-        const charges = document.querySelector('[name="charges"]');
-
-        // clear errors
-        clearError(name);
-        clearError(charges);
-
-        // ✅ NAME
-        if (!name.value.trim()) {
-            setError(name, "Therapy name is required");
-            isValid = false;
-        }
-
-        // ✅ CHARGES
-        if (!charges.value.trim()) {
-            setError(charges, "Charges are required");
-            isValid = false;
-        } 
-        else if (!/^\d+(\.\d+)?$/.test(charges.value)) {
-            setError(charges, "Enter valid amount");
-            isValid = false;
-        } 
-        else if (parseFloat(charges.value) <= 0) {
-            setError(charges, "Must be greater than 0");
-            isValid = false;
-        }
-
-        // ❌ STOP SUBMIT
-        if (!isValid) {
-            e.preventDefault();
-            e.stopPropagation();
-            form.querySelector(".is-invalid")?.focus();
-            return false;
-        }
-
-    });
-
-});
-
-</script>
 </body>
 </html>

@@ -10,7 +10,8 @@ from stockmgmt.models import Stock
 from patientmgmt.models import Patient
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from fieldmgmt.models import Adjuvant
+from fieldmgmt.models import Adjuvant,ActivityHistory
+from billingmgmt.models import HospitalSetting
 
 def generate_prescription_no():
     last = Prescription.objects.order_by('-id').first()
@@ -50,7 +51,6 @@ def create_prescription(request):
             messages.error(request, "Invalid Patient ID.")
             return redirect("dashboard")
 
-        # Create prescription
         prescription = Prescription.objects.create(
             prescription_no=pres_no,
             patient=patient,
@@ -59,7 +59,14 @@ def create_prescription(request):
             next_visit=next_visit,
         )
 
-        # Save medicines
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="PRESCRIPTION",
+            record_id=prescription.id,
+            description=f"Prescription #{prescription.id} created by {request.user}"
+        )
+
         for sid, med, dose, dur, qty, food, adj in zip(
             stock_ids,
             medicine_names,
@@ -91,11 +98,11 @@ def create_prescription(request):
                 adjuvant=adjuvant_obj
             )
 
-        messages.success(request, "Prescription saved successfully!")
-        return redirect("dashboard")
+        # Redirect to print page
+        # Redirect to print page
+        return redirect("prescriptionmgmt:print", prescription_no=prescription.prescription_no)
 
     return redirect("dashboard")
-
 @login_required
 def ajax_get_patient(request):
     patient_id = request.GET.get("patient_id")
@@ -154,9 +161,18 @@ def ajax_get_stock(request):
 
 @login_required
 def print_prescription(request, prescription_no):
+
     pres = get_object_or_404(Prescription, prescription_no=prescription_no)
     items = pres.items.all()
-    return render(request, "prescriptionmgmt/print_prescription.html", {
-        "prescription": pres,
-        "items": items,
-    })
+
+    settings = HospitalSetting.objects.first()
+
+    return render(
+        request,
+        "prescriptionmgmt/print_prescription.html",
+        {
+            "prescription": pres,
+            "items": items,
+            "settings": settings
+        }
+    )

@@ -12,7 +12,8 @@ from .models import (
     AyurvedicType,
     ManufacturerMaster,
     SupplierMaster,
-    TherapyMaster
+    TherapyMaster,
+    ActivityHistory
 )
 
 # ==================================================
@@ -42,11 +43,18 @@ def therapy_add(request):
             messages.error(request, "Therapy name and charges are required.")
             return redirect("fieldmgmt:therapy_add")
 
-        TherapyMaster.objects.create(
+        therapy=TherapyMaster.objects.create(
             name=name,
             description=description,
             charges=charges,
             status=status,
+        )
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="THERAPY",
+            record_id=therapy.id,
+            description=f"Therapy #{therapy.id} created by {request.user}"
         )
 
         messages.success(request, f"Therapy '{name}' added successfully.")
@@ -65,7 +73,13 @@ def therapy_edit(request, id):
         therapy.charges = request.POST.get("charges")
         therapy.status = request.POST.get("status") == "on"
         therapy.save()
-
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="THERAPY",
+            record_id=therapy.id,
+            description=f"Therapy #{therapy.id} updated by {request.user}"
+        )
         messages.success(request, f"Therapy '{therapy.name}' updated successfully.")
         return redirect("fieldmgmt:therapy_list")
 
@@ -77,7 +91,13 @@ def therapy_edit(request, id):
 def therapy_delete(request, id):
     therapy = get_object_or_404(TherapyMaster, id=id)
     therapy.delete()
-
+    ActivityHistory.objects.create(
+        user=request.user,
+        action="DELETE",
+        module="THERAPY",
+        record_id=therapy.id,
+        description=f"Therapy #{therapy.id} deleted by {request.user}"
+    )
     messages.success(request, "Therapy deleted successfully.")
     return redirect("fieldmgmt:therapy_list")
 
@@ -112,10 +132,17 @@ def ayurvedic_add(request):
             messages.error(request, "This Ayurvedic type already exists.")
             return redirect("fieldmgmt:ayurvedic_add")
 
-        AyurvedicType.objects.create(
+        ayurvedic=AyurvedicType.objects.create(
             name=name,
             description=description,
             status=status
+        )
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="AYURVEDIC TYPE",
+            record_id=ayurvedic.id,
+            description=f"Ayurvedic type #{ayurvedic.id} created by {request.user}"
         )
 
         messages.success(request, f"Ayurvedic type '{name}' added successfully.")
@@ -132,7 +159,13 @@ def ayurvedic_edit(request, id):
         obj.description = request.POST.get("description")
         obj.status = request.POST.get("status") == "on"
         obj.save()
-
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="AYURVEDIC TYPE",
+            record_id=obj.id,
+            description=f"Ayurvedic type #{obj.id} updated by {request.user}"
+        )
         messages.success(request, f"Ayurvedic type '{obj.name}' updated successfully.")
         return redirect("fieldmgmt:ayurvedic_list")
 
@@ -144,7 +177,13 @@ def ayurvedic_edit(request, id):
 def ayurvedic_delete(request, id):
     obj = get_object_or_404(AyurvedicType, id=id)
     obj.delete()
-
+    ActivityHistory.objects.create(
+        user=request.user,
+        action="DELETE",
+        module="AYURVEDIC TYPE",
+        record_id=obj.id,
+        description=f"Ayurvedic type #{obj.id} deleted by {request.user}"
+    )
     messages.success(request, "Ayurvedic type deleted successfully.")
     return redirect("fieldmgmt:ayurvedic_list")
 
@@ -166,13 +205,19 @@ def supplier_list(request):
 
 def supplier_add(request):
     if request.method == "POST":
-        SupplierMaster.objects.create(
+        supplier = SupplierMaster.objects.create(
             name=request.POST.get("name"),
             phone=request.POST.get("phone"),
             email=request.POST.get("email"),
             address=request.POST.get("address")
         )
-
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="SUPPLIER",
+            record_id=supplier.id,
+            description=f"Supplier #{supplier.id} created by {request.user}"
+        )
         messages.success(request, "Supplier added successfully.")
         return redirect("fieldmgmt:supplier_list")
 
@@ -190,6 +235,13 @@ def supplier_edit(request, pk):
         supplier.email = request.POST.get("email")
         supplier.address = request.POST.get("address")
         supplier.save()
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="SUPPLIER",
+            record_id=supplier.id,
+            description=f"Supplier #{supplier.id} updated by {request.user}"
+        )
 
         messages.success(request, "Supplier updated successfully.")
         return redirect("fieldmgmt:supplier_list")
@@ -203,7 +255,13 @@ def supplier_edit(request, pk):
 def supplier_delete(request, pk):
     supplier = get_object_or_404(SupplierMaster, id=pk)
     supplier.delete()
-
+    ActivityHistory.objects.create(
+        user=request.user,
+        action="DELETE",
+        module="SUPPLIER",
+        record_id=supplier.id,
+        description=f"Supplier type #{supplier.id} deleted by {request.user}"
+    )
     messages.success(request, "Supplier deleted successfully.")
     return redirect("fieldmgmt:supplier_list")
 
@@ -226,13 +284,19 @@ def manufacturer_list(request):
 
 def manufacturer_add(request):
     if request.method == "POST":
-        ManufacturerMaster.objects.create(
+        manufacturer = ManufacturerMaster.objects.create(
             name=request.POST.get("name"),
             phone=request.POST.get("phone"),
             email=request.POST.get("email"),
             address=request.POST.get("address")
         )
-
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="MANUFACTURER",
+            record_id=manufacturer.id,
+            description=f"Manufacturer #{manufacturer.id} created by {request.user}"
+        )
         messages.success(request, "Manufacturer added successfully.")
         return redirect("fieldmgmt:manufacturer_list")
 
@@ -250,7 +314,13 @@ def manufacturer_edit(request, pk):
         manufacturer.email = request.POST.get("email")
         manufacturer.address = request.POST.get("address")
         manufacturer.save()
-
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="MANUFACTURER",
+            record_id=manufacturer.id,
+            description=f"Manufacturer #{manufacturer.id} updated by {request.user}"
+        )
         messages.success(request, "Manufacturer updated successfully.")
         return redirect("fieldmgmt:manufacturer_list")
 
@@ -298,10 +368,17 @@ class DepartmentCreateView(LoginRequiredMixin, View):
             messages.error(request, "Department already exists!")
             return redirect("fieldmgmt:department_add")
 
-        Department.objects.create(
+        department = Department.objects.create(
             department_name=name,
             description=description,
             created_by=request.user
+        )
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="DEPARTMENT",
+            record_id=department.id,
+            description=f"Department #{department.id} created by {request.user}"
         )
 
         messages.success(request, "Department added successfully!")
@@ -327,6 +404,13 @@ class DepartmentUpdateView(LoginRequiredMixin, View):
         department.description = request.POST.get("description")
         department.status = request.POST.get("status") == "on"
         department.save()
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="DEPARTMENT",
+            record_id=department.id,
+            description=f"Department #{department.id} updated by {request.user}"
+        )
 
         messages.success(request, "Department updated successfully!")
         return redirect("fieldmgmt:department_list")
@@ -340,7 +424,13 @@ class DepartmentDeleteView(LoginRequiredMixin, View):
     def post(self, request, pk):
         department = get_object_or_404(Department, pk=pk)
         department.delete()
-
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="DELETE",
+            module="DEPARTMENT",
+            record_id=department.id,
+            description=f"Department #{department.id} deleted by {request.user}"
+        )
         messages.success(request, "Department deleted successfully!")
         return redirect("fieldmgmt:department_list")
     
@@ -356,10 +446,17 @@ def appointment_type_add(request):
         description = request.POST.get("description")
         duration = request.POST.get("duration_minutes")
 
-        AppointmentType.objects.create(
+        appoinment = AppointmentType.objects.create(
             name=name,
             description=description,
             duration_minutes=duration
+        )
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="APPOINMENT",
+            record_id=appoinment.id,
+            description=f"Appoinment #{appoinment.id} created by {request.user}"
         )
 
         messages.success(request, "Appointment type added successfully.")
@@ -377,6 +474,13 @@ def appointment_type_edit(request, pk):
         obj.duration_minutes = request.POST.get("duration_minutes")
         obj.status = True if request.POST.get("status") else False
         obj.save()
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="APPOINMENT",
+            record_id=obj.id,
+            description=f"Appoinment #{obj.id} updated by {request.user}"
+        )
 
         messages.success(request, "Appointment type updated.")
         return redirect("fieldmgmt:appointment_type_list")
@@ -387,7 +491,13 @@ def appointment_type_edit(request, pk):
 def appointment_type_delete(request, pk):
     obj = get_object_or_404(AppointmentType, pk=pk)
     obj.delete()
-
+    ActivityHistory.objects.create(
+            user=request.user,
+            action="DELETE",
+            module="APPOINMENT",
+            record_id=obj.id,
+            description=f"Appoinment #{obj.id} deleted by {request.user}"
+        )
     messages.success(request, "Appointment type deleted.")
     return redirect("fieldmgmt:appointment_type_list")
 
@@ -418,12 +528,19 @@ def ip_othercharge_add(request):
         description = request.POST.get("description")
         status = True if request.POST.get("status") else False
 
-        IPOtherCharge.objects.create(
+        ipotherCharge = IPOtherCharge.objects.create(
             name=name,
             type=type,
             unit_price=price,
             description=description,
             status=status,
+        )
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="IP-OTHER CHARGE",
+            record_id=ipotherCharge.id,
+            description=f"IPOtherCharge #{ipotherCharge.id} created by {request.user}"
         )
 
         messages.success(request, "Other Charge added successfully")
@@ -446,6 +563,13 @@ def ip_othercharge_edit(request, pk):
         obj.status = True if request.POST.get("status") else False
 
         obj.save()
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="IP-OTHER CHARGE",
+            record_id=obj.id,
+            description=f"IPOtherCharge #{obj.id} updated by {request.user}"
+        )
 
         messages.success(request, "Other Charge updated successfully")
 
@@ -462,7 +586,13 @@ def ip_othercharge_delete(request, pk):
 
     obj = get_object_or_404(IPOtherCharge, pk=pk)
     obj.delete()
-
+    ActivityHistory.objects.create(
+        user=request.user,
+        action="DELETE",
+        module="IP-OTHER CHARGE",
+        record_id=obj.id,
+        description=f"IPOtherCharge #{obj.id} deleted by {request.user}"
+    )
     messages.success(request, "Other Charge deleted successfully")
 
     return redirect("fieldmgmt:ip_othercharge_list")
@@ -478,11 +608,17 @@ def adjuvant_add(request):
         name = request.POST.get("name")
         description = request.POST.get("description")
 
-        Adjuvant.objects.create(
+        adjuvant= Adjuvant.objects.create(
             name=name,
             description=description
         )
-
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="ADJUVANT",
+            record_id=adjuvant.id,
+            description=f"Adjuvant #{adjuvant.id} created by {request.user}"
+        )
         return redirect("fieldmgmt:adjuvant_list")
 
     return render(request, "fieldmgmt/adjuvant_form.html")
@@ -495,6 +631,13 @@ def adjuvant_edit(request, id):
         adjuvant.name = request.POST.get("name")
         adjuvant.description = request.POST.get("description")
         adjuvant.save()
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="ADJUVANT",
+            record_id=adjuvant.id,
+            description=f"Adjuvant #{adjuvant.id} updated by {request.user}"
+        )
 
         return redirect("fieldmgmt:adjuvant_list")
 
@@ -504,4 +647,11 @@ def adjuvant_edit(request, id):
 def adjuvant_delete(request, id):
     adjuvant = get_object_or_404(Adjuvant, id=id)
     adjuvant.delete()
+    ActivityHistory.objects.create(
+        user=request.user,
+        action="DELETE",
+        module="ADJUVANT",
+        record_id=adjuvant.id,
+        description=f"Adjuvant #{adjuvant.id} deleted by {request.user}"
+    )
     return redirect("fieldmgmt:adjuvant_list")

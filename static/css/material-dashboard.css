@@ -21633,9 +21633,7 @@ fieldset:disabled .btn {
   box-shadow: none;
 }
 
-.alert-dismissible .btn-close {
-  background-image: none;
-}
+
 
 .avatar {
   color: #fff;

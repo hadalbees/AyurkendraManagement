@@ -21,6 +21,7 @@ from django.utils.timezone import now
 import os
 from billingmgmt.models import HospitalSetting
 from reportlab.lib.utils import ImageReader
+from fieldmgmt.models import ActivityHistory
 # from django.contrib.auth.decorators import login_required
 
 # @login_required
@@ -67,7 +68,13 @@ def staffaddform(request):
             )
             user.set_password(password)  # ✅ hash password properly
             user.save()
-
+            ActivityHistory.objects.create(
+                user=request.user,
+                action="CREATE",
+                module="STAFF",
+                record_id=user.id,
+                description=f"Staff #{user.id} created by {request.user}"
+            )
             messages.success(request, f"Staff '{username}' added successfully!")
             return redirect("permissionhome")
         else:
@@ -108,6 +115,13 @@ def staffeditform(request, pk):
         staff.menu_permission = ",".join(permissions)
 
         staff.save()
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="STAFF",
+            record_id=staff.id,
+            description=f"Staff #{staff.id} created by {request.user}"
+        )
         messages.success(request, f"Staff '{staff.username}' updated successfully!")
         return redirect("permissionhome")
 
@@ -121,6 +135,13 @@ def staff_delete_view(request, pk):
     staff = get_object_or_404(CustomUser, pk=pk)
     staff.is_active = False   # ✅ Use built-in field
     staff.save()
+    ActivityHistory.objects.create(
+        user=request.user,
+        action="DELETE",
+        module="STAFF",
+        record_id=staff.id,
+        description=f"Staff #{staff.id} deleted by {request.user}"
+    )
     messages.success(request, f"Staff '{staff.username}' deleted successfully!")
     return redirect("permissionhome")
 

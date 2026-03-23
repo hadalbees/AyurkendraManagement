@@ -10,7 +10,7 @@ from decimal import Decimal, InvalidOperation
 from django.http import JsonResponse
 from django.db import models
 
-from fieldmgmt.models import AyurvedicType, ManufacturerMaster, SupplierMaster
+from fieldmgmt.models import AyurvedicType, ManufacturerMaster, SupplierMaster,ActivityHistory
 from .models import Stock, Medicine, StockTransaction
 import pandas as pd
 from django.db import transaction
@@ -101,8 +101,7 @@ class StockListView(LoginRequiredMixin, ListView):
 # Add Medicine (AJAX)
 # --------------------------------------------------
 def add_medicine_ajax(request):
-    print("ADD MEDICINE VIEW HIT")   # DEBUG LINE
-    print(request)
+
     if request.method != "POST":
         messages.error(request, "Invalid request method.")
         return redirect("stockmgmt:stock_list")
@@ -123,7 +122,7 @@ def add_medicine_ajax(request):
     # -----------------------
     # Clean Values
     # -----------------------
-    name = name.strip() if name else ""
+    name = name.strip().title() if name else ""   # Auto Capitalize
     hsn_code = hsn_code.strip() if hsn_code else ""
     form_type = form_type.strip() if form_type else ""
     description = description.strip() if description else ""
@@ -139,9 +138,11 @@ def add_medicine_ajax(request):
         messages.error(request, "Form type is required.")
         return redirect("stockmgmt:stock_list")
 
-    # Duplicate check
+    # -----------------------
+    # Duplicate Check (case insensitive)
+    # -----------------------
     if Medicine.objects.filter(name__iexact=name).exists():
-        messages.error(request, "Medicine already exists.")
+        messages.error(request, f"{name} already exists.")
         return redirect("stockmgmt:stock_list")
 
     # -----------------------
@@ -186,9 +187,19 @@ def add_medicine_ajax(request):
         expiry_days_alert=expiry_days_alert,
     )
 
+    # -----------------------
+    # Activity Log
+    # -----------------------
+    ActivityHistory.objects.create(
+        user=request.user,
+        action="CREATE",
+        module="MEDICINE",
+        record_id=medicine.id,
+        description=f"Medicine '{medicine.name}' created by {request.user}"
+    )
+
     messages.success(request, f"{medicine.name} added successfully.")
     return redirect("stockmgmt:stock_list")
-
 
 def update_medicine(request):
     if request.method == "POST":
@@ -203,7 +214,13 @@ def update_medicine(request):
         medicine.description = request.POST.get("description")
 
         medicine.save()
-
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="update",
+            module="MEDICINE",
+            record_id=medicine.id,
+            description=f"medicine #{medicine.id} updated by {request.user}"
+        )
         messages.success(request, "Medicine updated successfully.")
 
     return redirect("stockmgmt:stock_list")
@@ -277,6 +294,13 @@ class StockCreateView(LoginRequiredMixin, CreateView):
         obj.last_updated_by = self.request.user
 
         obj.save()
+        ActivityHistory.objects.create(
+            user=self.request.user,
+            action="CREATE",
+            module="STOCK",
+            record_id=obj.id,
+            description=f"Stock #{obj.id} created by {self.request.user}"
+        )
 
         messages.success(self.request, "Stock added successfully.")
         return super().form_valid(form)
@@ -323,7 +347,13 @@ class StockUpdateView(LoginRequiredMixin, UpdateView):
         obj.last_updated_by = self.request.user
 
         obj.save()
-
+        ActivityHistory.objects.create(
+            user=self.request.user,
+            action="UPDATE",
+            module="STOCK",
+            record_id=obj.id,
+            description=f"Stock #{obj.id} updated by {self.request.user}"
+        )
         messages.success(self.request, "Stock updated successfully.")
         return super().form_valid(form)
 
@@ -538,3 +568,14 @@ def bulk_import_stock(request):
         messages.error(request, f"Import failed: {str(e)}")
 
     return redirect("stockmgmt:stock_list")
+
+
+def medicine_check(request):
+
+    q = request.GET.get("q","")
+
+    medicines = Medicine.objects.filter(
+        name__icontains=q
+    ).values("name")[:10]
+
+    return JsonResponse(list(medicines), safe=False)

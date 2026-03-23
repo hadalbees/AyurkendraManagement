@@ -31,7 +31,7 @@
   <div class="card shadow-sm border-0">
     <div class="card-body px-4 py-4">
 
-      <form id="supplierForm" method="post" novalidate>
+      <form method="post">
         {% csrf_token %}
 
         <div class="row g-4">
@@ -46,8 +46,7 @@
                    class="form-control"
                    placeholder="Enter supplier name"
                    value="{{ supplier.name|default:'' }}"
-                  >
-                  <small class="text-danger error-msg"></small>
+                   required>
           </div>
 
           <!-- Phone -->
@@ -111,57 +110,5 @@
 </main>
 
 {% include "includes/script.html" %}
-<script>
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    const form = document.getElementById("supplierForm");
-
-    function setError(input, message) {
-        const error = input.parentElement.querySelector(".error-msg");
-        input.classList.add("is-invalid");
-        if (error) error.innerText = message;
-    }
-
-    function clearError(input) {
-        const error = input.parentElement.querySelector(".error-msg");
-        input.classList.remove("is-invalid");
-        if (error) error.innerText = "";
-    }
-
-    const nameInput = document.querySelector('[name="name"]');
-
-    // 🔥 optional: real-time validation
-    nameInput.addEventListener("input", function () {
-        if (this.value.trim()) {
-            clearError(this);
-        }
-    });
-
-    form.addEventListener("submit", function(e) {
-
-        let isValid = true;
-
-        clearError(nameInput);
-
-        // ✅ EMPTY CHECK
-        if (!nameInput.value.trim()) {
-            setError(nameInput, "Supplier name is required");
-            isValid = false;
-        }
-
-        // ❌ STOP SUBMIT
-        if (!isValid) {
-            e.preventDefault();
-            e.stopPropagation();
-            nameInput.focus();
-            return false;
-        }
-
-    });
-
-});
-
-</script>
 </body>
 </html>

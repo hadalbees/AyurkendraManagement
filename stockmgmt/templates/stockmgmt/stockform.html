@@ -32,7 +32,7 @@
   <div class="card shadow-sm border-0">
     <div class="card-body px-4 py-4">
 
-      <form id="stockForm" method="post" novalidate>
+      <form method="post" novalidate>
         {% csrf_token %}
 
         <div class="row g-4">
@@ -61,7 +61,7 @@
                         </option>
                     {% endfor %}
                 </select>
-                <small class="text-danger error-msg"></small>
+
                 {% elif field.name == "base_unit" %}
                 <select name="base_unit" class="form-select">
                     <option value="">Select Base Unit</option>
@@ -72,7 +72,6 @@
                         </option>
                     {% endfor %}
                 </select>
-                <small class="text-danger error-msg"></small>
 
                 {% else %}
                 <select name="{{ field.name }}" class="form-select">
@@ -83,8 +82,6 @@
                         </option>
                     {% endfor %}
                 </select>
-                <small class="text-danger error-msg"></small>
-
                 {% endif %}
 
             <!-- DATE FIELDS -->
@@ -101,9 +98,6 @@
                        value="{{ field.value|default:'' }}"
                        class="form-control"
                        placeholder="{{ field.label }}">
-
-                       <small class="text-danger error-msg"></small>
-
             {% endif %}
 
             {% if field.help_text %}
@@ -215,80 +209,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     calculateGST();
 });
-
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    const form = document.getElementById("stockForm");
-
-    if (!form) {
-        console.error("Form not found ❌");
-        return;
-    }
-
-    function setError(input, message) {
-        const wrapper = input.closest(".col-md-6");
-        const error = wrapper ? wrapper.querySelector(".error-msg") : null;
-
-        input.classList.add("is-invalid");
-
-        if (error) error.innerText = message;
-    }
-
-    function clearError(input) {
-        const wrapper = input.closest(".col-md-6");
-        const error = wrapper ? wrapper.querySelector(".error-msg") : null;
-
-        input.classList.remove("is-invalid");
-
-        if (error) error.innerText = "";
-    }
-
-    form.addEventListener("submit", function(e) {
-
-        let isValid = true;
-
-        const fields = form.querySelectorAll("input, select");
-
-        fields.forEach(field => {
-
-            clearError(field);
-
-            const label = field.closest(".col-md-6")?.querySelector("label");
-
-            const isRequired =
-                field.hasAttribute("required") ||
-                (label && label.innerText.includes("*"));
-
-            if (isRequired) {
-                if (!field.value || field.value.trim() === "") {
-                    setError(field, "This field is required");
-                    isValid = false;
-                }
-            }
-
-        });
-
-        // 🚨 FORCE STOP SUBMIT
-        if (!isValid) {
-            e.preventDefault();
-            e.stopPropagation();   // 🔥 IMPORTANT
-            console.log("Form blocked ❌");
-
-            // focus first error
-            form.querySelector(".is-invalid")?.focus();
-
-            return false;  // 🔥 EXTRA SAFETY
-        }
-
-        console.log("Form allowed ✅");
-
-    });
-
-});
-
-
-
 </script>
 
 </body>
