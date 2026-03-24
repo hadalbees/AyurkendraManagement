@@ -31,7 +31,7 @@
   <div class="card shadow-sm border-0">
     <div class="card-body px-4 py-4">
 
-      <form method="POST">
+      <form id="departmentForm" method="POST" novalidate>
         {% csrf_token %}
 
         <div class="row g-4">
@@ -45,7 +45,8 @@
                    name="department_name"
                    class="form-control"
                    placeholder="Enter department name"
-                   required>
+                  >
+                   <small class="text-danger error-msg"></small>
           </div>
 
           <!-- Status -->
@@ -99,5 +100,50 @@
 </main>
 
 {% include "includes/script.html" %}
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("departmentForm");
+
+    function setError(input, message) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.add("is-invalid");
+        if (error) error.innerText = message;
+    }
+
+    function clearError(input) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.remove("is-invalid");
+        if (error) error.innerText = "";
+    }
+
+    form.addEventListener("submit", function(e) {
+
+        let isValid = true;
+
+        const name = document.querySelector('[name="department_name"]');
+
+        // clear errors
+        clearError(name);
+
+        // ✅ NAME
+        if (!name.value.trim()) {
+            setError(name, "Department name is required");
+            isValid = false;
+        }
+        // ❌ STOP SUBMIT
+        if (!isValid) {
+            e.preventDefault();
+            e.stopPropagation();
+            form.querySelector(".is-invalid")?.focus();
+            return false;
+        }
+
+    });
+
+});
+
+</script>
 </body>
 </html>

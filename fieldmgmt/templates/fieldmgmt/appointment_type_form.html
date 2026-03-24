@@ -38,7 +38,7 @@ class="btn btn-outline-secondary rounded-pill px-4">
 
 <div class="card-body px-4 py-4">
 
-<form method="POST">
+<form id="appointmenttypeForm" method="POST" novalidate>
 
 {% csrf_token %}
 
@@ -59,8 +59,8 @@ name="appointment_type_name"
 class="form-control"
 placeholder="Enter appointment type"
 value="{{ obj.name|default:'' }}"
-required>
-
+>
+ <small class="text-danger error-msg"></small>
 </div>
 
 
@@ -143,6 +143,50 @@ class="btn bg-gradient-dark px-4">
 </main>
 
 {% include "includes/script.html" %}
+<script>
 
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("appointmenttypeForm");
+
+    function setError(input, message) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.add("is-invalid");
+        if (error) error.innerText = message;
+    }
+
+    function clearError(input) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.remove("is-invalid");
+        if (error) error.innerText = "";
+    }
+
+    form.addEventListener("submit", function(e) {
+
+        let isValid = true;
+
+        const name = document.querySelector('[name="appointment_type_name"]');
+
+        // clear errors
+        clearError(name);
+
+        // ✅ NAME
+        if (!name.value.trim()) {
+            setError(name, "Appointment Type name is required");
+            isValid = false;
+        }
+        // ❌ STOP SUBMIT
+        if (!isValid) {
+            e.preventDefault();
+            e.stopPropagation();
+            form.querySelector(".is-invalid")?.focus();
+            return false;
+        }
+
+    });
+
+});
+
+</script>
 </body>
 </html>

@@ -38,7 +38,7 @@ class="btn btn-outline-secondary rounded-pill px-4">
 
 <div class="card-body px-4 py-4">
 
-<form method="POST">
+<form id="otherChargeForm" method="POST" novalidate>
 
 {% csrf_token %}
 
@@ -55,8 +55,8 @@ type="text"
 name="name"
 class="form-control"
 value="{{ obj.name|default:'' }}"
-required>
-
+>
+<small class="text-danger error-msg"></small>
 </div>
 
 
@@ -65,31 +65,15 @@ required>
 <label class="form-label fw-semibold">
 Type
 </label>
-
 <select name="type" class="form-select">
-
-<option value="Therapy"
-{% if obj.type == "Therapy" %}selected{% endif %}>
-Therapy
-</option>
-
-<option value="Lab"
-{% if obj.type == "Lab" %}selected{% endif %}>
-Lab
-</option>
-
-<option value="Medicine"
-{% if obj.type == "Medicine" %}selected{% endif %}>
-Medicine
-</option>
-
-<option value="Service"
-{% if obj.type == "Service" %}selected{% endif %}>
-Service
-</option>
-
+  <option value="">Select Type</option>
+  <option value="Therapy">Therapy</option>
+  <option value="Lab">Lab</option>
+  <option value="Medicine">Medicine</option>
+  <option value="Service">Service</option>
 </select>
-
+<small class="text-danger error-msg"></small>
+<small class="text-danger error-msg"></small>
 </div>
 
 <div class="col-md-6">
@@ -97,14 +81,10 @@ Service
 <label class="form-label fw-semibold">
 Unit Price
 </label>
-
-<input
-type="number"
-step="0.01"
-name="unit_price"
-class="form-control"
-value="{{ obj.unit_price|default:'' }}"
-required>
+<input type="number" step="0.01" name="unit_price"
+       class="form-control"
+       value="{{ obj.unit_price|default:'' }}">
+<small class="text-danger error-msg"></small>
 
 </div>
 
@@ -168,7 +148,83 @@ Save
 </main>
 
 {% include "includes/script.html" %}
+<script>
 
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("otherChargeForm");
+
+    function setError(input, message) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.add("is-invalid");
+        if (error) error.innerText = message;
+    }
+
+    function clearError(input) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.remove("is-invalid");
+        if (error) error.innerText = "";
+    }
+
+    const nameInput = document.querySelector('[name="name"]');
+    const typeInput = document.querySelector('[name="type"]');
+    const priceInput = document.querySelector('[name="unit_price"]');
+
+    // 🔥 Allow only numbers + decimal
+    priceInput.addEventListener("input", function () {
+        this.value = this.value
+            .replace(/[^0-9.]/g, '')       // remove non-numeric
+            .replace(/(\..*?)\..*/g, '$1'); // only one dot
+    });
+
+    form.addEventListener("submit", function(e) {
+
+        let isValid = true;
+
+        // clear errors
+        clearError(nameInput);
+        clearError(typeInput);
+        clearError(priceInput);
+
+        // ✅ NAME
+        if (!nameInput.value.trim()) {
+            setError(nameInput, "Charge name is required");
+            isValid = false;
+        }
+
+        // ✅ TYPE
+        if (!typeInput.value) {
+            setError(typeInput, "Please select type");
+            isValid = false;
+        }
+
+        // ✅ UNIT PRICE
+        if (!priceInput.value.trim()) {
+            setError(priceInput, "Unit price is required");
+            isValid = false;
+        } 
+        else if (!/^\d+(\.\d+)?$/.test(priceInput.value)) {
+            setError(priceInput, "Enter valid number");
+            isValid = false;
+        } 
+        else if (parseFloat(priceInput.value) <= 0) {
+            setError(priceInput, "Must be greater than 0");
+            isValid = false;
+        }
+
+        // ❌ STOP SUBMIT
+        if (!isValid) {
+            e.preventDefault();
+            e.stopPropagation();
+            form.querySelector(".is-invalid")?.focus();
+            return false;
+        }
+
+    });
+
+});
+
+</script>
 </body>
 </html>
 

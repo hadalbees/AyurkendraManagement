@@ -310,7 +310,7 @@
           class="alert alert-warning"
           style="display:none;">
       </div>
-      <form method="post" action="{% url 'stockmgmt:add_medicine_ajax' %}">
+      <form id="addMedicineForm" method="post" novalidate action="{% url 'stockmgmt:add_medicine_ajax' %}">
         {% csrf_token %}
 
         <div class="row g-3">
@@ -320,13 +320,15 @@
             <label class="form-label fw-semibold">
               Medicine Name <span class="text-danger">*</span>
             </label>
-            <input type="text" id="medicineName" name="name" class="form-control" required>
+            <input type="text" id="medicineName" name="name" class="form-control">
+            <small class="text-danger error-msg"></small>
           </div>
 
           <!-- HSN Code -->
           <div class="col-md-6">
-            <label class="form-label fw-semibold">HSN Code</label>
+            <label class="form-label fw-semibold">HSN Code <span class="text-danger">*</span></label>
             <input type="text" name="hsn_code" class="form-control">
+            <small class="text-danger error-msg"></small>
           </div>
 
           <!-- Form Type -->
@@ -334,12 +336,13 @@
             <label class="form-label fw-semibold">
               Form Type <span class="text-danger">*</span>
             </label>
-            <select name="form_type" class="form-select" required>
+            <select name="form_type" class="form-select">
               <option value="">Select Type</option>
               <option value="LIQUID">Liquid</option>
               <option value="POWDER">Powder</option>
               <option value="PIECE">Piece / Tablet</option>
             </select>
+            <small class="text-danger error-msg"></small>
           </div>
 
           <!-- GST Percentage -->
@@ -348,18 +351,20 @@
               GST % <span class="text-danger">*</span>
             </label>
             <input type="number" step="0.01" name="gst_percentage"
-                   class="form-control" placeholder="Example: 5, 12, 18" required>
+                   class="form-control" placeholder="Example: 5, 12, 18">
+                   <small class="text-danger error-msg"></small>
           </div>
 
           <!-- Ayurvedic Type -->
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Ayurvedic Type</label>
+            <label class="form-label fw-semibold">Ayurvedic Type <span class="text-danger">*</span></label>
             <select name="ayurvedic_type" class="form-select">
               <option value="">Select Ayurvedic Type</option>
               {% for type in ayurvedic_forms %}
                 <option value="{{ type.id }}">{{ type.name }}</option>
               {% endfor %}
             </select>
+            <small class="text-danger error-msg"></small>
           </div>
 
           <!-- Reorder Level -->
@@ -371,9 +376,10 @@
 
           <!-- Expiry Alert Days -->
           <div class="col-md-6">
-            <label class="form-label fw-semibold">Expiry Alert (Days)</label>
+            <label class="form-label fw-semibold">Expiry Alert (Days) <span class="text-danger">*</span></label>
             <input type="number" name="expiry_days_alert"
                    class="form-control" value="30">
+                   <small class="text-danger error-msg"></small>
           </div>
 
           <!-- Description -->
@@ -399,7 +405,7 @@
   <div class="modal-dialog modal-lg">
     <div class="modal-content p-4">
 
-      <form method="post" action="{% url 'stockmgmt:update_medicine' %}">
+      <form id="editMedicineForm" method="post" novalidate action="{% url 'stockmgmt:update_medicine' %}">
         {% csrf_token %}
 
         <input type="hidden" name="medicine_id" id="edit_medicine_id">
@@ -576,6 +582,95 @@ medInput.addEventListener("keyup", function(){
     });
 
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("addMedicineForm");
+
+    if (!form) {
+        console.error("Form not found!");
+        return;
+    }
+
+    function setError(input, message) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.add("is-invalid");
+        if (error) error.innerText = message;
+    }
+
+    function clearError(input) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.remove("is-invalid");
+        if (error) error.innerText = "";
+    }
+
+    form.addEventListener("submit", function(e) {
+
+        console.log("Validation running..."); // 🔥 debug
+
+        let isValid = true;
+
+        const name = form.querySelector('[name="name"]');
+        const hsn = form.querySelector('[name="hsn_code"]');
+        const formType = form.querySelector('[name="form_type"]');
+        const gst = form.querySelector('[name="gst_percentage"]');
+        const ayurvedic = form.querySelector('[name="ayurvedic_type"]');
+        const expiry = form.querySelector('[name="expiry_days_alert"]');
+
+        // clear all errors
+        form.querySelectorAll(".form-control, .form-select").forEach(el => {
+            clearError(el);
+        });
+
+        // NAME
+        if (!name.value.trim()) {
+            setError(name, "Medicine name is required");
+            isValid = false;
+        }
+
+        // HSN
+        if (!hsn.value.trim()) {
+            setError(hsn, "HSN code is required");
+            isValid = false;
+        }
+
+        // FORM TYPE
+        if (!formType.value) {
+            setError(formType, "Select form type");
+            isValid = false;
+        }
+
+        // GST
+        if (!gst.value.trim()) {
+            setError(gst, "GST is required");
+            isValid = false;
+        }
+
+        // AYURVEDIC
+        if (!ayurvedic.value) {
+            setError(ayurvedic, "Select ayurvedic type");
+            isValid = false;
+        }
+
+        // EXPIRY
+        if (!expiry.value.trim()) {
+            setError(expiry, "Expiry alert days required");
+            isValid = false;
+        }
+
+        // ❌ STOP FORM SUBMIT
+        if (!isValid) {
+            e.preventDefault();
+            console.log("Blocked submit ❌");
+            return false;
+        }
+
+        console.log("Form allowed ✅");
+
+    });
+
+});
+
 </script>
 </body>
 </html>

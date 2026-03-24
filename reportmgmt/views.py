@@ -131,24 +131,47 @@ class PatientReportCreateView(LoginRequiredMixin, View):
     def post(self, request, pk):
         patient = get_object_or_404(Patient, pk=pk)
 
-        patientreport = PatientReport.objects.create(
-            patient=patient,
-            report_title=request.POST.get("report_title"),
-            report_type=request.POST.get("report_type"),
-            report_date=request.POST.get("report_date"),
-            uploaded_file=request.FILES.get("uploaded_file"),
-            notes=request.POST.get("notes"),
-            uploaded_by=request.user
-        )
-        ActivityHistory.objects.create(
-            user=request.user,
-            action="CREATE",
-            module="PATIENT REPORT",
-            record_id=patientreport.id,
-            description=f"Patient report #{patientreport.id} created by {request.user}"
-        )
+        report_title = request.POST.get("report_title")
+        report_type = request.POST.get("report_type")
+        report_date = request.POST.get("report_date")
+        uploaded_file = request.FILES.get("uploaded_file")
+        notes = request.POST.get("notes")
 
-        messages.success(request, "Report uploaded successfully.")
+        # ✅ Basic validation
+        if not uploaded_file:
+            messages.error(request, "Please select a file to upload")
+            return redirect(request.path)
+
+        try:
+            patientreport = PatientReport.objects.create(
+                patient=patient,
+                report_title=report_title,
+                report_type=report_type,
+                report_date=report_date,
+                uploaded_file=uploaded_file,  # 👉 S3 will handle this automatically
+                notes=notes,
+                uploaded_by=request.user
+            )
+
+            # ✅ Activity log
+            ActivityHistory.objects.create(
+                user=request.user,
+                action="CREATE",
+                module="PATIENT REPORT",
+                record_id=patientreport.id,
+                description=f"Patient report #{patientreport.id} created by {request.user}"
+            )
+
+            # ✅ Debug (VERY USEFUL)
+            print("S3 FILE URL:", patientreport.uploaded_file.url)
+            print("Saved file path:", patientreport.uploaded_file.name)
+            print("File URL:", patientreport.uploaded_file.url)
+            messages.success(request, "Report uploaded successfully")
+
+        except Exception as e:
+            print("UPLOAD ERROR:", e)
+            messages.error(request, "File upload failed")
+
         return redirect("reportmgmt:patientreports", pk=pk)
 
 

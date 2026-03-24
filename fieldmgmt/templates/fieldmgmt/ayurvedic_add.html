@@ -31,7 +31,7 @@
   <div class="card shadow-sm border-0">
     <div class="card-body px-4 py-4">
 
-      <form method="POST">
+      <form id="ayurvedictypeForm" method="POST" novalidate>
         {% csrf_token %}
 
         <div class="row g-4">
@@ -45,7 +45,8 @@
                    name="name"
                    class="form-control"
                    placeholder="Enter ayurvedic type name"
-                   required>
+                   >
+                   <small class="text-danger error-msg"></small>
           </div>
 
           <!-- Status -->
@@ -99,5 +100,53 @@
 </main>
 
 {% include "includes/script.html" %}
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("ayurvedictypeForm");
+
+    function setError(input, message) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.add("is-invalid");
+        if (error) error.innerText = message;
+    }
+
+    function clearError(input) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.remove("is-invalid");
+        if (error) error.innerText = "";
+    }
+
+    // 🔥 real-time number validation
+    const chargesInput = document.querySelector('[name="charges"]');
+
+    form.addEventListener("submit", function(e) {
+
+        let isValid = true;
+
+        const name = document.querySelector('[name="name"]');
+
+        // clear errors
+        clearError(name);
+
+        // ✅ NAME
+        if (!name.value.trim()) {
+            setError(name, "Ayurvedic Type name is required");
+            isValid = false;
+        }
+        // ❌ STOP SUBMIT
+        if (!isValid) {
+            e.preventDefault();
+            e.stopPropagation();
+            form.querySelector(".is-invalid")?.focus();
+            return false;
+        }
+
+    });
+
+});
+
+</script>
 </body>
 </html>

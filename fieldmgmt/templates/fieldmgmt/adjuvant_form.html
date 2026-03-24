@@ -53,7 +53,7 @@ class="btn btn-outline-secondary rounded-pill px-4">
 
 <div class="card-body px-4 py-4">
 
-<form method="POST">
+<form id="adjuvantForm" method="POST" novalidate>
 
 {% csrf_token %}
 
@@ -71,8 +71,8 @@ type="text"
 name="name"
 class="form-control"
 value="{{ adjuvant.name|default:'' }}"
-required>
-
+>
+ <small class="text-danger error-msg"></small>
 </div>
 
 
@@ -149,6 +149,50 @@ Save
 </main>
 
 {% include "includes/script.html" %}
+<script>
 
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("adjuvantForm");
+
+    function setError(input, message) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.add("is-invalid");
+        if (error) error.innerText = message;
+    }
+
+    function clearError(input) {
+        const error = input.parentElement.querySelector(".error-msg");
+        input.classList.remove("is-invalid");
+        if (error) error.innerText = "";
+    }
+
+    form.addEventListener("submit", function(e) {
+
+        let isValid = true;
+
+        const name = document.querySelector('[name="name"]');
+
+        // clear errors
+        clearError(name);
+
+        // ✅ NAME
+        if (!name.value.trim()) {
+            setError(name, "Adjuvant name is required");
+            isValid = false;
+        }
+        // ❌ STOP SUBMIT
+        if (!isValid) {
+            e.preventDefault();
+            e.stopPropagation();
+            form.querySelector(".is-invalid")?.focus();
+            return false;
+        }
+
+    });
+
+});
+
+</script>
 </body>
 </html>

@@ -19,7 +19,7 @@
     </p>
   </div>
 
-  <form role="form" method="POST">
+  <form role="form" id="staffForm" method="POST" novalidate>
     {% csrf_token %}
 
     <!-- STAFF INFORMATION -->
@@ -31,36 +31,43 @@
 
       <div class="row g-3">
         <div class="col-md-6">
-          <label class="form-label">Name *</label>
+          <label class="form-label">Name <span class="text-danger">*</span></label>
           <input type="text" name="name" class="form-control">
+          <small class="text-danger error-msg"></small>
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">Role *</label>
+          <label class="form-label">Role <span class="text-danger">*</span></label>
           <select name="role" class="form-select">
+            <option value="">-- Select Role --</option>
             {% for r in roles %}
               <option value="{{ r.id }}">{{ r.role_name }}</option>
             {% endfor %}
           </select>
+          <small class="text-danger error-msg"></small>
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">Gender *</label>
+          <label class="form-label">Gender <span class="text-danger">*</span></label>
           <select name="gender" class="form-select">
+            <option value="">-- Select Gender --</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
             <option value="transgender">Other</option>
           </select>
+          <small class="text-danger error-msg"></small>
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">Email *</label>
+          <label class="form-label">Email <span class="text-danger">*</span></label>
           <input type="email" name="email" class="form-control">
+          <small class="text-danger error-msg"></small>
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">Mobile Number *</label>
+          <label class="form-label">Mobile Number <span class="text-danger">*</span></label>
           <input type="text" name="mobile_number" class="form-control">
+          <small class="text-danger error-msg"></small>
         </div>
 
         <div class="col-md-6">
@@ -71,14 +78,13 @@
                   id="password"
                   name="password"
                   class="form-control pe-5"
-                  required>
+                >
 
             <span class="password-eye" onclick="togglePassword()">
               <i id="passwordIcon" class="material-symbols-rounded">visibility</i>
             </span>
           </div>
-
-          <small id="passError" class="text-danger"></small>
+          <small class="text-danger error-msg"></small>
         </div>
 
       </div>
@@ -167,7 +173,122 @@ function togglePassword() {
         icon.textContent = 'visibility';
     }
 }
-</script>
 
+// ✅ Helper functions
+function setError(input, message) {
+    const errorElement = input.parentElement.querySelector(".error-msg");
+    input.classList.add("is-invalid");
+    if (errorElement) errorElement.innerText = message;
+}
+
+function clearError(input) {
+    const errorElement = input.parentElement.querySelector(".error-msg");
+    input.classList.remove("is-invalid");
+    if (errorElement) errorElement.innerText = "";
+}
+
+
+// ✅ Password validation (EMPTY + RULE)
+function validatePassword() {
+    const password = document.getElementById("password");
+    const value = password.value.trim();
+    const regex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+
+    if (!value) {
+        setError(password, "Password is required");
+        return false;
+    }
+
+    if (!regex.test(value)) {
+        setError(password, "Min 8 chars, uppercase, lowercase, number & special char required");
+        return false;
+    }
+
+    clearError(password);
+    return true;
+}
+
+document.getElementById("password").addEventListener("input", validatePassword);
+
+
+// 👁️ toggle
+function togglePassword() {
+    const input = document.getElementById('password');
+    const icon = document.getElementById('passwordIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.textContent = 'visibility_off';
+    } else {
+        input.type = 'password';
+        icon.textContent = 'visibility';
+    }
+}
+
+
+// ✅ MAIN FORM VALIDATION
+document.getElementById("staffForm").addEventListener("submit", function(e) {
+
+    let isValid = true;
+
+    const name = document.querySelector('[name="name"]');
+    const role = document.querySelector('[name="role"]');
+    const gender = document.querySelector('[name="gender"]');
+    const email = document.querySelector('[name="email"]');
+    const mobile = document.querySelector('[name="mobile_number"]');
+    const password = document.getElementById("password");
+
+    // clear all errors
+    document.querySelectorAll(".form-control, .form-select").forEach(el => {
+        clearError(el);
+    });
+
+    // ✅ NAME
+    if (!name.value.trim()) {
+        setError(name, "Name is required");
+        isValid = false;
+    }
+
+    // ✅ ROLE
+    if (!role.value || role.value === "") {
+        setError(role, "Role is required");
+        isValid = false;
+    }
+
+    // ✅ GENDER
+    if (!gender.value || gender.value === "") {
+        setError(gender, "Gender is required");
+        isValid = false;
+    }
+
+    // ✅ EMAIL (EMPTY + FORMAT)
+    if (!email.value.trim()) {
+        setError(email, "Email is required");
+        isValid = false;
+    } else if (!/^\S+@\S+\.\S+$/.test(email.value)) {
+        setError(email, "Enter valid email");
+        isValid = false;
+    }
+
+    // ✅ MOBILE (EMPTY + FORMAT)
+    if (!mobile.value.trim()) {
+        setError(mobile, "Mobile number is required");
+        isValid = false;
+    } else if (!/^[0-9]{10}$/.test(mobile.value)) {
+        setError(mobile, "Enter valid 10 digit mobile number");
+        isValid = false;
+    }
+
+    // ✅ PASSWORD (EMPTY + RULE)
+    if (!validatePassword()) {
+        isValid = false;
+    }
+
+    // ❌ STOP SUBMIT
+    if (!isValid) {
+        e.preventDefault();
+    }
+
+});
+</script>
 </body>
 </html>
