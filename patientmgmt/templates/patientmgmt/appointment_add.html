@@ -89,11 +89,10 @@
               <option value="">Select</option>
 
               {% for a in appointment_types %}
-              <option value="{{ a.id }}">
+              <option value="{{ a.id }}" data-name="{{ a.name|upper }}">
                 {{ a.name }}
               </option>
               {% endfor %}
-
             </select>
 
           </div>
@@ -207,7 +206,8 @@
 <script>
 document.getElementById("apptType").addEventListener("change", function () {
 
-  const value = this.value;
+  const selectedOption = this.options[this.selectedIndex];
+  const typeName = selectedOption.getAttribute("data-name");
 
   const doctorDiv = document.getElementById("doctorDiv");
   const therapistDiv = document.getElementById("therapistDiv");
@@ -218,32 +218,29 @@ document.getElementById("apptType").addEventListener("change", function () {
   therapistDiv.style.display = "none";
   therapyDiv.style.display = "none";
 
-  if (value === "CONSULT") {
+  if (!typeName) return;
 
+  const type = typeName.toUpperCase();
+
+  if (type === "CONSULTATION" || type === "CONSULT") {
     doctorDiv.style.display = "block";
     loadDoctors("Doctor", "doctorSelect");
-
   }
 
-  else if (value === "THERAPY") {
-
+  else if (type === "THERAPY") {
     therapyDiv.style.display = "block";
     therapistDiv.style.display = "block";
     loadDoctors("Therapist", "therapistSelect");
-
   }
 
-  else if (value === "BOTH") {
-
+  else if (type === "BOTH") {
     doctorDiv.style.display = "block";
     therapistDiv.style.display = "block";
     therapyDiv.style.display = "block";
 
     loadDoctors("Doctor", "doctorSelect");
     loadDoctors("Therapist", "therapistSelect");
-
   }
-
 });
 
 let bookedSlots = [];
@@ -291,7 +288,7 @@ function openSlotModal() {
 /* ================= CONVERT TIME ================= */
 function to12Hour(time24) {
   let [h, m] = time24.split(":");
-  h = parseInt(h);
+  h = parseInt(h, 10);
   const ampm = h >= 12 ? "PM" : "AM";
   h = h % 12 || 12;
   return `${h}:${m} ${ampm}`;
@@ -325,33 +322,39 @@ function loadSlots() {
 }
 
 
-/* ================= RENDER SLOT BUTTONS ================= */
+/* ================= RENDER SLOT BUTTONS (30-MIN INTERVALS) ================= */
 function renderSlots() {
 
   const box = document.getElementById("slotsContainer");
   box.innerHTML = "";
 
-  for (let hour = 9; hour <= 18; hour++) {
+  const startHour = 9;   // Clinic opening time (9 AM)
+  const endHour = 18;    // Clinic closing time (6 PM)
+  const interval = 30;   // Slot duration in minutes
 
-    const time24 = String(hour).padStart(2, "0") + ":00";
-    const time12 = to12Hour(time24);
+  for (let hour = startHour; hour < endHour; hour++) {
+    for (let minute = 0; minute < 60; minute += interval) {
 
-    const btn = document.createElement("button");
+      const h = String(hour).padStart(2, "0");
+      const m = String(minute).padStart(2, "0");
 
-    if (bookedSlots.includes(time24)) {
+      const time24 = `${h}:${m}`; // Format: HH:MM (24-hour)
+      const time12 = to12Hour(time24);
 
-      btn.className = "btn btn-secondary btn-sm";
-      btn.textContent = time12 + " (Booked)";
-      btn.disabled = true;
+      const btn = document.createElement("button");
 
-    } else {
+      if (bookedSlots.includes(time24)) {
+        btn.className = "btn btn-secondary btn-sm";
+        btn.textContent = `${time12} (Booked)`;
+        btn.disabled = true;
+      } else {
+        btn.className = "btn btn-outline-success btn-sm";
+        btn.textContent = time12;
+        btn.onclick = () => selectSlot(time24, time12);
+      }
 
-      btn.className = "btn btn-outline-success btn-sm";
-      btn.textContent = time12;
-      btn.onclick = () => selectSlot(time24, time12);
+      box.appendChild(btn);
     }
-
-    box.appendChild(btn);
   }
 }
   
