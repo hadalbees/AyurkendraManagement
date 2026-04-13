@@ -35,7 +35,7 @@ from django.utils.timezone import now
 from billingmgmt.models import HospitalSetting
 from fieldmgmt.models import AppointmentType
 from django.db.models import Q
-
+from django.utils.dateparse import parse_date, parse_time
 
 from .models import (
     Appointment,
@@ -897,27 +897,43 @@ def appointment_edit(request, pk):
     appointment_types = AppointmentType.objects.filter(status=True)
 
     if request.method == "POST":
-        appt.appointment_type = request.POST.get("appointment_type")
-        appt.appointment_date = request.POST.get("appointment_date")
-        appt.appointment_time = request.POST.get("appointment_time")
-        appt.status = request.POST.get("status")
-        appt.notes = request.POST.get("notes")
-
+        # Get POST data
+        appointment_type_id = request.POST.get("appointment_type")
+        appointment_date = request.POST.get("appointment_date")
+        appointment_time = request.POST.get("appointment_time")
+        status = request.POST.get("status")
+        notes = request.POST.get("notes")
         therapy_id = request.POST.get("therapy")
 
-        # Only assign therapy if type is THERAPY or BOTH
-        if appt.appointment_type in ['THERAPY', 'BOTH'] and therapy_id:
-            appt.therapy = TherapyMaster.objects.get(id=therapy_id)
-        else:
-            appt.therapy = None  # Clear therapy if type is CONSULT
+        # ✅ Fetch AppointmentType instance
+        appointment_type = get_object_or_404(
+            AppointmentType, id=appointment_type_id
+        )
+        appt.appointment_type = appointment_type
 
+        # ✅ Convert and assign date & time
+        appt.appointment_date = parse_date(appointment_date)
+        appt.appointment_time = parse_time(appointment_time)
+
+        appt.status = status
+        appt.notes = notes
+
+        # ✅ Assign Therapy based on Appointment Type
+        if appointment_type.name.upper() in ["THERAPY", "BOTH"] and therapy_id:
+            appt.therapy = get_object_or_404(TherapyMaster, id=therapy_id)
+        else:
+            appt.therapy = None
+
+        # Save the appointment
         appt.save()
+
+        # Log activity
         ActivityHistory.objects.create(
             user=request.user,
             action="UPDATE",
-             module="PATIENT APPOINMENT",
+            module="PATIENT APPOINTMENT",
             record_id=appt.id,
-            description=f"Appoinment #{appt.id} updated by {request.user}"
+            description=f"Appointment #{appt.id} updated by {request.user}"
         )
 
         return redirect("patientmgmt:appointment_list")
@@ -925,10 +941,8 @@ def appointment_edit(request, pk):
     return render(request, "patientmgmt/appointment_edit.html", {
         "appt": appt,
         "therapies": therapies,
-        "appointment_types":appointment_types
+        "appointment_types": appointment_types
     })
-
-
 # APPOINMENT DELETE
 def appointment_delete(request, pk):
     appt = get_object_or_404(Appointment, id=pk)
@@ -1017,27 +1031,27 @@ def get_patient_suggestions(request):
 
 
 def booked_slots(request):
-
     date = request.GET.get("date")
     doctor_id = request.GET.get("doctor")
     therapist_id = request.GET.get("therapist")
+    exclude_id = request.GET.get("exclude_id")
 
     if not date:
         return JsonResponse({"booked": []})
 
-    # Only active appointments should block
     appointments = Appointment.objects.filter(
         appointment_date=date,
         status__in=["PENDING", "CONFIRMED"]
     )
 
-    # If doctor selected → filter only that doctor
     if doctor_id:
         appointments = appointments.filter(doctor_id=doctor_id)
 
-    # If therapist selected → filter only that therapist
     if therapist_id:
         appointments = appointments.filter(therapist_id=therapist_id)
+
+    if exclude_id:
+        appointments = appointments.exclude(id=exclude_id)
 
     booked_times = appointments.values_list("appointment_time", flat=True)
 
@@ -1074,7 +1088,6 @@ def get_doctors_by_role(request):
     ]
 
     return JsonResponse({"doctors": data})
-
 
 def check_availability(request):
 
