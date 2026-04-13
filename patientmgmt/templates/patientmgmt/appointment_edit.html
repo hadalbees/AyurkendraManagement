@@ -69,20 +69,15 @@
           <div class="col-md-4">
             <label class="form-label">Appointment Type</label>
 
-            <select id="apptType"
-                    name="appointment_type"
-                    class="form-select"
-                    required>
-
+            <select id="apptType" name="appointment_type" class="form-select" required>
               <option value="">Select</option>
-
               {% for a in appointment_types %}
-             <option value="{{ a.id }}"
-              {% if a.name == appointment.appointment_type %}selected{% endif %}>
-              {{ a.name }}
-              </option>
+                <option value="{{ a.id }}"
+                        data-name="{{ a.name|upper }}"
+                        {% if appt.appointment_type and appt.appointment_type.id == a.id %}selected{% endif %}>
+                  {{ a.name }}
+                </option>
               {% endfor %}
-
             </select>
 
           </div>
@@ -208,9 +203,26 @@
 
 <!-- ================= YOUR SCRIPT (UNCHANGED) ================= -->
 <script>
-document.getElementById("apptType").addEventListener("change", function(){
-  document.getElementById("therapyDiv").style.display =
-    (this.value === "THERAPY" || this.value === "BOTH") ? "block" : "none";
+document.getElementById("apptType").addEventListener("change", function () {
+  const selectedOption = this.options[this.selectedIndex];
+  const typeName = selectedOption.getAttribute("data-name");
+
+  const therapyDiv = document.getElementById("therapyDiv");
+
+  if (!typeName) {
+    therapyDiv.style.display = "none";
+    return;
+  }
+
+  const type = typeName.toUpperCase();
+
+  therapyDiv.style.display =
+    (type === "THERAPY" || type === "BOTH") ? "block" : "none";
+});
+
+// Trigger on page load
+window.addEventListener("load", () => {
+  document.getElementById("apptType").dispatchEvent(new Event("change"));
 });
 window.onload = () =>
   document.getElementById("apptType").dispatchEvent(new Event("change"));
@@ -226,7 +238,7 @@ function openSlotModal(){
 }
 
 function to12Hour(time){
-  let [h,m] = time.split(":");
+  let [h, m] = time.split(":");
   h = parseInt(h);
   const ap = h >= 12 ? "PM" : "AM";
   h = h % 12 || 12;
@@ -237,7 +249,13 @@ function loadSlots(){
   selectedDate = document.getElementById("slotDate").value;
   if(!selectedDate) return;
 
-  fetch("{% url 'patientmgmt:booked_slots' %}?date=" + selectedDate)
+  const doctor = document.getElementById("doctorSelect")?.value || "";
+  const therapist = document.getElementById("therapistSelect")?.value || "";
+
+  fetch("{% url 'patientmgmt:booked_slots' %}?date="
+        + selectedDate
+        + "&doctor=" + doctor
+        + "&therapist=" + therapist)
     .then(r => r.json())
     .then(d => {
       bookedSlots = d.booked || [];
@@ -252,27 +270,37 @@ function renderSlots(){
   const currentDate = "{{ appt.appointment_date|date:'Y-m-d' }}";
   const currentTime = "{{ appt.appointment_time|time:'H:i' }}";
 
-  for(let h=9; h<=18; h++){
-    const t24 = String(h).padStart(2,"0")+":00";
-    const t12 = to12Hour(t24);
+  const startHour = 9;
+  const endHour = 18;
+  const interval = 30;
 
-    const isBooked =
-      bookedSlots.includes(t24) &&
-      !(selectedDate === currentDate && t24 === currentTime);
+  for (let hour = startHour; hour < endHour; hour++) {
+    for (let minute = 0; minute < 60; minute += interval) {
 
-    const btn = document.createElement("button");
+      const h = String(hour).padStart(2, "0");
+      const m = String(minute).padStart(2, "0");
 
-    if(isBooked){
-      btn.className = "btn btn-secondary btn-sm";
-      btn.textContent = t12 + " (Booked)";
-      btn.disabled = true;
-    }else{
-      btn.className = "btn btn-outline-success btn-sm";
-      btn.textContent = t12;
-      btn.onclick = () => selectSlot(t24);
+      const time24 = `${h}:${m}`;
+      const time12 = to12Hour(time24);
+
+      const isBooked =
+        bookedSlots.includes(time24) &&
+        !(selectedDate === currentDate && time24 === currentTime);
+
+      const btn = document.createElement("button");
+
+      if (isBooked) {
+        btn.className = "btn btn-secondary btn-sm";
+        btn.textContent = `${time12} (Booked)`;
+        btn.disabled = true;
+      } else {
+        btn.className = "btn btn-outline-success btn-sm";
+        btn.textContent = time12;
+        btn.onclick = () => selectSlot(time24);
+      }
+
+      box.appendChild(btn);
     }
-
-    box.appendChild(btn);
   }
 }
 
