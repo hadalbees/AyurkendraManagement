@@ -34,6 +34,8 @@ from reportlab.lib.utils import ImageReader
 from django.utils.timezone import now
 from billingmgmt.models import HospitalSetting
 from fieldmgmt.models import AppointmentType
+from django.db.models import Q
+
 
 from .models import (
     Appointment,
@@ -112,14 +114,12 @@ class PatientRegistrationView(LoginRequiredMixin, View):
 
         current_time = timezone.localtime().strftime("%I:%M %p")
 
-        # Get Doctor Role
-        doctor_role = Role.objects.filter(role_name__iexact="Doctor").first()
-
-        # Get all active doctors
         doctors = CustomUser.objects.filter(
-            role=doctor_role,
-            is_active=True
-        ) if doctor_role else []
+                    Q(role__role_name__icontains="Doctor") |
+                    Q(role__role_name__icontains="Consultant") |
+                    Q(role__role_name__icontains="Surgeon"),
+                    is_active=True
+                ).select_related('role').order_by('username').distinct()
         
         # ✅ Get Active Departments
         departments = Department.objects.filter(status=True).order_by("department_name")
@@ -1046,28 +1046,31 @@ def booked_slots(request):
     })
 
 def get_doctors_by_role(request):
+    role_name = request.GET.get("role", "").lower()
 
-    role_name = request.GET.get("role")
+    if role_name == "doctor":
+        users = CustomUser.objects.filter(
+            Q(role__role_name__icontains="doctor") |
+            Q(role__role_name__icontains="consultant") |
+            Q(role__role_name__icontains="surgeon"),
+            is_active=True
+        )
 
-    if not role_name:
-        return JsonResponse({"doctors": []})
+    elif role_name == "therapist":
+        users = CustomUser.objects.filter(
+            role__role_name__icontains="therapist",
+            is_active=True
+        )
 
-    try:
-        role = Role.objects.get(role_name__iexact=role_name)
-    except Role.DoesNotExist:
-        return JsonResponse({"doctors": []})
-
-    doctors = CustomUser.objects.filter(
-        role=role,
-        is_active=True
-    )
+    else:
+        users = CustomUser.objects.none()
 
     data = [
         {
-            "id": d.id,
-            "name": d.get_full_name() or d.username
+            "id": user.id,
+            "name": f"{user.get_full_name() or user.username} ({user.role.role_name})"
         }
-        for d in doctors
+        for user in users
     ]
 
     return JsonResponse({"doctors": data})
