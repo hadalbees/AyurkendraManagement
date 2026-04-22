@@ -135,15 +135,16 @@ th { background:#f2f2f2; }
 <p class="right">
   Payment Status: {{ bill.payment_status }}
 </p>
-<!-- ================= FOOTER ================= -->
-<div class="footer">
-  This is a computer-generated medical bill and does not require a signature
-</div>
-<!-- ================= ACTION ================= -->
-<div class="no-print">
-  <button onclick="window.print()">🖨 Print</button>
-  <a href="{% url 'billingmgmt:therapybilling' %}">⬅ Back</a>
-</div>
 
+  <div class="footer" style="position: absolute;bottom: 0;text-align: center;width: 100%;">
+  This is a computer-generated therapy bill and does not require a signature
+</div>
+  <div class="no-print" style="text-align:center; margin-top:20px;">
+  <button onclick="window.print()">🖨 Print</button>
+  <a href="{% url 'billingmgmt:therapybilling' %}"
+     style="padding:6px 12px;border:1px solid #000;text-decoration:none;color:#000;">
+     ⬅ Back
+  </a>
+</div>
 </body>
 </html>
