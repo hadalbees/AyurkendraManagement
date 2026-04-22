@@ -111,12 +111,13 @@
                     edit
                   </i>
                 </a>
-                <a href="{% url 'staff_delete' s.id %}" class="icon-btn delete">
-                  <i class="material-symbols-rounded text-danger"
-                     style="font-variation-settings:'FILL' 1,'wght' 500;">
-                    delete
-                  </i>
-                </a>
+                <button type="button"
+                        class="icon-btn delete"
+                        data-id="{{ s.id }}"
+                        data-name="{{ s.username }}"
+                        onclick="openDeleteModal(this)">
+                    <i class="material-symbols-rounded text-danger">delete</i>
+                </button>
               </td>
             </tr>
           {% empty %}
@@ -195,7 +196,36 @@
 
 </div>
 
+<div class="modal fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
 
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Delete Staff</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body text-center">
+        <p id="deleteText"></p>
+        <p class="text-danger">⚠ This action cannot be undone</p>
+      </div>
+
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+
+        <form method="post" id="deleteForm">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">
+            Yes, Delete
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
 </main>
 
 {% include "includes/script.html" %}
@@ -233,7 +263,22 @@ function getCookie(name) {
   }
   return cookieValue;
 }
-</script>
 
+function openDeleteModal(btn) {
+    const id = btn.getAttribute("data-id");
+    const name = btn.getAttribute("data-name");
+
+    // Update text
+    document.getElementById("deleteText").innerHTML =
+        `Are you sure you want to delete <strong>${name}</strong>?`;
+
+    // Update form action
+    document.getElementById("deleteForm").action =
+        `/permission/staff/delete/${id}/`;
+
+    // Show modal
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
 </body>
 </html>

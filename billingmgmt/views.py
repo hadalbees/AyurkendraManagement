@@ -478,7 +478,8 @@ def inpatient_billing_view(request):
 
         # ---- GST FROM SETTINGS ----
         settings = HospitalSetting.objects.first()
-        gst_percent = Decimal(settings.consultation_gst or 0) if settings else Decimal("0")
+        gst_value = getattr(settings, "consultation_gst", 0) if settings else 0
+        gst_percent = Decimal(gst_value or 0)
 
         item_names = request.POST.getlist("item_name[]")
         item_rates = request.POST.getlist("item_rate[]")
@@ -614,7 +615,8 @@ def edit_inpatient_bill_view(request, bill_no):
         item_types = request.POST.getlist("item_type[]")
         item_stock_ids = request.POST.getlist("item_stock_id[]")
 
-        gst_percent = Decimal(settings.consultation_gst or 0)
+        gst_value = getattr(settings, "consultation_gst", 0) if settings else 0
+        gst_percent = Decimal(gst_value or 0)
 
         with transaction.atomic():
 
@@ -799,7 +801,9 @@ def print_inpatient_bill(request, bill_no):
 
     # ---- SETTINGS ----
     settings = HospitalSetting.objects.first()
-    gst_percent = Decimal(settings.consultation_gst or 0).quantize(
+
+    gst_value = getattr(settings, "consultation_gst", 0) if settings else 0
+    gst_percent = Decimal(gst_value or 0).quantize(
         Decimal("0.01"), rounding=ROUND_HALF_UP
     )
 
@@ -896,7 +900,9 @@ def outpatient_billing_view(request):
 
     # -------- GST --------
     settings = HospitalSetting.objects.first()
-    gst_percent = Decimal(settings.consultation_gst or 0) if settings else Decimal("0")
+
+    gst_value = getattr(settings, "consultation_gst", 0) if settings else 0
+    gst_percent = Decimal(gst_value or 0)
 
     tax = (
         subtotal_after_discount * gst_percent / Decimal("100")
@@ -990,7 +996,8 @@ def edit_outpatient_bill_view(request, bill_no):
         item_rates = request.POST.getlist("item_rate[]")
         item_qtys = request.POST.getlist("item_qty[]")
 
-        gst_percent = Decimal(settings.consultation_gst or 0) if settings else Decimal("0")
+        gst_value = getattr(settings, "consultation_gst", 0) if settings else 0
+        gst_percent = Decimal(gst_value or 0)
 
         with transaction.atomic():
 
@@ -1078,9 +1085,10 @@ def print_outpatient_bill(request, bill_no):
 
     # ---- SETTINGS ----
     settings = HospitalSetting.objects.first()
-    gst_percent = Decimal(settings.consultation_gst or 0).quantize(
-        Decimal("0.01"), rounding=ROUND_HALF_UP
-    )
+
+    gst_percent = Decimal(
+        getattr(settings, "consultation_gst", 0) if settings else 0
+    ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     # ---- GST SPLIT (PERCENT) ----
     cgst_percent = (gst_percent / 2).quantize(Decimal("0.01"))
@@ -1167,12 +1175,24 @@ def therapy_billing_view(request):
         # ---------- TOTAL ----------
         total = subtotal_with_gst - discount
 
-        # ---------- BALANCE ----------
-        balance_amount = total - advance_payment
+        # ---------- BALANCE LOGIC (FINAL FIX) ----------
 
-        if balance_amount < 0:
+        # Normalize status
+        print("STATUS:", payment_status)
+        status = (payment_status or "").strip().lower()
+
+        # ✅ Paid → always full payment
+        if status == "paid":
+            advance_payment = total
             balance_amount = Decimal("0.00")
 
+        # ✅ Partial payment
+        elif advance_payment > 0:
+            balance_amount = total - advance_payment
+
+        # ✅ No payment
+        else:
+            balance_amount = total
         # ---------- FORM ARRAYS ----------
         therapy_ids = request.POST.getlist("therapy_id[]")
         quantities = request.POST.getlist("quantity[]")

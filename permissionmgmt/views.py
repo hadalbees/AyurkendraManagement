@@ -132,17 +132,25 @@ def staffeditform(request, pk):
         "permissions_list": PERMISSIONS_DISPLAY
     })
 def staff_delete_view(request, pk):
-    staff = get_object_or_404(CustomUser, pk=pk)
-    staff.is_active = False   # ✅ Use built-in field
-    staff.save()
-    ActivityHistory.objects.create(
-        user=request.user,
-        action="DELETE",
-        module="STAFF",
-        record_id=staff.id,
-        description=f"Staff #{staff.id} deleted by {request.user}"
-    )
-    messages.success(request, f"Staff '{staff.username}' deleted successfully!")
+    if request.method == "POST":
+        staff = get_object_or_404(CustomUser, pk=pk)
+
+        if staff.is_superuser:
+            messages.error(request, "Cannot delete admin user")
+            return redirect("permissionhome")
+
+        staff.delete()
+
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="DELETE",
+            module="STAFF",
+            record_id=pk,
+            description=f"Staff #{pk} deleted by {request.user}"
+        )
+
+        messages.success(request, "Staff deleted successfully!")
+
     return redirect("permissionhome")
 
 

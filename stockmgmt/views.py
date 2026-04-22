@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.db.models import Q
 from django.contrib.auth.mixins import LoginRequiredMixin
 from decimal import Decimal, InvalidOperation
-
+import re
 from django.http import JsonResponse
 from django.db import models
 
@@ -431,7 +431,122 @@ def safe_decimal(value, default=0):
         return Decimal(default)
 
 
-def bulk_import_stock(request):
+def detect_form_type(name):
+    name = name.lower()
+
+    if "ml" in name:
+        return "LIQUID"
+    elif "gm" in name or "gms" in name:
+        return "POWDER"
+    else:
+        return "PIECE"
+    
+def detect_ayurvedic_type(name):
+    name = name.lower()
+
+    mapping = {
+        "cream": "Cream",
+        "capsule": "Capsules",
+        "cap": "Capsules",
+        "tablet": "Tablet",
+        "tab": "Tablet",
+        "soap": "Soap",
+        "lehyam": "Lehyam",
+        "lotion": "Lotion",
+        "oil": "Oil",
+        "choornam": "Powder",
+        "churna": "Powder",
+    }
+
+    for key, value in mapping.items():
+        if key in name:
+            return value
+
+    return None
+ 
+def normalize_category(name):
+    if not name:
+        return None
+
+    name = str(name).strip().lower()
+
+    mapping = {
+        "kashayam": "Kashayam",
+        "kasayam": "Kashayam",
+        "kashyam": "Kashayam",
+
+        "aristam": "Arishtam",
+        "arishtam": "Arishtam",
+
+        "asavam": "Asavam",
+
+        "thailam": "Thailam",
+
+        "tablet": "Tablet",
+        "tablets": "Tablet",
+
+        "capsule": "Capsules",
+        "capsules": "Capsules",
+        "cap": "Capsules",
+
+        "choornam": "Choornam",
+        "churnam": "Choornam",
+        "churna": "Choornam",
+        "powder": "Choornam",
+
+        "lehyam": "Lehyam",
+
+        "rasayanam": "Rasayanam",
+
+        "gritham": "Gritham",
+        "ghritam": "Gritham",
+
+        "gulika": "Gulika",
+        "vatika": "Gulika",
+        "vatakam": "Gulika",
+
+        "bhasmam": "Bhasmam",
+
+        "soap": "Soap",
+
+        "cream": "Cream",
+        "ointment": "Ointment",
+        "oinment": "Ointment",
+
+        "lotion": "Lotion",
+
+        "syrup": "Syrup",
+    }
+
+    return mapping.get(name, name.title())
+
+def get_or_create_ayurvedic_type(category_name):
+    if not category_name:
+        return None
+
+    normalized_name = normalize_category(category_name)
+
+    obj = AyurvedicType.objects.filter(
+        name__iexact=normalized_name
+    ).first()
+
+    if obj:
+        return obj
+
+    return AyurvedicType.objects.create(
+        name=normalized_name,
+        status=True
+    )
+    
+    
+def normalize_name(name):
+    """Normalize for exact duplicate check"""
+    name = str(name).strip().lower()
+    name = re.sub(r"\s+", " ", name)
+    return name
+
+
+def bulk_import_medicine(request):
     if request.method != "POST":
         return redirect("stockmgmt:stock_list")
 
@@ -441,12 +556,17 @@ def bulk_import_stock(request):
         return redirect("stockmgmt:stock_list")
 
     try:
+        import pandas as pd
+        from django.db import transaction
+
+        # Read file
         if file.name.endswith(".csv"):
             df = pd.read_csv(file)
         else:
-            df = pd.read_excel(file)
+            df = pd.read_excel(file, engine="openpyxl")
 
-        # Normalize columns
+        df = df.dropna(how="all")
+
         df.columns = (
             df.columns
             .str.strip()
@@ -454,120 +574,76 @@ def bulk_import_stock(request):
             .str.replace(" ", "_")
         )
 
-        # 🔴 Check required columns
-        missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
-        if missing:
-            messages.error(
-                request,
-                f"Missing required columns: {', '.join(missing)}"
-            )
-            return redirect("stockmgmt:stock_list")
-
         created = 0
-        updated = 0
+        duplicates = 0
         skipped = 0
+
+        # ✅ Load existing names from DB (normalized)
+        existing_names = set(
+            normalize_name(name)
+            for name in Medicine.objects.values_list("name", flat=True)
+        )
 
         with transaction.atomic():
 
-            for index, row in df.iterrows():
+            for _, row in df.iterrows():
 
                 medicine_name = str(row.get("medicine_name", "")).strip()
-                batch_number = str(row.get("batch_number", "")).strip()
 
-                if not medicine_name or not batch_number:
+                if not medicine_name:
                     skipped += 1
                     continue
 
-                pack_size = safe_decimal(row.get("pack_size"))
-                number_of_packs = safe_decimal(row.get("number_of_packs"))
-                unit_price = safe_decimal(row.get("unit_price"))
-                selling_price = safe_decimal(row.get("selling_price"))
+                normalized_name = normalize_name(medicine_name)
+                
 
-                if pack_size <= 0 or number_of_packs <= 0:
-                    skipped += 1
+                # ✅ ONLY CHECK FULL NAME
+                if normalized_name in existing_names:
+                    duplicates += 1
                     continue
 
-                total_qty = pack_size * number_of_packs
+                # Add to set (so next same name in Excel won't insert twice)
+                existing_names.add(normalized_name)
 
-                if total_qty <= 0:
-                    skipped += 1
-                    continue
+                # Category
+                category = row.get("category")
+                ayurvedic_type_obj = get_or_create_ayurvedic_type(category)
 
-                price_per_unit = selling_price / total_qty
+                # Form type
+                form_type = detect_form_type(medicine_name)
 
-                # Medicine create or get
-                medicine, _ = Medicine.objects.get_or_create(
+                # GST
+                sgst = safe_decimal(row.get("sgst"), 0)
+                cgst = safe_decimal(row.get("cgst"), 0)
+                gst = sgst + cgst
+
+                reorder_level = safe_decimal(row.get("reorder_level"), 0)
+                expiry_alert = safe_decimal(row.get("expiry_days_alert"), 30)
+                hsn_code = str(row.get("hsn_code", "")).strip()
+
+                # ✅ INSERT
+                Medicine.objects.create(
                     name=medicine_name,
-                    defaults={
-                        "form_type": row.get("form_type", "PIECE"),
-                        "gst_percentage": safe_decimal(
-                            row.get("gst_percentage"), 0
-                        ),
-                        "reorder_level": 0,
-                        "expiry_days_alert": 30,
-                    }
+                    form_type=form_type,
+                    gst_percentage=gst,
+                    reorder_level=reorder_level,
+                    expiry_days_alert=expiry_alert,
+                    hsn_code=hsn_code,
+                    ayurvedic_type=ayurvedic_type_obj,
                 )
 
-                stock = Stock.objects.filter(
-                    batch_number=batch_number
-                ).first()
-
-                if stock:
-                    # Update existing stock
-                    stock.total_base_quantity += total_qty
-                    stock.number_of_packs += number_of_packs
-                    stock.unit_price = unit_price
-                    stock.selling_price = selling_price
-                    stock.price_per_base_unit = price_per_unit
-                    stock.updated_at = timezone.now()
-                    stock.save()
-
-                    updated += 1
-
-                    StockTransaction.objects.create(
-                        stock_item=stock,
-                        transaction_type="ADJUSTMENT",
-                        quantity_change=total_qty,
-                        recorded_by=request.user,
-                        notes="Bulk import update"
-                    )
-
-                else:
-                    # Create new stock
-                    stock = Stock.objects.create(
-                        medicine=medicine,
-                        batch_number=batch_number,
-                        base_unit=row.get("base_unit", "piece"),
-                        pack_size=pack_size,
-                        number_of_packs=number_of_packs,
-                        total_base_quantity=total_qty,
-                        unit_price=unit_price,
-                        selling_price=selling_price,
-                        gst_amount=Decimal("0"),
-                        price_per_base_unit=price_per_unit,
-                        expiry_date=row.get("expiry_date", None),
-                        last_updated_by=request.user,
-                    )
-
-                    created += 1
-
-                    StockTransaction.objects.create(
-                        stock_item=stock,
-                        transaction_type="PURCHASE",
-                        quantity_change=total_qty,
-                        recorded_by=request.user,
-                        notes="Bulk import new stock"
-                    )
+                created += 1
 
         messages.success(
             request,
-            f"Import Complete ✔ Created: {created}, Updated: {updated}, Skipped: {skipped}"
+            f"Import Done ✔ Created: {created}, Duplicates Skipped: {duplicates}, Skipped: {skipped}"
         )
 
     except Exception as e:
         messages.error(request, f"Import failed: {str(e)}")
 
     return redirect("stockmgmt:stock_list")
+
 
 
 def medicine_check(request):
