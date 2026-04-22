@@ -144,77 +144,33 @@
 
 {% include "includes/script.html" %}
 
-<!-- YOUR ORIGINAL SCRIPT (UNCHANGED) -->
 <script>
+
+// ================= PASSWORD VALIDATION =================
+document.getElementById("password").addEventListener("input", validatePassword);
+
 function validatePassword() {
     const password = document.getElementById("password").value;
     const error = document.getElementById("passError");
+
     const regex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 
     if (!regex.test(password)) {
         error.innerHTML =
-            "Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character.";
+            "Password must contain 8+ chars, uppercase, lowercase, number & special char.";
         return false;
     } else {
         error.innerHTML = "";
         return true;
     }
 }
-document.getElementById("password").addEventListener("input", validatePassword);
 
+
+// ================= TOGGLE PASSWORD =================
 function togglePassword() {
     const input = document.getElementById('password');
     const icon = document.getElementById('passwordIcon');
-    if (input.type === 'password') {
-        input.type = 'text';
-        icon.textContent = 'visibility_off';
-    } else {
-        input.type = 'password';
-        icon.textContent = 'visibility';
-    }
-}
 
-// ✅ Helper functions
-function setError(input, message) {
-    const errorElement = input.parentElement.querySelector(".error-msg");
-    input.classList.add("is-invalid");
-    if (errorElement) errorElement.innerText = message;
-}
-
-function clearError(input) {
-    const errorElement = input.parentElement.querySelector(".error-msg");
-    input.classList.remove("is-invalid");
-    if (errorElement) errorElement.innerText = "";
-}
-
-
-// ✅ Password validation (EMPTY + RULE)
-function validatePassword() {
-    const password = document.getElementById("password");
-    const value = password.value.trim();
-    const regex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-
-    if (!value) {
-        setError(password, "Password is required");
-        return false;
-    }
-
-    if (!regex.test(value)) {
-        setError(password, "Min 8 chars, uppercase, lowercase, number & special char required");
-        return false;
-    }
-
-    clearError(password);
-    return true;
-}
-
-document.getElementById("password").addEventListener("input", validatePassword);
-
-
-// 👁️ toggle
-function togglePassword() {
-    const input = document.getElementById('password');
-    const icon = document.getElementById('passwordIcon');
     if (input.type === 'password') {
         input.type = 'text';
         icon.textContent = 'visibility_off';
@@ -225,70 +181,96 @@ function togglePassword() {
 }
 
 
-// ✅ MAIN FORM VALIDATION
-document.getElementById("staffForm").addEventListener("submit", function(e) {
+// ================= EMAIL VALIDATION =================
+let isEmailValid = false; // 🔥 controls submit
+let timeout = null;
 
-    let isValid = true;
+const emailInput = document.getElementById("emailField");
+const emailError = document.getElementById("emailError");
 
-    const name = document.querySelector('[name="name"]');
-    const role = document.querySelector('[name="role"]');
-    const gender = document.querySelector('[name="gender"]');
-    const email = document.querySelector('[name="email"]');
-    const mobile = document.querySelector('[name="mobile_number"]');
-    const password = document.getElementById("password");
+emailInput.addEventListener("keyup", function () {
 
-    // clear all errors
-    document.querySelectorAll(".form-control, .form-select").forEach(el => {
-        clearError(el);
-    });
+    clearTimeout(timeout);
 
-    // ✅ NAME
-    if (!name.value.trim()) {
-        setError(name, "Name is required");
-        isValid = false;
-    }
+    let email = this.value.trim();
 
-    // ✅ ROLE
-    if (!role.value || role.value === "") {
-        setError(role, "Role is required");
-        isValid = false;
-    }
+    timeout = setTimeout(() => {
 
-    // ✅ GENDER
-    if (!gender.value || gender.value === "") {
-        setError(gender, "Gender is required");
-        isValid = false;
-    }
+        // Empty or short input
+        if (email.length < 5) {
+            emailError.innerText = "";
+            emailInput.classList.remove("is-invalid");
+            isEmailValid = false;
+            return;
+        }
 
-    // ✅ EMAIL (EMPTY + FORMAT)
-    if (!email.value.trim()) {
-        setError(email, "Email is required");
-        isValid = false;
-    } else if (!/^\S+@\S+\.\S+$/.test(email.value)) {
-        setError(email, "Enter valid email");
-        isValid = false;
-    }
+        // Email format check
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    // ✅ MOBILE (EMPTY + FORMAT)
-    if (!mobile.value.trim()) {
-        setError(mobile, "Mobile number is required");
-        isValid = false;
-    } else if (!/^[0-9]{10}$/.test(mobile.value)) {
-        setError(mobile, "Enter valid 10 digit mobile number");
-        isValid = false;
-    }
+        if (!emailRegex.test(email)) {
+            emailError.innerText = "Enter valid email format";
+            emailError.classList.add("text-danger");
+            emailInput.classList.add("is-invalid");
+            isEmailValid = false;
+            return;
+        }
 
-    // ✅ PASSWORD (EMPTY + RULE)
-    if (!validatePassword()) {
-        isValid = false;
-    }
+        // 🔥 API CALL
+        fetch(`/permission/check-email/?email=${encodeURIComponent(email)}`)
+            .then(res => res.json())
+            .then(data => {
 
-    // ❌ STOP SUBMIT
-    if (!isValid) {
+                if (data.exists) {
+                    emailError.innerText = "Email already exists";
+                    emailError.classList.add("text-danger");
+                    emailError.classList.remove("text-success");
+                    emailInput.classList.add("is-invalid");
+                    isEmailValid = false;
+                } else {
+                    emailError.innerText = "Email available ✔";
+                    emailError.classList.remove("text-danger");
+                    emailError.classList.add("text-success");
+                    emailInput.classList.remove("is-invalid");
+                    isEmailValid = true;
+                }
+
+            })
+            .catch(() => {
+                emailError.innerText = "Server error. Try again.";
+                emailError.classList.add("text-danger");
+                isEmailValid = false;
+            });
+
+    }, 400); // debounce delay
+
+});
+
+
+// ================= FORM SUBMIT CONTROL =================
+document.querySelector("form").addEventListener("submit", function(e){
+
+    let passwordValid = validatePassword();
+
+    if (!isEmailValid) {
         e.preventDefault();
+
+        emailError.innerText = "Please enter a unique email";
+        emailError.classList.add("text-danger");
+        emailInput.classList.add("is-invalid");
+
+        emailInput.focus();
+        return;
+    }
+
+    if (!passwordValid) {
+        e.preventDefault();
+        document.getElementById("password").focus();
+        return;
     }
 
 });
+
 </script>
+
 </body>
 </html>
