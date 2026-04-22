@@ -295,3 +295,8 @@ def staff_export_pdf(request):
     )
 
     return response
+
+def check_email(request):
+    email = request.GET.get('email')
+    exists = CustomUser.objects.filter(email=email).exists()
+    return JsonResponse({'exists': exists})
