@@ -85,9 +85,9 @@
               <td>{{ a.appointment_time }}</td>
 
               <td>
-                {% if a.status == "Completed" %}
+                {% if a.status == "COMPLETED" %}
                   <span class="badge bg-success">Completed</span>
-                {% elif a.status == "Cancelled" %}
+                {% elif a.status == "CANCELLED" %}
                   <span class="badge bg-danger">Cancelled</span>
                 {% else %}
                   <span class="badge bg-warning text-dark">Pending</span>
