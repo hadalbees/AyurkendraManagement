@@ -29,7 +29,7 @@ th { background:#f2f2f2; }
     <img src="{{ settings.hospital_logo.url }}" class="logo">
   {% endif %}
 
-  <strong>{{ settings.hospital_name }}</strong><br>
+  <div><strong>{{ settings.hospital_name }}</strong></div>
 
   <div class="address">
     {{ settings.address|linebreaksbr }}<br>
@@ -135,7 +135,13 @@ th { background:#f2f2f2; }
   Payment Status: {{ bill.payment_status }}
 </p>
 
+  <!-- ================= FOOTER ================= -->
+<div class="footer">
+  This is a computer-generated Inpatient bill and does not require a signature
+</div>
+
 <!-- ================= FOOTER ================= -->
+  
 <div class="no-print">
   <button onclick="window.print()">🖨 Print</button>
   <a href="{% url 'billingmgmt:inpatientbilling' %}">⬅ Back</a>
