@@ -41,6 +41,12 @@
       <a href="#" class="bill-action-item">
         <i class="material-symbols-rounded">share</i> Share
       </a>
+      <form action="{% url 'billingmgmt:therapy_bill_delete' bill.id %}" method="POST">
+        {% csrf_token %}
+        <button type="submit" onclick="return confirm('Delete this therapy bill?')" class="bill-action-item" style="border: none !important;background: #fff;">
+          <i class="material-symbols-rounded">delete</i> Delete
+        </button>
+      </form>
 
     </div>
 
