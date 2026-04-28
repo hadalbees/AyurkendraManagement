@@ -29537,54 +29537,69 @@ body {
   color: #111827;           /* Dark on hover */
   transform: scale(1.15);   /* Smooth zoom */
 }
-/* Wrapper (important for positioning) */
+.bill-action-cell {
+  position: relative;
+  overflow: visible !important;
+}
+
 .bill-action-wrapper {
   position: relative;
 }
 
-/* Three dot button */
-.bill-action-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-/* Dropdown menu */
 .bill-action-menu {
   position: absolute;
-  top: 100%;
   right: 0;
+  top: 100%;
   z-index: 9999;
-
-  display: none; /* JS will control this */
+  display: none;
 
   background: #fff;
-  min-width: 160px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  padding: 5px 0;
+  border-radius: 10px;
+  min-width: 170px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
-/* Menu items */
-.bill-action-item,
+
+/* FIX FORM */
+.bill-action-menu form {
+  margin: 0;
+}
+
 .bill-action-menu button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
   width: 100%;
-  padding: 10px 15px;
-
-  text-decoration: none;
-  color: #333;
-  background: none;
   border: none;
-
+  background: none;
+  text-align: left;
+  padding: 10px 14px;
   cursor: pointer;
 }
 
-/* Hover effect */
+/* HOVER */
 .bill-action-item:hover,
 .bill-action-menu button:hover {
   background: #f5f5f5;
+}
+.card,
+.table-responsive {
+  overflow: visible !important;
+}
+.bill-action-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 9999;
+  display: none;
+}
+
+.bill-action-wrapper.active .bill-action-menu {
+  display: block !important;
+}.bill-action-wrapper {
+  position: relative;
+}
+
+.bill-action-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 9999;
 }
