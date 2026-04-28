@@ -200,6 +200,24 @@ function toggleBillMenu(btn) {
   menu.style.right = "0";
 }
 
+// Close on outside click
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.bill-action-wrapper')) {
+    document.querySelectorAll('.bill-action-wrapper').forEach(el => {
+      el.classList.remove('active');
+    });
+  }
+});
+
+// Close on outside click
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.bill-action-wrapper')) {
+    document.querySelectorAll('.bill-action-wrapper').forEach(el => {
+      el.classList.remove('active');
+    });
+  }
+});
+
 
 document.addEventListener("click",function(e){
 
