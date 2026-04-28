@@ -40,6 +40,7 @@
       <a href="#" class="bill-action-item">
         <i class="material-symbols-rounded">share</i> Share
       </a>
+
       <form action="{% url 'billingmgmt:inpatient_bill_delete' bill.id %}" method="POST">
       {% csrf_token %}
       <button type="submit" onclick="return confirm('Delete this inpatient bill?')" class="bill-action-item" style="border: none !important;background: #fff;">
