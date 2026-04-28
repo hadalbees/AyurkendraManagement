@@ -167,17 +167,37 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 
-function toggleBillMenu(button){
+function toggleBillMenu(btn) {
+  const wrapper = btn.closest('.bill-action-wrapper');
+  const menu = wrapper.querySelector('.bill-action-menu');
 
-  let menu = button.nextElementSibling;
-
-  document.querySelectorAll(".bill-action-menu").forEach(m=>{
-      if(m !== menu){
-          m.classList.remove("show");
-      }
+  // Close others
+  document.querySelectorAll('.bill-action-wrapper').forEach(el => {
+    if (el !== wrapper) el.classList.remove('active');
   });
 
-  menu.classList.toggle("show");
+  wrapper.classList.toggle('active');
+
+  // 🔥 FIX: Use offset instead of viewport
+  const btnRect = btn.getBoundingClientRect();
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+  const menuHeight = 220;
+  const spaceBelow = window.innerHeight - btnRect.bottom;
+
+  if (spaceBelow < menuHeight) {
+    // Open upward
+    menu.style.top = "auto";
+    menu.style.bottom = "100%";
+  } else {
+    // Open downward
+    menu.style.top = "100%";
+    menu.style.bottom = "auto";
+  }
+
+  // 🔥 RESET horizontal alignment (important)
+  menu.style.left = "auto";
+  menu.style.right = "0";
 }
 
 
