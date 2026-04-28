@@ -167,66 +167,58 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 
+// Toggle menu
 function toggleBillMenu(btn) {
   const wrapper = btn.closest('.bill-action-wrapper');
   const menu = wrapper.querySelector('.bill-action-menu');
 
-  // Close others
-  document.querySelectorAll('.bill-action-wrapper').forEach(el => {
-    if (el !== wrapper) el.classList.remove('active');
+  // Close all other menus
+  document.querySelectorAll('.bill-action-menu').forEach(m => {
+    if (m !== menu) m.style.display = "none";
   });
 
-  wrapper.classList.toggle('active');
+  // Toggle current
+  if (menu.style.display === "block") {
+    menu.style.display = "none";
+    return;
+  }
 
-  // 🔥 FIX: Use offset instead of viewport
-  const btnRect = btn.getBoundingClientRect();
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  menu.style.display = "block";
 
+  // 🔥 Smart position (up/down)
+  const rect = btn.getBoundingClientRect();
   const menuHeight = 220;
-  const spaceBelow = window.innerHeight - btnRect.bottom;
+  const spaceBelow = window.innerHeight - rect.bottom;
 
   if (spaceBelow < menuHeight) {
-    // Open upward
     menu.style.top = "auto";
     menu.style.bottom = "100%";
   } else {
-    // Open downward
     menu.style.top = "100%";
     menu.style.bottom = "auto";
   }
 
-  // 🔥 RESET horizontal alignment (important)
+  // Align right
   menu.style.left = "auto";
   menu.style.right = "0";
 }
 
-// Close on outside click
-document.addEventListener('click', function (e) {
-  if (!e.target.closest('.bill-action-wrapper')) {
-    document.querySelectorAll('.bill-action-wrapper').forEach(el => {
-      el.classList.remove('active');
-    });
-  }
-});
 
-// Close on outside click
-document.addEventListener('click', function (e) {
-  if (!e.target.closest('.bill-action-wrapper')) {
-    document.querySelectorAll('.bill-action-wrapper').forEach(el => {
-      el.classList.remove('active');
+// ✅ Close on outside click (ONLY ONE HANDLER)
+document.addEventListener("click", function (e) {
+  if (!e.target.closest(".bill-action-wrapper")) {
+    document.querySelectorAll(".bill-action-menu").forEach(menu => {
+      menu.style.display = "none";
     });
   }
 });
 
 
-document.addEventListener("click",function(e){
-
-  if(!e.target.closest(".bill-action-wrapper")){
-      document.querySelectorAll(".bill-action-menu").forEach(menu=>{
-          menu.classList.remove("show");
-      });
-  }
-
+// ✅ Close on scroll (prevents floating bug)
+window.addEventListener("scroll", () => {
+  document.querySelectorAll(".bill-action-menu").forEach(menu => {
+    menu.style.display = "none";
+  });
 });
 </script>
 
