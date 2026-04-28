@@ -59,6 +59,9 @@ urlpatterns = [
     path("billing/combined/print/",views.combined_billing_print,name="combined_billing_print"),
     
     path('settings/', views.hospital_settings, name='hospital_settings'),
-
+    path("billing-history/medical/delete/<int:pk>/", views.medical_bill_delete, name="medical_bill_delete"),
+    path("billing-history/inpatient/delete/<int:pk>/",views.inpatient_bill_delete, name="inpatient_bill_delete"),
+    path("billing-history/outpatient/delete/<int:pk>/",views.outpatient_bill_delete,name="outpatient_bill_delete"),
+    path("billing-history/therapy/delete/<int:pk>/",views.therapy_bill_delete,name="therapy_bill_delete"),
 
 ]
