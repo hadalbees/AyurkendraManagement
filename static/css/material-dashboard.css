@@ -29633,7 +29633,7 @@ body {
 }
 
 .bill-action-wrapper.active .bill-action-menu {
-  display: block;
+  display: block !important;
 }.bill-action-wrapper {
   position: relative;
 }
