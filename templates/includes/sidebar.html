@@ -204,7 +204,7 @@
       {% endif %}
 
       {# ===== Billing Management ===== #}
-      {% if request.user.is_superuser or "medicalbilling" in user_permissions or "inpatientbilling" in user_permissions or "outpatientbilling" in user_permissions %}
+      {% if request.user.is_superuser or "medicalbilling" in user_permissions or "inpatientbilling" in user_permissions or "outpatientbilling" or "therapybilling" in user_permissions %}
       <li class="nav-item">
         <a class="nav-link text-dark d-flex justify-content-between align-items-center {% if '/billing' in request.path %}active bg-gradient-dark text-white{% endif %}"
            data-bs-toggle="collapse" href="#billingMenu">
