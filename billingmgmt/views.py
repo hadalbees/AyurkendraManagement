@@ -1872,3 +1872,43 @@ def hospital_settings(request):
     return render(request, 'billingmgmt/settings.html', {
         'settings': settings
     })
+
+
+def medical_bill_delete(request, pk):
+    bill = get_object_or_404(MedicalBill, pk=pk)
+
+    bill_no = bill.bill_no  # store for message
+    bill.delete()
+
+    messages.success(request, f"Medical Bill {bill_no} deleted successfully.")
+    return redirect('billingmgmt:medical_billing_list')  # change to your list page name
+
+
+# ---------------- INPATIENT DELETE ----------------
+def inpatient_bill_delete(request, pk):
+    bill = get_object_or_404(InpatientBill, pk=pk)
+    bill_no = bill.bill_no
+    bill.delete()
+
+    messages.success(request, f"Inpatient Bill {bill_no} deleted successfully.")
+    return redirect('billingmgmt:inpatient_billing_list')
+
+
+# ---------------- OUTPATIENT DELETE ----------------
+def outpatient_bill_delete(request, pk):
+    bill = get_object_or_404(OutpatientBill, pk=pk)
+    bill_no = bill.bill_no
+    bill.delete()
+
+    messages.success(request, f"Outpatient Bill {bill_no} deleted successfully.")
+    return redirect('billingmgmt:outpatient_billing_list')
+
+
+# ---------------- THERAPY DELETE ----------------
+def therapy_bill_delete(request, pk):
+    bill = get_object_or_404(TherapyBill, pk=pk)
+    bill_no = bill.bill_no
+    bill.delete()
+
+    messages.success(request, f"Therapy Bill {bill_no} deleted successfully.")
+    return redirect('billingmgmt:therapy_billing_list')
