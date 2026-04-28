@@ -29601,12 +29601,6 @@ body {
   min-width: 170px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
-
-/* SHOW MENU */
-.bill-action-wrapper.active .bill-action-menu {
-  display: block;
-}
-
 /* FIX FORM */
 .bill-action-menu form {
   margin: 0;
