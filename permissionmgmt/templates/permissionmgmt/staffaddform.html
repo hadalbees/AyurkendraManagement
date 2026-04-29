@@ -19,7 +19,7 @@
     </p>
   </div>
 
-  <form role="form" id="staffForm" method="POST" novalidate>
+  <form role="form" method="POST">
     {% csrf_token %}
 
     <!-- STAFF INFORMATION -->
@@ -31,43 +31,37 @@
 
       <div class="row g-3">
         <div class="col-md-6">
-          <label class="form-label">Name <span class="text-danger">*</span></label>
+          <label class="form-label">Name *</label>
           <input type="text" name="name" class="form-control">
-          <small class="text-danger error-msg"></small>
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">Role <span class="text-danger">*</span></label>
+          <label class="form-label">Role *</label>
           <select name="role" class="form-select">
-            <option value="">-- Select Role --</option>
             {% for r in roles %}
               <option value="{{ r.id }}">{{ r.role_name }}</option>
             {% endfor %}
           </select>
-          <small class="text-danger error-msg"></small>
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">Gender <span class="text-danger">*</span></label>
+          <label class="form-label">Gender *</label>
           <select name="gender" class="form-select">
-            <option value="">-- Select Gender --</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
             <option value="transgender">Other</option>
           </select>
-          <small class="text-danger error-msg"></small>
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">Email <span class="text-danger">*</span></label>
-         <input type="email" id="emailField" name="email" class="form-control">
+          <label class="form-label">Email *</label>
+          <input type="email" id="emailField" name="email" class="form-control">
            <small id="emailError" class="text-danger"></small>
         </div>
 
         <div class="col-md-6">
-          <label class="form-label">Mobile Number <span class="text-danger">*</span></label>
+          <label class="form-label">Mobile Number *</label>
           <input type="text" name="mobile_number" class="form-control">
-          <small class="text-danger error-msg"></small>
         </div>
 
         <div class="col-md-6">
@@ -78,12 +72,13 @@
                   id="password"
                   name="password"
                   class="form-control pe-5"
-                >
+                  required>
 
             <span class="password-eye" onclick="togglePassword()">
               <i id="passwordIcon" class="material-symbols-rounded">visibility</i>
             </span>
           </div>
+
           <small id="passError" class="text-danger"></small>
         </div>
 
@@ -91,43 +86,95 @@
     </div>
 
     <!-- PERMISSIONS -->
-    <div class="form-card mb-4">
-      <div class="section-header">
-        <i class="material-symbols-rounded">lock</i>
-        Permissions
-      </div>
-
-      <div class="row">
-
-        <!-- EXACT SAME PERMISSIONS YOU HAD, ONLY STYLED -->
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="dashboard"><label class="form-check-label">Dashboard</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="medicalbilling"><label class="form-check-label">Medical Billing</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="inpatientbilling"><label class="form-check-label">Inpatient Billing</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="outpatientbilling"><label class="form-check-label">Outpatient Billing</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="therapybilling"><label class="form-check-label">Therapy Billing</label></div></div>
-
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="reportsdashboard"><label class="form-check-label">Reports Dashboard</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="allreports"><label class="form-check-label">All Reports</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="rolemanagement"><label class="form-check-label">Role Management</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="staffmanagement"><label class="form-check-label">Staff Management</label></div></div>
-
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="attendancemanagement"><label class="form-check-label">Attendance Management</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="stockmanagement"><label class="form-check-label">Stock Management</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="patientdashboard"><label class="form-check-label">Patient Dashboard</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="registerpatient"><label class="form-check-label">Register Patient</label></div></div>
-
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="appoinments"><label class="form-check-label">Appointments</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="therapy"><label class="form-check-label">Therapy</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="ayurvedictype"><label class="form-check-label">Ayurvedic Type</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="suppliers"><label class="form-check-label">Suppliers</label></div></div>
-
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="manufacturers"><label class="form-check-label">Manufacturers</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="prescription"><label class="form-check-label">Prescription</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="accountmanagement"><label class="form-check-label">Account Management</label></div></div>
-        <div class="col-md-3"><div class="permission-box form-check"><input class="form-check-input" type="checkbox" name="permission" value="sendmessage"><label class="form-check-label">Send Message</label></div></div>
-
-      </div>
+   <div class="form-card mb-4">
+    <div class="section-header">
+      <i class="material-symbols-rounded">lock</i>
+      Permissions
     </div>
+
+    <div class="row">
+
+      <!-- MAIN MENUS -->
+      <div class="col-md-3">
+        <div class="form-check permission-box">
+          <input type="checkbox" name="permission" value="dashboard">
+          <label>Dashboard</label>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="form-check permission-box">
+          <input type="checkbox" name="permission" value="staffmanagement">
+          <label>Staff Management</label>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="form-check permission-box">
+          <input type="checkbox" name="permission" value="attendancemanagement">
+          <label>Attendance</label>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="form-check permission-box">
+          <input type="checkbox" name="permission" value="stockmanagement">
+          <label>Stock</label>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="form-check permission-box">
+          <input type="checkbox" name="permission" value="fieldmanagement">
+          <label>Field Management</label>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="form-check permission-box">
+          <input type="checkbox" name="permission" value="patientmanagement">
+          <label>Patient Management</label>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="form-check permission-box">
+          <input type="checkbox" name="permission" value="reportmanagement">
+          <label>Report Management</label>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="form-check permission-box">
+          <input type="checkbox" name="permission" value="billingmanagement">
+          <label>Billing Management</label>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="form-check permission-box">
+          <input type="checkbox" name="permission" value="accountmanagement">
+          <label>Account Management</label>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="form-check permission-box">
+          <input type="checkbox" name="permission" value="sendmessage">
+          <label>Send Message</label>
+        </div>
+      </div>
+
+      <!-- OPTIONAL (SUB FEATURES if needed later) -->
+      <div class="col-md-3">
+        <div class="form-check permission-box">
+          <input type="checkbox" name="permission" value="prescriptions">
+          <label>Prescriptions</label>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
     <!-- SUBMIT -->
     <div class="text-center">
@@ -145,6 +192,7 @@
 
 {% include "includes/script.html" %}
 
+<!-- YOUR ORIGINAL SCRIPT (UNCHANGED) -->
 <script>
 
 // ================= PASSWORD VALIDATION =================
