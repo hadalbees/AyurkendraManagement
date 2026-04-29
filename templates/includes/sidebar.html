@@ -1,4 +1,7 @@
 {% load static %}
+
+{% with perms=request.user.menu_permission|default:"" %}
+
 <aside class="sidenav navbar navbar-vertical navbar-expand-xs fixed-start bg-white" id="sidenav-main">
 
 <button class="sidebar-close d-xl-none">
@@ -16,8 +19,8 @@
 <div class="collapse navbar-collapse w-auto">
 <ul class="navbar-nav">
 
-<!-- ================= DASHBOARD ================= -->
-{% if request.user.is_superuser or "dashboard" in user_permissions %}
+<!-- DASHBOARD -->
+{% if request.user.is_superuser or "dashboard" in perms %}
 <li class="nav-item">
   <a class="nav-link {% if '/dashboard' in request.path %}active bg-gradient-dark text-white{% endif %}"
      href="{% url 'dashboard' %}">
@@ -26,8 +29,8 @@
 </li>
 {% endif %}
 
-<!-- ================= STAFF ================= -->
-{% if request.user.is_superuser or "staffmanagement" in user_permissions %}
+<!-- STAFF -->
+{% if request.user.is_superuser or "staffmanagement" in perms %}
 <li class="nav-item">
   <a class="nav-link {% if '/permission' in request.path or '/role' in request.path %}active bg-gradient-dark text-white{% endif %}"
      data-bs-toggle="collapse" href="#staffMenu">
@@ -43,8 +46,8 @@
 </li>
 {% endif %}
 
-<!-- ================= ATTENDANCE ================= -->
-{% if request.user.is_superuser or "attendancemanagement" in user_permissions %}
+<!-- ATTENDANCE -->
+{% if request.user.is_superuser or "attendancemanagement" in perms %}
 <li class="nav-item">
   <a class="nav-link {% if '/attendance' in request.path %}active bg-gradient-dark text-white{% endif %}"
      href="{% url 'attendancemgmt:attendancehome' %}">
@@ -53,8 +56,8 @@
 </li>
 {% endif %}
 
-<!-- ================= STOCK ================= -->
-{% if request.user.is_superuser or "stockmanagement" in user_permissions %}
+<!-- STOCK -->
+{% if request.user.is_superuser or "stockmanagement" in perms %}
 <li class="nav-item">
   <a class="nav-link {% if '/stock' in request.path %}active bg-gradient-dark text-white{% endif %}"
      href="{% url 'stockmgmt:stock_list' %}">
@@ -63,8 +66,8 @@
 </li>
 {% endif %}
 
-<!-- ================= FIELD MANAGEMENT ================= -->
-{% if request.user.is_superuser or "fieldmanagement" in user_permissions %}
+<!-- FIELD MANAGEMENT -->
+{% if request.user.is_superuser or "fieldmanagement" in perms %}
 <li class="nav-item">
   <a class="nav-link {% if '/field' in request.path %}active bg-gradient-dark text-white{% endif %}"
      data-bs-toggle="collapse" href="#fieldMenu">
@@ -86,8 +89,8 @@
 </li>
 {% endif %}
 
-<!-- ================= PATIENT ================= -->
-{% if request.user.is_superuser or "patientmanagement" in user_permissions %}
+<!-- PATIENT -->
+{% if request.user.is_superuser or "patientmanagement" in perms %}
 <li class="nav-item">
   <a class="nav-link {% if '/patient' in request.path %}active bg-gradient-dark text-white{% endif %}"
      data-bs-toggle="collapse" href="#patientMenu">
@@ -104,8 +107,8 @@
 </li>
 {% endif %}
 
-<!-- ================= REPORT ================= -->
-{% if request.user.is_superuser or "reportmanagement" in user_permissions %}
+<!-- REPORT -->
+{% if request.user.is_superuser or "reportmanagement" in perms %}
 <li class="nav-item">
   <a class="nav-link {% if '/report' in request.path %}active bg-gradient-dark text-white{% endif %}"
      data-bs-toggle="collapse" href="#reportMenu">
@@ -122,8 +125,8 @@
 </li>
 {% endif %}
 
-<!-- ================= BILLING ================= -->
-{% if request.user.is_superuser or "billingmanagement" in user_permissions %}
+<!-- BILLING -->
+{% if request.user.is_superuser or "billingmanagement" in perms %}
 <li class="nav-item">
   <a class="nav-link {% if '/billing' in request.path %}active bg-gradient-dark text-white{% endif %}"
      data-bs-toggle="collapse" href="#billingMenu">
@@ -142,8 +145,8 @@
 </li>
 {% endif %}
 
-<!-- ================= ACCOUNT (FIXED) ================= -->
-{% if request.user.is_superuser or "accountmanagement" in user_permissions %}
+<!-- ACCOUNT -->
+{% if request.user.is_superuser or "accountmanagement" in perms %}
 <li class="nav-item">
   <a class="nav-link {% if '/accountmanagement' in request.path %}active bg-gradient-dark text-white{% endif %}"
      data-bs-toggle="collapse" href="#accountMenu">
@@ -152,49 +155,18 @@
 
   <div class="collapse {% if '/accountmanagement' in request.path %}show{% endif %}" id="accountMenu">
     <ul class="nav flex-column ms-4">
-
-      <li>
-        <a class="nav-link {% if 'account_dashboard' in request.path %}active text-primary{% endif %}"
-           href="{% url 'accountmgmt:account_dashboard' %}">
-          Dashboard
-        </a>
-      </li>
-
-      <li>
-        <a class="nav-link {% if 'income' in request.path %}active text-primary{% endif %}"
-           href="{% url 'accountmgmt:income_list' %}">
-          Income
-        </a>
-      </li>
-
-      <li>
-        <a class="nav-link {% if 'expenses' in request.path %}active text-primary{% endif %}"
-           href="{% url 'accountmgmt:expense_list' %}">
-          Expenses
-        </a>
-      </li>
-
-      <li>
-        <a class="nav-link {% if 'ledger' in request.path %}active text-primary{% endif %}"
-           href="{% url 'accountmgmt:ledger_list' %}">
-          Ledger
-        </a>
-      </li>
-
-      <li>
-        <a class="nav-link {% if 'reports' in request.path %}active text-primary{% endif %}"
-           href="{% url 'accountmgmt:account_reports' %}">
-          Reports
-        </a>
-      </li>
-
+      <li><a class="nav-link" href="{% url 'accountmgmt:account_dashboard' %}">Dashboard</a></li>
+      <li><a class="nav-link" href="{% url 'accountmgmt:income_list' %}">Income</a></li>
+      <li><a class="nav-link" href="{% url 'accountmgmt:expense_list' %}">Expenses</a></li>
+      <li><a class="nav-link" href="{% url 'accountmgmt:ledger_list' %}">Ledger</a></li>
+      <li><a class="nav-link" href="{% url 'accountmgmt:account_reports' %}">Reports</a></li>
     </ul>
   </div>
 </li>
 {% endif %}
 
-<!-- ================= MESSAGE ================= -->
-{% if request.user.is_superuser or "sendmessage" in user_permissions %}
+<!-- MESSAGE -->
+{% if request.user.is_superuser or "sendmessage" in perms %}
 <li class="nav-item">
   <a class="nav-link {% if 'whatsapp_send' in request.path %}active bg-gradient-dark text-white{% endif %}"
      href="{% url 'patientmgmt:whatsapp_send' %}">
@@ -206,6 +178,12 @@
 </ul>
 </div>
 
-<!-- Sidebar footer --> <div class="sidebar-footer"> <a class="nav-link logout-link" href="{% url 'logout' %}"> <i class="material-symbols-rounded">logout</i> <span class="nav-link-text ms-1">Logout</span> </a> </div>
+<div class="sidebar-footer">
+  <a class="nav-link logout-link" href="{% url 'logout' %}">
+    <i class="material-symbols-rounded">logout</i> Logout
+  </a>
+</div>
 
 </aside>
+
+{% endwith %}
