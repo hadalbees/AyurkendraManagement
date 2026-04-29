@@ -93,29 +93,114 @@
 
     <!-- ================= PERMISSIONS ================= -->
     <div class="form-card mb-4">
-      <div class="section-header">
-        <i class="material-symbols-rounded">lock</i>
-        Permissions
-      </div>
+  <div class="section-header">
+    <i class="material-symbols-rounded">lock</i>
+    Permissions
+  </div>
 
-      <div class="row">
-        {% for perm_value, perm_label in permissions_list %}
-        <div class="col-md-3">
-          <div class="permission-box form-check">
-            <input class="form-check-input" type="checkbox"
-                   name="permission"
-                   value="{{ perm_value }}"
-                   id="perm_{{ perm_value }}"
-                   {% if perm_value in selected_permissions %}checked{% endif %}>
-            <label class="form-check-label" for="perm_{{ perm_value }}">
-              {{ perm_label }}
-            </label>
-          </div>
-        </div>
-        {% endfor %}
-        
+  <div class="row">
+
+    <!-- DASHBOARD -->
+    <div class="col-md-3">
+      <div class="permission-box form-check">
+        <input type="checkbox" name="permission" value="dashboard"
+        {% if "dashboard" in selected_permissions %}checked{% endif %}>
+        <label>Dashboard</label>
       </div>
     </div>
+
+    <!-- STAFF -->
+    <div class="col-md-3">
+      <div class="permission-box form-check">
+        <input type="checkbox" name="permission" value="staffmanagement"
+        {% if "staffmanagement" in selected_permissions %}checked{% endif %}>
+        <label>Staff Management</label>
+      </div>
+    </div>
+
+    <!-- ATTENDANCE -->
+    <div class="col-md-3">
+      <div class="permission-box form-check">
+        <input type="checkbox" name="permission" value="attendancemanagement"
+        {% if "attendancemanagement" in selected_permissions %}checked{% endif %}>
+        <label>Attendance</label>
+      </div>
+    </div>
+
+    <!-- STOCK -->
+    <div class="col-md-3">
+      <div class="permission-box form-check">
+        <input type="checkbox" name="permission" value="stockmanagement"
+        {% if "stockmanagement" in selected_permissions %}checked{% endif %}>
+        <label>Stock Management</label>
+      </div>
+    </div>
+
+    <!-- FIELD -->
+    <div class="col-md-3">
+      <div class="permission-box form-check">
+        <input type="checkbox" name="permission" value="fieldmanagement"
+        {% if "fieldmanagement" in selected_permissions %}checked{% endif %}>
+        <label>Field Management</label>
+      </div>
+    </div>
+
+    <!-- PATIENT -->
+    <div class="col-md-3">
+      <div class="permission-box form-check">
+        <input type="checkbox" name="permission" value="patientmanagement"
+        {% if "patientmanagement" in selected_permissions %}checked{% endif %}>
+        <label>Patient Management</label>
+      </div>
+    </div>
+
+    <!-- REPORT -->
+    <div class="col-md-3">
+      <div class="permission-box form-check">
+        <input type="checkbox" name="permission" value="reportmanagement"
+        {% if "reportmanagement" in selected_permissions %}checked{% endif %}>
+        <label>Report Management</label>
+      </div>
+    </div>
+
+    <!-- BILLING -->
+    <div class="col-md-3">
+      <div class="permission-box form-check">
+        <input type="checkbox" name="permission" value="billingmanagement"
+        {% if "billingmanagement" in selected_permissions %}checked{% endif %}>
+        <label>Billing Management</label>
+      </div>
+    </div>
+
+    <!-- ACCOUNT -->
+    <div class="col-md-3">
+      <div class="permission-box form-check">
+        <input type="checkbox" name="permission" value="accountmanagement"
+        {% if "accountmanagement" in selected_permissions %}checked{% endif %}>
+        <label>Account Management</label>
+      </div>
+    </div>
+
+    <!-- MESSAGE -->
+    <div class="col-md-3">
+      <div class="permission-box form-check">
+        <input type="checkbox" name="permission" value="sendmessage"
+        {% if "sendmessage" in selected_permissions %}checked{% endif %}>
+        <label>Send Message</label>
+      </div>
+    </div>
+
+    <!-- OPTIONAL -->
+    <div class="col-md-3">
+      <div class="permission-box form-check">
+        <input type="checkbox" name="permission" value="prescriptions"
+        {% if "prescriptions" in selected_permissions %}checked{% endif %}>
+        <label>Prescriptions</label>
+      </div>
+    </div>
+
+  </div>
+</div>
 
     <!-- ================= SUBMIT ================= -->
     <div class="text-center">
