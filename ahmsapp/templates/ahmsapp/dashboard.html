@@ -122,7 +122,7 @@
 
       <!-- LEFT CONTENT -->
       <div class="col-lg-9 col-12">
-        {% if request.user.is_superuser or "prescription" in user_permissions %}
+        {% if request.user.is_superuser or "prescriptions" in user_permissions %}
 
         <form id="presForm" method="post" action="{% url 'prescriptionmgmt:create' %}">
         {% csrf_token %}
