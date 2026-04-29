@@ -52,33 +52,41 @@ def staffaddform(request):
         password = request.POST.get("password")
         permissions = request.POST.getlist("permission")
 
-        permission_str = ",".join(permissions)
+        # ✅ Fix: consistent permission format
+        permission_str = ",".join(set(permissions))
 
-        role = Role.objects.get(id=role_id) if role_id else None
+        role = Role.objects.filter(id=role_id).first()
 
-        if username:
-            # ✅ Use create() instead of create_user()
-            user = CustomUser.objects.create(
-                username=username,
-                email=email,
-                mobile_number=mobile_number,
-                gender=gender,
-                role=role,
-                menu_permission=permission_str,
-            )
-            user.set_password(password)  # ✅ hash password properly
-            user.save()
-            ActivityHistory.objects.create(
-                user=request.user,
-                action="CREATE",
-                module="STAFF",
-                record_id=user.id,
-                description=f"Staff #{user.id} created by {request.user}"
-            )
-            messages.success(request, f"Staff '{username}' added successfully!")
-            return redirect("permissionhome")
-        else:
+        if not username:
             messages.error(request, "Please enter a valid name.")
+            return redirect("permissionhome")
+
+        if not password:
+            messages.error(request, "Password is required.")
+            return redirect("permissionhome")
+
+        user = CustomUser.objects.create(
+            username=username,
+            email=email,
+            mobile_number=mobile_number,
+            gender=gender,
+            role=role,
+            menu_permission=permission_str,
+        )
+
+        user.set_password(password)
+        user.save()
+
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="CREATE",
+            module="STAFF",
+            record_id=user.id,
+            description=f"Staff #{user.id} created by {request.user}"
+        )
+
+        messages.success(request, f"Staff '{username}' added successfully!")
+        return redirect("permissionhome")
 
     return render(request, "permissionmgmt/staffaddform.html", {"roles": roles})
 
@@ -86,50 +94,44 @@ def staffeditform(request, pk):
     staff = get_object_or_404(CustomUser, pk=pk)
     roles = Role.objects.all()
 
-    # Selected permissions as list
+    # ✅ Convert string → list
     selected_permissions = staff.menu_permission.split(",") if staff.menu_permission else []
-
-    # Full permissions list
-    PERMISSIONS_LIST = [
-        "dashboard","medicalbilling","inpatientbilling","outpatientbilling",
-        "reportsdashboard","allreports","rolemanagement","staffmanagement",
-        "attendancemanagement","stockmanagement","patientdashboard","registerpatient",
-        "appoinments","therapy","ayurvedictype","suppliers","manufacturers",'prescription','accountmanagement','sendmessage'
-    ]
-
-    # Display-friendly permissions (tuple: value, label)
-    PERMISSIONS_DISPLAY = [(p, p.replace("_"," ").title()) for p in PERMISSIONS_LIST]
 
     if request.method == "POST":
         staff.username = request.POST.get("name")
         staff.email = request.POST.get("email")
         staff.mobile_number = request.POST.get("mobile_number")
         staff.gender = request.POST.get("gender")
-        staff.role_id = request.POST.get("role")
+
+        role_id = request.POST.get("role")
+        staff.role = Role.objects.filter(id=role_id).first()
 
         password = request.POST.get("password")
         if password:
             staff.set_password(password)
 
         permissions = request.POST.getlist("permission")
-        staff.menu_permission = ",".join(permissions)
+
+        # ✅ remove duplicates
+        staff.menu_permission = ",".join(set(permissions))
 
         staff.save()
+
         ActivityHistory.objects.create(
             user=request.user,
             action="UPDATE",
             module="STAFF",
             record_id=staff.id,
-            description=f"Staff #{staff.id} created by {request.user}"
+            description=f"Staff #{staff.id} updated by {request.user}"
         )
+
         messages.success(request, f"Staff '{staff.username}' updated successfully!")
         return redirect("permissionhome")
 
     return render(request, "permissionmgmt/staffeditform.html", {
         "roles": roles,
         "staff": staff,
-        "selected_permissions": selected_permissions,
-        "permissions_list": PERMISSIONS_DISPLAY
+        "selected_permissions": selected_permissions
     })
 def staff_delete_view(request, pk):
     if request.method == "POST":
