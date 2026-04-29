@@ -1,331 +1,211 @@
 {% load static %}
 <aside class="sidenav navbar navbar-vertical navbar-expand-xs fixed-start bg-white" id="sidenav-main">
-<!-- Mobile Close Button -->
-<button class="sidebar-close d-xl-none" id="sidebarClose">
+
+<button class="sidebar-close d-xl-none">
   <i class="material-symbols-rounded">close</i>
 </button>
 
-  <div class="sidenav-header">
-    <a class="navbar-brand px-4 py-3 m-0" href="#">
-      <img src="{% static 'img/logos/logohms.png' %}"
-           class="navbar-brand-img"
-           alt="Ayurvedic HMS">
-    </a>
+<div class="sidenav-header">
+  <a class="navbar-brand px-4 py-3 m-0">
+    <img src="{% static 'img/logos/logohms.png' %}" class="navbar-brand-img">
+  </a>
+</div>
+
+<hr class="horizontal dark mt-0 mb-2">
+
+<div class="collapse navbar-collapse w-auto">
+<ul class="navbar-nav">
+
+<!-- ================= DASHBOARD ================= -->
+{% if request.user.is_superuser or "dashboard" in user_permissions %}
+<li class="nav-item">
+  <a class="nav-link {% if '/dashboard' in request.path %}active bg-gradient-dark text-white{% endif %}"
+     href="{% url 'dashboard' %}">
+    <i class="material-symbols-rounded">dashboard</i> Dashboard
+  </a>
+</li>
+{% endif %}
+
+<!-- ================= STAFF ================= -->
+{% if request.user.is_superuser or "staffmanagement" in user_permissions %}
+<li class="nav-item">
+  <a class="nav-link {% if '/permission' in request.path or '/role' in request.path %}active bg-gradient-dark text-white{% endif %}"
+     data-bs-toggle="collapse" href="#staffMenu">
+    <i class="material-symbols-rounded">person</i> Staff Management
+  </a>
+
+  <div class="collapse {% if '/permission' in request.path or '/role' in request.path %}show{% endif %}" id="staffMenu">
+    <ul class="nav flex-column ms-4">
+      <li><a class="nav-link" href="{% url 'permissionhome' %}">Staff List</a></li>
+      <li><a class="nav-link" href="{% url 'roledashboard' %}">Role Management</a></li>
+    </ul>
   </div>
-  <hr class="horizontal dark mt-0 mb-2">
-  <div class="collapse navbar-collapse w-auto" id="sidenav-collapse-main">
-    <ul class="navbar-nav">
+</li>
+{% endif %}
 
-      {# ===== Dashboard ===== #}
-      {% if request.user.is_superuser or "dashboard" in user_permissions %}
-      <li class="nav-item">
-        <a class="nav-link {% if request.path == '/dashboard/' %}active bg-gradient-dark text-white{% else %}text-dark{% endif %}" 
-           href="{% url 'dashboard' %}">
-          <i class="material-symbols-rounded opacity-5">dashboard</i>
-          <span class="nav-link-text ms-1">Dashboard</span>
+<!-- ================= ATTENDANCE ================= -->
+{% if request.user.is_superuser or "attendancemanagement" in user_permissions %}
+<li class="nav-item">
+  <a class="nav-link {% if '/attendance' in request.path %}active bg-gradient-dark text-white{% endif %}"
+     href="{% url 'attendancemgmt:attendancehome' %}">
+    <i class="material-symbols-rounded">punch_clock</i> Attendance
+  </a>
+</li>
+{% endif %}
+
+<!-- ================= STOCK ================= -->
+{% if request.user.is_superuser or "stockmanagement" in user_permissions %}
+<li class="nav-item">
+  <a class="nav-link {% if '/stock' in request.path %}active bg-gradient-dark text-white{% endif %}"
+     href="{% url 'stockmgmt:stock_list' %}">
+    <i class="material-symbols-rounded">inventory_2</i> Stock Management
+  </a>
+</li>
+{% endif %}
+
+<!-- ================= FIELD MANAGEMENT ================= -->
+{% if request.user.is_superuser or "fieldmanagement" in user_permissions %}
+<li class="nav-item">
+  <a class="nav-link {% if '/field' in request.path %}active bg-gradient-dark text-white{% endif %}"
+     data-bs-toggle="collapse" href="#fieldMenu">
+    <i class="material-symbols-rounded">inventory_2</i> Field Management
+  </a>
+
+  <div class="collapse {% if '/field' in request.path %}show{% endif %}" id="fieldMenu">
+    <ul class="nav flex-column ms-4">
+      <li><a class="nav-link" href="{% url 'fieldmgmt:therapy_list' %}">Therapy</a></li>
+      <li><a class="nav-link" href="{% url 'fieldmgmt:ayurvedic_list' %}">Ayurvedic Type</a></li>
+      <li><a class="nav-link" href="{% url 'fieldmgmt:department_list' %}">Departments</a></li>
+      <li><a class="nav-link" href="{% url 'fieldmgmt:supplier_list' %}">Suppliers</a></li>
+      <li><a class="nav-link" href="{% url 'fieldmgmt:manufacturer_list' %}">Manufacturers</a></li>
+      <li><a class="nav-link" href="{% url 'fieldmgmt:appointment_type_list' %}">Appointment Type</a></li>
+      <li><a class="nav-link" href="{% url 'fieldmgmt:ip_othercharge_list' %}">IP Other Charges</a></li>
+      <li><a class="nav-link" href="{% url 'fieldmgmt:adjuvant_list' %}">Adjuvant</a></li>
+    </ul>
+  </div>
+</li>
+{% endif %}
+
+<!-- ================= PATIENT ================= -->
+{% if request.user.is_superuser or "patientmanagement" in user_permissions %}
+<li class="nav-item">
+  <a class="nav-link {% if '/patient' in request.path %}active bg-gradient-dark text-white{% endif %}"
+     data-bs-toggle="collapse" href="#patientMenu">
+    <i class="material-symbols-rounded">person</i> Patient Management
+  </a>
+
+  <div class="collapse {% if '/patient' in request.path %}show{% endif %}" id="patientMenu">
+    <ul class="nav flex-column ms-4">
+      <li><a class="nav-link" href="{% url 'patientmgmt:patient_list' %}">Dashboard</a></li>
+      <li><a class="nav-link" href="{% url 'patientmgmt:patient_register' %}">Register</a></li>
+      <li><a class="nav-link" href="{% url 'patientmgmt:appointment_list' %}">Appointments</a></li>
+    </ul>
+  </div>
+</li>
+{% endif %}
+
+<!-- ================= REPORT ================= -->
+{% if request.user.is_superuser or "reportmanagement" in user_permissions %}
+<li class="nav-item">
+  <a class="nav-link {% if '/report' in request.path %}active bg-gradient-dark text-white{% endif %}"
+     data-bs-toggle="collapse" href="#reportMenu">
+    <i class="material-symbols-rounded">description</i> Reports Management
+  </a>
+
+  <div class="collapse {% if '/report' in request.path %}show{% endif %}" id="reportMenu">
+    <ul class="nav flex-column ms-4">
+      <li><a class="nav-link" href="{% url 'reportmgmt:reporthome' %}">Dashboard</a></li>
+      <li><a class="nav-link" href="{% url 'reportmgmt:reportlist' %}">All Reports</a></li>
+      <li><a class="nav-link" href="{% url 'reportmgmt:prescription_list' %}">Prescriptions</a></li>
+    </ul>
+  </div>
+</li>
+{% endif %}
+
+<!-- ================= BILLING ================= -->
+{% if request.user.is_superuser or "billingmanagement" in user_permissions %}
+<li class="nav-item">
+  <a class="nav-link {% if '/billing' in request.path %}active bg-gradient-dark text-white{% endif %}"
+     data-bs-toggle="collapse" href="#billingMenu">
+    <i class="material-symbols-rounded">receipt_long</i> Billing Management
+  </a>
+
+  <div class="collapse {% if '/billing' in request.path %}show{% endif %}" id="billingMenu">
+    <ul class="nav flex-column ms-4">
+      <li><a class="nav-link" href="{% url 'billingmgmt:billing_history' %}">Billing History</a></li>
+      <li><a class="nav-link" href="{% url 'billingmgmt:medicalbilling' %}">Medical</a></li>
+      <li><a class="nav-link" href="{% url 'billingmgmt:inpatientbilling' %}">Inpatients</a></li>
+      <li><a class="nav-link" href="{% url 'billingmgmt:outpatientbilling' %}">Outpatients</a></li>
+      <li><a class="nav-link" href="{% url 'billingmgmt:therapybilling' %}">Therapy</a></li>
+    </ul>
+  </div>
+</li>
+{% endif %}
+
+<!-- ================= ACCOUNT (FIXED) ================= -->
+{% if request.user.is_superuser or "accountmanagement" in user_permissions %}
+<li class="nav-item">
+  <a class="nav-link {% if '/accountmanagement' in request.path %}active bg-gradient-dark text-white{% endif %}"
+     data-bs-toggle="collapse" href="#accountMenu">
+    <i class="material-symbols-rounded">account_balance</i> Account Management
+  </a>
+
+  <div class="collapse {% if '/accountmanagement' in request.path %}show{% endif %}" id="accountMenu">
+    <ul class="nav flex-column ms-4">
+
+      <li>
+        <a class="nav-link {% if 'account_dashboard' in request.path %}active text-primary{% endif %}"
+           href="{% url 'accountmgmt:account_dashboard' %}">
+          Dashboard
         </a>
       </li>
-      {% endif %}
-      {# ===== Staff Management ===== #}
-      {% if request.user.is_superuser or "staffmanagement" in user_permissions %}
-      <li class="nav-item">
-        <a class="nav-link {% if '/permission' in request.path or '/role' in request.path %} active bg-gradient-dark text-white{% else %}text-dark{% endif %}" data-bs-toggle="collapse" href="#staffMenu">
-          <i class="material-symbols-rounded opacity-5">person</i>
-          <span class="nav-link-text ms-1">Staff Management</span>
-        </a>
-        <div class="collapse {% if '/permission' in request.path %}show{% endif %}" id="staffMenu">
-          <ul class="nav flex-column ms-4">
-            {% if request.user.is_superuser or "staffmanagement" in user_permissions %}
-            <li><a class="nav-link {% if 'permission' in request.path %}active text-primary{% endif %}" href="{% url 'permissionhome' %}">Staff List</a></li>
-            {% endif %}
-           {% if request.user.is_superuser or "rolemanagement" in user_permissions %}
-            <li><a class="nav-link {% if 'role' in request.path %}active text-primary{% endif %}" href="{% url 'roledashboard' %}">Role Management</a></li>
-            {% endif %}
-          </div>
-      </li>
-      {% endif %}
 
-      {# ===== Attendance ===== #}
-      {% if request.user.is_superuser or "attendancemanagement" in user_permissions %}
-      <li class="nav-item">
-        <a class="nav-link {% if '/attendance' in request.path %}active bg-gradient-dark text-white{% else %}text-dark{% endif %}" href="{% url 'attendancemgmt:attendancehome' %}">
-          <i class="material-symbols-rounded opacity-5">punch_clock</i>
-          <span class="nav-link-text ms-1">Attendance Management</span>
+      <li>
+        <a class="nav-link {% if 'income' in request.path %}active text-primary{% endif %}"
+           href="{% url 'accountmgmt:income_list' %}">
+          Income
         </a>
       </li>
-      {% endif %}
 
-      {# ===== Stock ===== #}
-      {% if request.user.is_superuser or "stockmanagement" in user_permissions %}
-      <li class="nav-item">
-        <a class="nav-link {% if '/stock' in request.path %}active bg-gradient-dark text-white{% else %}text-dark{% endif %}" href="{% url 'stockmgmt:stock_list' %}">
-          <i class="material-symbols-rounded opacity-5">inventory_2</i>
-          <span class="nav-link-text ms-1">Stock Management</span>
+      <li>
+        <a class="nav-link {% if 'expenses' in request.path %}active text-primary{% endif %}"
+           href="{% url 'accountmgmt:expense_list' %}">
+          Expenses
         </a>
       </li>
-      {% endif %}
 
-      {# ===== Field Management ===== #}
-      {% if request.user.is_superuser or "therapy" in user_permissions or "ayurvedictype" in user_permissions or "suppliers" in user_permissions or "manufacturers" in user_permissions or "departments" in user_permissions %}
-
-      <li class="nav-item">
-        <a class="nav-link text-dark d-flex justify-content-between align-items-center 
-          {% if '/field' in request.path %}active bg-gradient-dark text-white{% endif %}"
-          data-bs-toggle="collapse" href="#fieldMenu">
-
-          <span>
-            <i class="material-symbols-rounded opacity-5">inventory_2</i>
-            Field Management
-          </span>
-        </a>
-
-        <div class="collapse {% if '/field' in request.path %}show{% endif %}" id="fieldMenu">
-          <ul class="nav flex-column ms-4">
-
-            {% if request.user.is_superuser or "therapy" in user_permissions %}
-            <li>
-              <a class="nav-link {% if 'therapy' in request.path %}active text-primary{% endif %}"
-                href="{% url 'fieldmgmt:therapy_list' %}">
-                Therapy
-              </a>
-            </li>
-            {% endif %}
-
-            {% if request.user.is_superuser or "ayurvedictype" in user_permissions %}
-            <li>
-              <a class="nav-link {% if 'ayurvedic' in request.path %}active text-primary{% endif %}"
-                href="{% url 'fieldmgmt:ayurvedic_list' %}">
-                Ayurvedic Type
-              </a>
-            </li>
-            {% endif %}
-
-            {% if request.user.is_superuser or "departments" in user_permissions %}
-            <li>
-              <a class="nav-link {% if 'department' in request.path %}active text-primary{% endif %}"
-                href="{% url 'fieldmgmt:department_list' %}">
-                Departments
-              </a>
-            </li>
-            {% endif %}
-
-            {% if request.user.is_superuser or "suppliers" in user_permissions %}
-            <li>
-              <a class="nav-link {% if 'supplier' in request.path %}active text-primary{% endif %}"
-                href="{% url 'fieldmgmt:supplier_list' %}">
-                Suppliers
-              </a>
-            </li>
-            {% endif %}
-
-            {% if request.user.is_superuser or "manufacturers" in user_permissions %}
-            <li>
-              <a class="nav-link {% if 'manufacturer' in request.path %}active text-primary{% endif %}"
-                href="{% url 'fieldmgmt:manufacturer_list' %}">
-                Manufacturers
-              </a>
-            </li>
-            {% endif %}
-            {% if request.user.is_superuser or "appoinment_type" in user_permissions %}
-            <li>
-              <a class="nav-link {% if 'appointment-types' in request.path %}active text-primary{% endif %}"
-                href="{% url 'fieldmgmt:appointment_type_list' %}">
-                Appoinment Type
-              </a>
-            </li>
-            {% endif %}
-            {% if request.user.is_superuser or "ipothercharges" in user_permissions %}
-            <li>
-              <a class="nav-link {% if 'ip-othercharges' in request.path %}active text-primary{% endif %}"
-                href="{% url 'fieldmgmt:ip_othercharge_list' %}">
-                IP Other Charges
-              </a>
-            </li>
-            {% endif %}
-             {% if request.user.is_superuser or "adjuvant" in user_permissions %}
-            <li>
-              <a class="nav-link {% if 'adjuvant' in request.path %}active text-primary{% endif %}"
-                href="{% url 'fieldmgmt:adjuvant_list' %}">
-                Adjuvant
-              </a>
-            </li>
-            {% endif %}
-          </ul>
-        </div>
-      </li>
-
-      {% endif %}
-
-
-      {# ===== Patient Management ===== #}
-      {% if request.user.is_superuser or "patientdashboard" in user_permissions or "registerpatient" in user_permissions or "appoinments" in user_permissions %}
-      <li class="nav-item">
-        <a class="nav-link text-dark d-flex justify-content-between align-items-center {% if '/patient' in request.path %}active bg-gradient-dark text-white{% endif %}"
-           data-bs-toggle="collapse" href="#patientMenu">
-          <span><i class="material-symbols-rounded opacity-5">person</i> Patient Management</span>
-        </a>
-        <div class="collapse {% if '/patient' in request.path %}show{% endif %}" id="patientMenu">
-          <ul class="nav flex-column ms-4">
-            {% if request.user.is_superuser or "patientdashboard" in user_permissions %}
-            <li><a class="nav-link {% if 'patient_list' in request.path %}active text-primary{% endif %}" href="{% url 'patientmgmt:patient_list' %}">Patient Dashboard</a></li>
-            {% endif %}
-            {% if request.user.is_superuser or "registerpatient" in user_permissions %}
-            <li><a class="nav-link {% if 'patient_register' in request.path %}active text-primary{% endif %}" href="{% url 'patientmgmt:patient_register' %}">Register Patient</a></li>
-            {% endif %}
-            {% if request.user.is_superuser or "appoinments" in user_permissions %}
-            <li><a class="nav-link {% if 'appointment_list' in request.path %}active text-primary{% endif %}" href="{% url 'patientmgmt:appointment_list' %}">Appointments</a></li>
-            {% endif %}
-          </ul>
-        </div>
-      </li>
-      {% endif %}
-
-      {# ===== Reports ===== #}
-      {% if request.user.is_superuser or "reportsdashboard" in user_permissions or "allreports" in user_permissions %}
-      <li class="nav-item">
-        <a class="nav-link text-dark d-flex justify-content-between align-items-center {% if '/report' in request.path %}active bg-gradient-dark text-white{% endif %}"
-           data-bs-toggle="collapse" href="#reportMenu">
-          <span><i class="material-symbols-rounded opacity-5">description</i> Report Management</span>
-        </a>
-        <div class="collapse {% if '/report' in request.path %}show{% endif %}" id="reportMenu">
-          <ul class="nav flex-column ms-4">
-            {% if request.user.is_superuser or "reportsdashboard" in user_permissions %}
-            <li><a class="nav-link {% if 'reporthome' in request.path %}active text-primary{% endif %}" href="{% url 'reportmgmt:reporthome' %}">Report Dashboard</a></li>
-            {% endif %}
-            {% if request.user.is_superuser or "allreports" in user_permissions %}
-            <li><a class="nav-link {% if 'reportlist' in request.path %}active text-primary{% endif %}" href="{% url 'reportmgmt:reportlist' %}">All Reports</a></li>
-            {% endif %}
-             {% if request.user.is_superuser or "prescriptions" in user_permissions %}
-            <li><a class="nav-link {% if 'prescriptions' in request.path %}active text-primary{% endif %}" href="{% url 'reportmgmt:prescription_list' %}">Prescriptions</a></li>
-            {% endif %}
-          </ul>
-        </div>
-      </li>
-      {% endif %}
-
-      {# ===== Billing Management ===== #}
-      {% if request.user.is_superuser or "medicalbilling" in user_permissions or "inpatientbilling" in user_permissions or "outpatientbilling" in user_permissions or "therapybilling" in user_permissions %}
-      <li class="nav-item">
-        <a class="nav-link text-dark d-flex justify-content-between align-items-center {% if '/billing' in request.path %}active bg-gradient-dark text-white{% endif %}"
-           data-bs-toggle="collapse" href="#billingMenu">
-          <span><i class="material-symbols-rounded opacity-5">receipt_long</i> Billing Management</span>
-        </a>
-        <div class="collapse {% if '/billing' in request.path %}show{% endif %}" id="billingMenu">
-          <ul class="nav flex-column ms-4">
-            {% if request.user.is_superuser or "medicalbilling" in user_permissions %}
-            <li><a class="nav-link {% if 'billing-history' in request.path %}active text-primary{% endif %}" href="{% url 'billingmgmt:billing_history' %}">Billing History</a></li>
-            {% endif %}
-            {% if request.user.is_superuser or "medicalbilling" in user_permissions %}
-            <li><a class="nav-link {% if 'medicalbilling' in request.path %}active text-primary{% endif %}" href="{% url 'billingmgmt:medicalbilling' %}">Medical</a></li>
-            {% endif %}
-            {% if request.user.is_superuser or "inpatientbilling" in user_permissions %}
-            <li><a class="nav-link {% if 'inpatientbilling' in request.path %}active text-primary{% endif %}" href="{% url 'billingmgmt:inpatientbilling' %}">Inpatients</a></li>
-            {% endif %}
-            {% if request.user.is_superuser or "outpatientbilling" in user_permissions %}
-            <li><a class="nav-link {% if 'outpatientbilling' in request.path %}active text-primary{% endif %}" href="{% url 'billingmgmt:outpatientbilling' %}">Outpatients</a></li>
-            {% endif %}
-            {% if request.user.is_superuser or "therapybilling" in user_permissions %}
-            <li><a class="nav-link {% if 'therapybilling' in request.path %}active text-primary{% endif %}" href="{% url 'billingmgmt:therapybilling' %}">Therapy</a></li>
-            {% endif %}
-          </ul>
-        </div>
-      </li>
-      {% endif %}
-
-{# ===== Account Management ===== #}
-     {% if request.user.is_superuser or "accountmanagement" in user_permissions %}
-      <li class="nav-item">
-
-        <a class="nav-link text-dark d-flex justify-content-between align-items-center
-          {% if 'accountmanagement' in request.path %}active bg-gradient-dark text-white{% endif %}"
-          data-bs-toggle="collapse"
-          href="#accountMenu"
-          role="button"
-          aria-expanded="{% if 'accountmanagement' in request.path %}true{% else %}false{% endif %}">
-          
-          <span>
-            <i class="material-symbols-rounded opacity-5">account_balance</i>
-            Account Management
-          </span>
-        </a>
-
-        <div class="collapse {% if 'accountmanagement' in request.path %}show{% endif %}"
-            id="accountMenu">
-          <ul class="nav flex-column ms-4">
-
-           <li>
-            <a class="nav-link {% if 'accountmanagement/dashboard' in request.path %}active text-primary{% endif %}"
-              href="{% url 'accountmgmt:account_dashboard' %}">
-              Dashboard
-            </a>
-          </li>
-
-          <li>
-            <a class="nav-link {% if 'accountmanagement/income' in request.path %}active text-primary{% endif %}"
-              href="{% url 'accountmgmt:income_list' %}">
-              Income
-            </a>
-          </li>
-
-          <li>
-            <a class="nav-link {% if 'accountmanagement/expenses' in request.path %}active text-primary{% endif %}"
-              href="{% url 'accountmgmt:expense_list' %}">
-              Expenses
-            </a>
-          </li>
-
-          <li>
-            <a class="nav-link {% if 'accountmanagement/ledger' in request.path %}active text-primary{% endif %}"
-              href="{% url 'accountmgmt:ledger_list' %}">
-              Ledger
-            </a>
-          </li>
-
-          <li>
-            <a class="nav-link {% if 'accountmanagement/reports' in request.path %}active text-primary{% endif %}"
-              href="{% url 'accountmgmt:account_reports' %}">
-              Reports
-            </a>
-          </li>
-
-
-          </ul>
-        </div>
-      </li>
-      {% endif %}
-
-     {% if request.user.is_superuser or "sendmessage" in user_permissions %}
-      <li class="nav-item">
-        <a class="nav-link {% if request.path == '/patientmgmt:whatsapp_send/' %}active bg-gradient-dark text-white{% else %}text-dark{% endif %}" 
-           href="{% url 'patientmgmt:whatsapp_send' %}">
-          <i class="material-symbols-rounded opacity-5">message</i>
-          <span class="nav-link-text ms-1">Sent Message</span>
+      <li>
+        <a class="nav-link {% if 'ledger' in request.path %}active text-primary{% endif %}"
+           href="{% url 'accountmgmt:ledger_list' %}">
+          Ledger
         </a>
       </li>
-      {% endif %}
 
-
-      {# ===== Settings Management ===== #}
-      {% if request.user.is_superuser %}
-      <li class="nav-item">
-        <a class="nav-link {% if '/settings' in request.path %}active bg-gradient-dark text-white{% else %}text-dark{% endif %}"
-          href="{% url 'billingmgmt:hospital_settings' %}">
-          <i class="material-symbols-rounded opacity-5">settings</i>
-          <span class="nav-link-text ms-1">Hospital Settings</span>
+      <li>
+        <a class="nav-link {% if 'reports' in request.path %}active text-primary{% endif %}"
+           href="{% url 'accountmgmt:account_reports' %}">
+          Reports
         </a>
       </li>
-      {% endif %}
-
-
 
     </ul>
   </div>
-<!-- Sidebar footer -->
-<div class="sidebar-footer">
-  <a class="nav-link logout-link" href="{% url 'logout' %}">
-    <i class="material-symbols-rounded">logout</i>
-    <span class="nav-link-text ms-1">Logout</span>
+</li>
+{% endif %}
+
+<!-- ================= MESSAGE ================= -->
+{% if request.user.is_superuser or "sendmessage" in user_permissions %}
+<li class="nav-item">
+  <a class="nav-link {% if 'whatsapp_send' in request.path %}active bg-gradient-dark text-white{% endif %}"
+     href="{% url 'patientmgmt:whatsapp_send' %}">
+    <i class="material-symbols-rounded">message</i> Send Message
   </a>
+</li>
+{% endif %}
+
+</ul>
 </div>
+
+<!-- Sidebar footer --> <div class="sidebar-footer"> <a class="nav-link logout-link" href="{% url 'logout' %}"> <i class="material-symbols-rounded">logout</i> <span class="nav-link-text ms-1">Logout</span> </a> </div>
+
 </aside>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
