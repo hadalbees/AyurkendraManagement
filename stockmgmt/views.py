@@ -422,131 +422,78 @@ REQUIRED_COLUMNS = [
 ]
 
 
-def safe_decimal(value, default=0):
+from datetime import datetime
+# -----------------------------
+# SAFE DECIMAL
+# -----------------------------
+def safe_decimal(val, default=0):
     try:
-        if pd.isna(value):
+        if pd.isna(val):
             return Decimal(default)
-        return Decimal(str(value).strip())
-    except (InvalidOperation, ValueError):
+        return Decimal(str(val).replace("₹", "").strip())
+    except:
         return Decimal(default)
 
 
-def detect_form_type(name):
+# -----------------------------
+# FIX QUANTITY (handles date issue like 4-Jan)
+# -----------------------------
+def fix_quantity(val):
+    try:
+        if pd.isna(val):
+            return 0
+
+        if isinstance(val, pd.Timestamp):
+            return val.day
+
+        return int(val)
+    except:
+        return 0
+
+
+# -----------------------------
+# FORM TYPE + BASE UNIT
+# -----------------------------
+def detect_form_and_unit(name):
     name = name.lower()
 
     if "ml" in name:
-        return "LIQUID"
-    elif "gm" in name or "gms" in name:
-        return "POWDER"
+        return "LIQUID", "ml"
+
+    elif "gm" in name or " g " in name or "gms" in name:
+        return "POWDER", "g"
+
     else:
-        return "PIECE"
-    
-def detect_ayurvedic_type(name):
-    name = name.lower()
+        return "PIECE", "piece"   # 🔥 IMPORTANT FIX
 
-    mapping = {
-        "cream": "Cream",
-        "capsule": "Capsules",
-        "cap": "Capsules",
-        "tablet": "Tablet",
-        "tab": "Tablet",
-        "soap": "Soap",
-        "lehyam": "Lehyam",
-        "lotion": "Lotion",
-        "oil": "Oil",
-        "choornam": "Powder",
-        "churna": "Powder",
-    }
 
-    for key, value in mapping.items():
-        if key in name:
-            return value
+# -----------------------------
+# EXPIRY PARSER (FIX ERROR)
+# -----------------------------
+def parse_expiry(val):
+    try:
+        if pd.isna(val):
+            return None
 
-    return None
- 
-def normalize_category(name):
-    if not name:
+        if isinstance(val, pd.Timestamp):
+            return val.date()
+
+        if isinstance(val, str):
+            try:
+                return datetime.strptime(val, "%b-%y").date()
+            except:
+                return pd.to_datetime(val).date()
+
+        return None
+    except:
         return None
 
-    name = str(name).strip().lower()
 
-    mapping = {
-        "kashayam": "Kashayam",
-        "kasayam": "Kashayam",
-        "kashyam": "Kashayam",
+# =============================
+# MAIN BULK IMPORT
+# =============================
+def bulk_import_stock(request):
 
-        "aristam": "Arishtam",
-        "arishtam": "Arishtam",
-
-        "asavam": "Asavam",
-
-        "thailam": "Thailam",
-
-        "tablet": "Tablet",
-        "tablets": "Tablet",
-
-        "capsule": "Capsules",
-        "capsules": "Capsules",
-        "cap": "Capsules",
-
-        "choornam": "Choornam",
-        "churnam": "Choornam",
-        "churna": "Choornam",
-        "powder": "Choornam",
-
-        "lehyam": "Lehyam",
-
-        "rasayanam": "Rasayanam",
-
-        "gritham": "Gritham",
-        "ghritam": "Gritham",
-
-        "gulika": "Gulika",
-        "vatika": "Gulika",
-        "vatakam": "Gulika",
-
-        "bhasmam": "Bhasmam",
-
-        "soap": "Soap",
-
-        "cream": "Cream",
-        "ointment": "Ointment",
-        "oinment": "Ointment",
-
-        "lotion": "Lotion",
-
-        "syrup": "Syrup",
-    }
-
-    return mapping.get(name, name.title())
-
-def get_or_create_ayurvedic_type(category_name):
-    if not category_name:
-        return None
-
-    normalized_name = normalize_category(category_name)
-
-    obj = AyurvedicType.objects.filter(
-        name__iexact=normalized_name
-    ).first()
-
-    if obj:
-        return obj
-
-    return AyurvedicType.objects.create(
-        name=normalized_name,
-        status=True
-    )
-    
-    
-def normalize_name(name):
-    """Normalize for exact duplicate check"""
-    name = str(name).strip().lower()
-    name = re.sub(r"\s+", " ", name)
-    return name
-
-
-def bulk_import_medicine(request):
     if request.method != "POST":
         return redirect("stockmgmt:stock_list")
 
@@ -556,33 +503,15 @@ def bulk_import_medicine(request):
         return redirect("stockmgmt:stock_list")
 
     try:
-        import pandas as pd
-        from django.db import transaction
+        df = pd.read_excel(file)
 
-        # Read file
-        if file.name.endswith(".csv"):
-            df = pd.read_csv(file)
-        else:
-            df = pd.read_excel(file, engine="openpyxl")
-
-        df = df.dropna(how="all")
-
-        df.columns = (
-            df.columns
-            .str.strip()
-            .str.lower()
-            .str.replace(" ", "_")
-        )
+        df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
 
         created = 0
-        duplicates = 0
+        updated = 0
         skipped = 0
 
-        # ✅ Load existing names from DB (normalized)
-        existing_names = set(
-            normalize_name(name)
-            for name in Medicine.objects.values_list("name", flat=True)
-        )
+        current_type = None
 
         with transaction.atomic():
 
@@ -590,60 +519,126 @@ def bulk_import_medicine(request):
 
                 medicine_name = str(row.get("medicine_name", "")).strip()
 
+                # ✅ Skip ONLY empty medicine name
                 if not medicine_name:
                     skipped += 1
                     continue
 
-                normalized_name = normalize_name(medicine_name)
-                
-
-                # ✅ ONLY CHECK FULL NAME
-                if normalized_name in existing_names:
-                    duplicates += 1
+                # ✅ Category rows
+                if medicine_name.isupper():
+                    current_type, _ = AyurvedicType.objects.get_or_create(
+                        name=medicine_name.title()
+                    )
                     continue
 
-                # Add to set (so next same name in Excel won't insert twice)
-                existing_names.add(normalized_name)
+                # -------------------------
+                # FIELDS
+                # -------------------------
+                batch_number = str(row.get("batch_no", "")).strip()
 
-                # Category
-                category = row.get("category")
-                ayurvedic_type_obj = get_or_create_ayurvedic_type(category)
+                # 🔥 FIX: allow empty batch
+                if not batch_number:
+                    batch_number = f"NO-BATCH-{_}"
 
-                # Form type
-                form_type = detect_form_type(medicine_name)
+                manufacturer_name = str(row.get("manufacturer", "")).strip()
 
-                # GST
-                sgst = safe_decimal(row.get("sgst"), 0)
-                cgst = safe_decimal(row.get("cgst"), 0)
-                gst = sgst + cgst
+                pack_size = safe_decimal(row.get("package"))
+                number_of_packs = fix_quantity(row.get("quantity"))
+                selling_price = safe_decimal(row.get("price"))
 
-                reorder_level = safe_decimal(row.get("reorder_level"), 0)
-                expiry_alert = safe_decimal(row.get("expiry_days_alert"), 30)
-                hsn_code = str(row.get("hsn_code", "")).strip()
+                # 🔥 ALLOW ZERO VALUES
+                if pack_size < 0:
+                    pack_size = Decimal("0")
 
-                # ✅ INSERT
-                Medicine.objects.create(
-                    name=medicine_name,
-                    form_type=form_type,
-                    gst_percentage=gst,
-                    reorder_level=reorder_level,
-                    expiry_days_alert=expiry_alert,
-                    hsn_code=hsn_code,
-                    ayurvedic_type=ayurvedic_type_obj,
+                if number_of_packs < 0:
+                    number_of_packs = Decimal("0")
+
+                if selling_price < 0:
+                    selling_price = Decimal("0")
+
+                unit_price = selling_price
+                total_qty = pack_size * number_of_packs
+
+                expiry_date = parse_expiry(row.get("expiry"))
+
+                # -------------------------
+                # FORM TYPE
+                # -------------------------
+                form_type, base_unit = detect_form_and_unit(medicine_name)
+
+                # -------------------------
+                # MANUFACTURER
+                # -------------------------
+                manufacturer = None
+                if manufacturer_name:
+                    manufacturer, _ = ManufacturerMaster.objects.get_or_create(
+                        name=manufacturer_name
+                    )
+
+                # -------------------------
+                # MEDICINE
+                # -------------------------
+                medicine, created_medicine = Medicine.objects.get_or_create(
+                    name__iexact=medicine_name,
+                    defaults={
+                        "name": medicine_name,
+                        "hsn_code": str(row.get("hsn_code", "")),
+                        "form_type": form_type,
+                        "ayurvedic_type": current_type,
+                        "gst_percentage": Decimal("0"),
+                        "reorder_level": 0,
+                        "expiry_days_alert": 30,
+                        "description": "",
+                    }
                 )
 
-                created += 1
+                # -------------------------
+                # STOCK
+                # -------------------------
+                stock = Stock.objects.filter(
+                    medicine=medicine,
+                    batch_number=batch_number
+                ).first()
+
+                if stock:
+                    stock.total_base_quantity += total_qty
+                    stock.number_of_packs += number_of_packs
+                    stock.unit_price = unit_price
+                    stock.selling_price = selling_price
+                    stock.manufacturer = manufacturer
+                    stock.expiry_date = expiry_date
+                    stock.updated_at = timezone.now()
+                    stock.save()
+
+                    updated += 1
+
+                else:
+                    Stock.objects.create(
+                        medicine=medicine,
+                        batch_number=batch_number,
+                        base_unit=base_unit,
+                        pack_size=pack_size,
+                        number_of_packs=number_of_packs,
+                        total_base_quantity=total_qty,
+                        unit_price=unit_price,
+                        selling_price=selling_price,
+                        expiry_date=expiry_date,
+                        manufacturer=manufacturer,
+                        supplier=None,
+                        last_updated_by=request.user,
+                    )
+
+                    created += 1
 
         messages.success(
             request,
-            f"Import Done ✔ Created: {created}, Duplicates Skipped: {duplicates}, Skipped: {skipped}"
+            f"✔ Import Done → Created: {created}, Updated: {updated}, Skipped: {skipped}"
         )
 
     except Exception as e:
         messages.error(request, f"Import failed: {str(e)}")
 
     return redirect("stockmgmt:stock_list")
-
 
 
 def medicine_check(request):
