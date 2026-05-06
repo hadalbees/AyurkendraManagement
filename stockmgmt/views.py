@@ -62,39 +62,91 @@ class StockListView(LoginRequiredMixin, ListView):
     paginate_by = 50
 
     def get_queryset(self):
-        qs = super().get_queryset().select_related("medicine", "supplier")
+
+        qs = super().get_queryset().select_related(
+            "medicine",
+            "supplier",
+            "manufacturer"
+        )
 
         q_name = self.request.GET.get("q", "").strip()
         low_stock = self.request.GET.get("low_stock")
         near_expiry = self.request.GET.get("near_expiry")
 
+        # -----------------------------
+        # Search
+        # -----------------------------
         if q_name:
             qs = qs.filter(
                 Q(medicine__name__icontains=q_name) |
                 Q(batch_number__icontains=q_name)
             )
 
+        # -----------------------------
+        # Low Stock
+        # -----------------------------
         if low_stock:
-            qs = qs.filter(quantity__lte=models.F("medicine__reorder_level"))
+            qs = qs.filter(
+                total_base_quantity__lte=models.F(
+                    "medicine__reorder_level"
+                )
+            )
 
+        # -----------------------------
+        # Near Expiry
+        # -----------------------------
         if near_expiry:
             today = timezone.localdate()
+
             qs = qs.filter(
                 expiry_date__isnull=False,
                 expiry_date__lte=today + timezone.timedelta(days=30)
             )
 
-        return qs
+        return qs.order_by("medicine__name")
 
     def get_context_data(self, **kwargs):
+
         ctx = super().get_context_data(**kwargs)
+
         ctx["q"] = self.request.GET.get("q", "")
-        ctx["low_stock"] = bool(self.request.GET.get("low_stock"))
-        ctx["near_expiry"] = bool(self.request.GET.get("near_expiry"))
-        ctx["ayurvedic_forms"] = AyurvedicType.objects.filter(status=True)
-        ctx["suppliers"] = SupplierMaster.objects.filter(status=True)
-        ctx["manufacturers"] = ManufacturerMaster.objects.filter(status=True)
+        ctx["low_stock"] = bool(
+            self.request.GET.get("low_stock")
+        )
+        ctx["near_expiry"] = bool(
+            self.request.GET.get("near_expiry")
+        )
+
+        ctx["ayurvedic_forms"] = AyurvedicType.objects.filter(
+            status=True
+        )
+
+        ctx["suppliers"] = SupplierMaster.objects.filter(
+            status=True
+        )
+
+        ctx["manufacturers"] = ManufacturerMaster.objects.filter(
+            status=True
+        )
+
         return ctx
+
+
+def stock_delete(request, pk):
+
+    stock = get_object_or_404(Stock, pk=pk)
+
+    medicine_name = stock.medicine.name
+    batch_no = stock.batch_number
+
+    stock.delete()
+
+    messages.success(
+        request,
+        f"Stock deleted successfully. ({medicine_name} - {batch_no})"
+    )
+
+    return redirect("stockmgmt:stock_list")
 
 
 # --------------------------------------------------
