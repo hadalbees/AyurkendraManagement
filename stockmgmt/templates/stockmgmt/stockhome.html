@@ -301,54 +301,6 @@
 
     </div>
   </div>
-
-      <!-- PAGINATION -->
-      <div class="d-flex justify-content-between align-items-center p-3 border-top">
-
-        <div class="text-muted text-sm">
-          Showing
-          <strong>{{ page_obj.start_index }}</strong>
-          to
-          <strong>{{ page_obj.end_index }}</strong>
-          of
-          <strong>{{ page_obj.paginator.count }}</strong>
-          records
-        </div>
-
-        <nav>
-          <ul class="pagination mb-0">
-
-            {% if page_obj.has_previous %}
-              <li class="page-item">
-                <a class="page-link"
-                   href="?page={{ page_obj.previous_page_number }}&q={{ q }}{% if low_stock %}&low_stock=on{% endif %}{% if near_expiry %}&near_expiry=on{% endif %}">
-                  Previous
-                </a>
-              </li>
-            {% else %}
-              <li class="page-item disabled">
-                <span class="page-link">Previous</span>
-              </li>
-            {% endif %}
-
-            {% if page_obj.has_next %}
-              <li class="page-item">
-                <a class="page-link"
-                   href="?page={{ page_obj.next_page_number }}&q={{ q }}{% if low_stock %}&low_stock=on{% endif %}{% if near_expiry %}&near_expiry=on{% endif %}">
-                  Next
-                </a>
-              </li>
-            {% else %}
-              <li class="page-item disabled">
-                <span class="page-link">Next</span>
-              </li>
-            {% endif %}
-
-          </ul>
-        </nav>
-
-      </div>
-
     </div>
   </div>
 
