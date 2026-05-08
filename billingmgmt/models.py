@@ -227,7 +227,23 @@ class OutpatientItem(models.Model):
  
  
 class TherapyBill(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+
+    walkin_name = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+
+    customer_type = models.CharField(
+        max_length=20,
+        default="patient"
+    )
     bill_no = models.CharField(max_length=20, unique=True)
     bill_date = models.DateField(default=timezone.localdate)
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
