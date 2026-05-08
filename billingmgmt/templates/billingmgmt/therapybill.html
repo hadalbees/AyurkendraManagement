@@ -34,14 +34,67 @@
 
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label">Select Patient</label>
-                <select class="form-select" name="patient_id" required>
-                  <option value="">-- Select Patient --</option>
-                  {% for patient in patients %}
-                    <option value="{{ patient.id }}">{{ patient.patient_name }}</option>
-                  {% endfor %}
-                </select>
-              </div>
+          <label class="form-label">
+            Customer Type
+          </label>
+
+          <select
+            name="customer_type"
+            id="customerType"
+            class="form-select">
+
+            <option value="patient">
+              Registered Patient
+            </option>
+
+            <option value="walkin">
+              Walk-in Customer
+            </option>
+
+          </select>
+        </div>
+
+        <!-- PATIENT FIELD -->
+        <div class="col-md-6" id="patientBox">
+
+          <label class="form-label">
+            Select Patient
+          </label>
+
+          <select
+            class="form-select"
+            name="patient_id"
+            id="patientSelect">
+
+            <option value="">
+              -- Select Patient --
+            </option>
+
+            {% for patient in patients %}
+              <option value="{{ patient.id }}">
+                {{ patient.patient_name }}
+              </option>
+            {% endfor %}
+
+          </select>
+
+        </div>
+
+        <!-- WALKIN FIELD -->
+        <div class="col-md-6 d-none" id="walkinBox">
+
+          <label class="form-label">
+            Walk-in Customer Name
+          </label>
+
+          <input
+            type="text"
+            name="walkin_name"
+            id="walkinName"
+            class="form-control"
+            placeholder="Enter customer name">
+
+        </div>
             </div>
           </div>
         </div>
@@ -329,8 +382,99 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById("advanceInput")
     .addEventListener("input", calcBalance);
-
 });
+
+(function(){
+
+  function initCustomerType(){
+
+    const customerType =
+      document.getElementById("customerType");
+
+    const patientBox =
+      document.getElementById("patientBox");
+
+    const walkinBox =
+      document.getElementById("walkinBox");
+
+    const patientSelect =
+      document.getElementById("patientSelect");
+
+    const walkinName =
+      document.getElementById("walkinName");
+
+    if(
+      !customerType ||
+      !patientBox ||
+      !walkinBox
+    ){
+      return;
+    }
+
+    function toggleCustomerFields(){
+
+      const isPatient =
+        customerType.value === "patient";
+
+      // SHOW / HIDE
+      patientBox.classList.toggle(
+        "d-none",
+        !isPatient
+      );
+
+      walkinBox.classList.toggle(
+        "d-none",
+        isPatient
+      );
+
+      // REQUIRED
+      if(isPatient){
+
+        if(patientSelect){
+          patientSelect.required = true;
+        }
+
+        if(walkinName){
+          walkinName.required = false;
+          walkinName.value = "";
+        }
+
+      }else{
+
+        if(patientSelect){
+          patientSelect.required = false;
+          patientSelect.value = "";
+        }
+
+        if(walkinName){
+          walkinName.required = true;
+        }
+
+      }
+
+    }
+
+    // REMOVE OLD EVENT
+    customerType.onchange = null;
+
+    // ADD NEW EVENT
+    customerType.addEventListener(
+      "change",
+      toggleCustomerFields
+    );
+
+    // INITIAL LOAD
+    toggleCustomerFields();
+
+  }
+
+  // RUN
+  document.addEventListener(
+    "DOMContentLoaded",
+    initCustomerType
+  );
+
+})();
 </script>
 </body>
 </html>
