@@ -478,8 +478,7 @@ def inpatient_billing_view(request):
 
         # ---- GST FROM SETTINGS ----
         settings = HospitalSetting.objects.first()
-        gst_value = getattr(settings, "consultation_gst", 0) if settings else 0
-        gst_percent = Decimal(gst_value or 0)
+        gst_percent = Decimal(settings.consultation_gst or 0) if settings else Decimal("0")
 
         item_names = request.POST.getlist("item_name[]")
         item_rates = request.POST.getlist("item_rate[]")
@@ -615,8 +614,7 @@ def edit_inpatient_bill_view(request, bill_no):
         item_types = request.POST.getlist("item_type[]")
         item_stock_ids = request.POST.getlist("item_stock_id[]")
 
-        gst_value = getattr(settings, "consultation_gst", 0) if settings else 0
-        gst_percent = Decimal(gst_value or 0)
+        gst_percent = Decimal(settings.consultation_gst or 0)
 
         with transaction.atomic():
 
@@ -801,9 +799,7 @@ def print_inpatient_bill(request, bill_no):
 
     # ---- SETTINGS ----
     settings = HospitalSetting.objects.first()
-
-    gst_value = getattr(settings, "consultation_gst", 0) if settings else 0
-    gst_percent = Decimal(gst_value or 0).quantize(
+    gst_percent = Decimal(settings.consultation_gst or 0).quantize(
         Decimal("0.01"), rounding=ROUND_HALF_UP
     )
 
@@ -900,9 +896,7 @@ def outpatient_billing_view(request):
 
     # -------- GST --------
     settings = HospitalSetting.objects.first()
-
-    gst_value = getattr(settings, "consultation_gst", 0) if settings else 0
-    gst_percent = Decimal(gst_value or 0)
+    gst_percent = Decimal(settings.consultation_gst or 0) if settings else Decimal("0")
 
     tax = (
         subtotal_after_discount * gst_percent / Decimal("100")
@@ -996,8 +990,7 @@ def edit_outpatient_bill_view(request, bill_no):
         item_rates = request.POST.getlist("item_rate[]")
         item_qtys = request.POST.getlist("item_qty[]")
 
-        gst_value = getattr(settings, "consultation_gst", 0) if settings else 0
-        gst_percent = Decimal(gst_value or 0)
+        gst_percent = Decimal(settings.consultation_gst or 0) if settings else Decimal("0")
 
         with transaction.atomic():
 
@@ -1085,10 +1078,9 @@ def print_outpatient_bill(request, bill_no):
 
     # ---- SETTINGS ----
     settings = HospitalSetting.objects.first()
-
-    gst_percent = Decimal(
-        getattr(settings, "consultation_gst", 0) if settings else 0
-    ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    gst_percent = Decimal(settings.consultation_gst or 0).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
 
     # ---- GST SPLIT (PERCENT) ----
     cgst_percent = (gst_percent / 2).quantize(Decimal("0.01"))
@@ -1137,10 +1129,31 @@ def generate_therapy_bill_number():
 def therapy_billing_view(request):
 
     if request.method == "POST":
+        customer_type = request.POST.get("customer_type", "patient")
 
         patient_id = request.POST.get("patient_id")
-        if not patient_id:
-            return redirect("billingmgmt:therapybilling")
+        walkin_name = request.POST.get("walkin_name", "").strip()
+
+        # REGISTERED PATIENT
+        patient = None
+
+        if customer_type == "patient":
+
+            if not patient_id:
+                messages.error(request, "Select patient")
+                return redirect("billingmgmt:therapybilling")
+
+            patient = get_object_or_404(
+                Patient,
+                id=patient_id
+            )
+
+        # WALKIN
+        else:
+
+            if not walkin_name:
+                messages.error(request, "Enter customer name")
+                return redirect("billingmgmt:therapybilling")
 
         bill_no = request.POST.get("bill_no") or generate_therapy_bill_number()
         bill_date = request.POST.get("bill_date") or timezone.localdate()
@@ -1175,24 +1188,12 @@ def therapy_billing_view(request):
         # ---------- TOTAL ----------
         total = subtotal_with_gst - discount
 
-        # ---------- BALANCE LOGIC (FINAL FIX) ----------
+        # ---------- BALANCE ----------
+        balance_amount = total - advance_payment
 
-        # Normalize status
-        print("STATUS:", payment_status)
-        status = (payment_status or "").strip().lower()
-
-        # ✅ Paid → always full payment
-        if status == "paid":
-            advance_payment = total
+        if balance_amount < 0:
             balance_amount = Decimal("0.00")
 
-        # ✅ Partial payment
-        elif advance_payment > 0:
-            balance_amount = total - advance_payment
-
-        # ✅ No payment
-        else:
-            balance_amount = total
         # ---------- FORM ARRAYS ----------
         therapy_ids = request.POST.getlist("therapy_id[]")
         quantities = request.POST.getlist("quantity[]")
@@ -1201,10 +1202,13 @@ def therapy_billing_view(request):
 
         with transaction.atomic():
 
-            patient = get_object_or_404(Patient, id=patient_id)
-
             bill = TherapyBill.objects.create(
+
+                customer_type=customer_type,
+                walkin_name=walkin_name if customer_type == "walkin" else None,
+
                 patient=patient,
+
                 bill_no=bill_no,
                 bill_date=bill_date,
 
@@ -1277,6 +1281,28 @@ def edit_therapy_bill_view(request, bill_no):
     settings = HospitalSetting.objects.first()
 
     if request.method == "POST":
+        bill.customer_type = request.POST.get(
+            "customer_type",
+            "patient"
+        )
+
+        bill.walkin_name = request.POST.get(
+            "walkin_name",
+            ""
+        ).strip()
+
+        if bill.customer_type == "patient":
+
+            patient_id = request.POST.get("patient_id")
+
+            if patient_id:
+                bill.patient = get_object_or_404(
+                    Patient,
+                    id=patient_id
+                )
+
+        else:
+            bill.patient = None
 
         subtotal = Decimal(request.POST.get("subtotal") or "0")
         discount_percent = Decimal(request.POST.get("discount_percent") or "0")
@@ -1872,8 +1898,7 @@ def hospital_settings(request):
     return render(request, 'billingmgmt/settings.html', {
         'settings': settings
     })
-
-
+    
 def medical_bill_delete(request, pk):
     bill = get_object_or_404(MedicalBill, pk=pk)
 
