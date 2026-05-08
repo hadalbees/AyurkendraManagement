@@ -123,7 +123,7 @@
             <div id="prescriptionItemsContainer"></div>
 
             <div class="table-responsive mt-3">
-              <table class="table align-items-center" id="itemsTable">
+              <table class="table align-items-center" id="itemsTable" style="min-width: 100%;">
                 <thead class="bg-light">
                   <tr>
                     <th>Medicine</th>
@@ -231,255 +231,585 @@
 
 <!-- ====================== SCRIPT (UNCHANGED) ====================== -->
 <script>
-/* ---------- Prepare Medicines from Django ---------- */
-const allMedicines = [
+
+window.allMedicines = [
   {% for m in medicines %}
   {
     id: "{{ m.id }}",
     name: "{{ m.medicine.name|escapejs }}",
-    unit: "{{ m.base_unit|escapejs }}",
-    available: {{ m.total_base_quantity }},
-    selling_price: {{ m.selling_price }},
-    price_per_unit: {{ m.price_per_base_unit }},
+    unit: "{{ m.get_base_unit_display|escapejs }}",
+    available: {{ m.total_base_quantity|default:0 }},
+    selling_price: {{ m.selling_price|default:0 }},
+    price_per_unit: {{ m.price_per_base_unit|default:0 }},
     gst: {{ m.medicine.gst_percentage|default:0 }}
   }{% if not forloop.last %},{% endif %}
   {% endfor %}
 ];
 
-let items = [];
-function num(v){ return parseFloat(v) || 0; }
+window.items = [];
 
-/* ---------- Patient Dropdown ---------- */
+function num(v){
+  return parseFloat(v) || 0;
+}
+
+/* =========================
+   PATIENT DROPDOWN
+========================= */
+
 function filterDropdown(){
   const input = document.getElementById("patientInput").value.toLowerCase();
   const li = document.querySelectorAll("#patientDropdown li");
-  document.getElementById("patientDropdown").style.display = "block";
-  li.forEach(el => el.style.display = el.innerText.toLowerCase().includes(input) ? "block" : "none");
-}
-function showDropdown(){ document.getElementById("patientDropdown").style.display = "block"; }
-function hideDropdownDelayed(){ setTimeout(()=>{ document.getElementById("patientDropdown").style.display="none"; },200); }
 
-/* ---------- Patient Select ---------- */
+  document.getElementById("patientDropdown").style.display = "block";
+
+  li.forEach(el=>{
+    el.style.display =
+      el.innerText.toLowerCase().includes(input)
+      ? "block"
+      : "none";
+  });
+}
+
+function showDropdown(){
+  document.getElementById("patientDropdown").style.display = "block";
+}
+
+function hideDropdownDelayed(){
+  setTimeout(()=>{
+    document.getElementById("patientDropdown").style.display="none";
+  },200);
+}
+
+/* =========================
+   SELECT PATIENT
+========================= */
+
 function selectPatient(id,name){
-  document.getElementById("patientInput").value = `${id} - ${name}`;
+
+  document.getElementById("patientInput").value =
+    `${id} - ${name}`;
+
   document.getElementById("patientHidden").value = id;
+
   document.getElementById("patientDropdown").style.display="none";
 
   fetch(`/billing/get-patient/?patient_id=${id}`)
     .then(res=>res.json())
     .then(d=>{
+
       if(!d.error){
-        document.getElementById("patientAge").value = d.age;
-        document.getElementById("patientGender").value = d.gender;
+
+        document.getElementById("patientAge").value =
+          d.age || "";
+
+        document.getElementById("patientGender").value =
+          d.gender || "";
+
         loadPrescriptionItems(id);
       }
+
     });
+
 }
 
-/* ---------- Load Prescription ---------- */
+/* =========================
+   LOAD PRESCRIPTION
+========================= */
+
 function loadPrescriptionItems(pid){
+
   fetch(`/billing/get-prescription/?patient_id=${pid}`)
     .then(res=>res.json())
     .then(d=>{
-      document.getElementById("prescriptionItemsContainer").innerHTML = "";
+
+      document.getElementById(
+        "prescriptionItemsContainer"
+      ).innerHTML = "";
+
       if(d.items && d.items.length){
-        d.items.forEach(r => renderManualBlankRow(r.medicine_name, r.quantity));
+
+        d.items.forEach(r=>{
+
+          renderManualBlankRow(
+            r.medicine_name,
+            r.quantity
+          );
+
+        });
+
       }
+
     });
+
 }
 
-/* ---------- Render Manual Row ---------- */
-function renderManualBlankRow(selectedName = "", qtyValue = ""){
-  const c = document.getElementById("prescriptionItemsContainer");
+/* =========================
+   RENDER ROW
+========================= */
 
-  let options = `<option value="">-- Select --</option>`;
+function renderManualBlankRow(
+  selectedName = "",
+  qtyValue = ""
+){
+
+  const c =
+    document.getElementById(
+      "prescriptionItemsContainer"
+    );
+
+  let options =
+    `<option value="">-- Select --</option>`;
+
+  let selectedMedicineId = "";
+
   allMedicines.forEach(m=>{
-  options += `
-<option value="${m.id}"
+
+    const isSelected =
+      m.name.trim().toLowerCase() ===
+      selectedName.trim().toLowerCase();
+
+    if(isSelected){
+      selectedMedicineId = m.id;
+    }
+
+    options += `
+      <option
+        value="${m.id}"
+        ${isSelected ? "selected" : ""}
+        data-name="${m.name}"
         data-unit="${m.unit}"
         data-price="${m.selling_price}"
         data-single="${m.price_per_unit}"
         data-available="${m.available}"
-        data-gst="${m.gst}">
-  ${m.name} (${m.unit}) - Available: ${m.available}
-</option>`;
-});
+        data-gst="${m.gst}"
+      >
+        ${m.name}
+        (${m.unit})
+        - Available: ${m.available}
+      </option>
+    `;
 
+  });
 
   const div = document.createElement("div");
-  div.className = "row g-2 align-items-end mb-2";
+
+  div.className =
+    "row g-2 align-items-end mb-2";
 
   div.innerHTML = `
+
     <div class="col-md-3">
       <label>Medicine</label>
-      <select class="form-control medSelect">${options}</select>
+
+      <select class="form-control medSelect">
+        ${options}
+      </select>
     </div>
+
     <div class="col-md-2">
       <label>Unit</label>
-      <input class="form-control unitField" readonly>
+
+      <input
+        class="form-control unitField"
+        readonly>
     </div>
+
     <div class="col-md-2">
       <label>Unit Price</label>
-      <input class="form-control priceField" readonly>
+
+      <input
+        class="form-control priceField"
+        readonly>
     </div>
+
     <div class="col-md-2">
       <label>Qty</label>
-      <input class="form-control qtyField" type="number" min="1" value="${qtyValue}">
+
+      <input
+        class="form-control qtyField"
+        type="number"
+        min="1"
+        value="${qtyValue || 1}">
     </div>
+
     <div class="col-md-2">
       <label>Subtotal</label>
-      <input class="form-control subField" readonly>
+
+      <input
+        class="form-control subField"
+        readonly>
     </div>
+
     <div class="col-md-1">
-      <button type="button" class="btn btn-dark w-100 addBtn">+</button>
+      <button
+        type="button"
+        class="btn btn-dark w-100 addBtn">
+        +
+      </button>
     </div>
+
   `;
 
   c.appendChild(div);
-  const select = div.querySelector(".medSelect");
-  const qty = div.querySelector(".qtyField");
 
-  select.onchange = () => updateRow(div);
-  qty.oninput = () => updateRow(div);
-  div.querySelector(".addBtn").onclick = () => addRowToTable(div);
-  updateRow(div);
+  const select =
+    div.querySelector(".medSelect");
+
+  const qty =
+    div.querySelector(".qtyField");
+
+  // ===== UPDATE FUNCTION =====
+  function calculate(){
+
+    const opt =
+      select.selectedOptions[0];
+
+    if(!opt || !opt.value){
+      return;
+    }
+
+    const price =
+      parseFloat(opt.dataset.single) || 0;
+
+    const available =
+      parseFloat(opt.dataset.available) || 0;
+
+    const qtyVal =
+      parseFloat(qty.value) || 0;
+
+    // UNIT
+    div.querySelector(".unitField").value =
+      opt.dataset.unit || "";
+
+    // PRICE
+    div.querySelector(".priceField").value =
+      price.toFixed(2);
+
+    // STOCK CHECK
+    if(qtyVal > available){
+
+      alert(
+        "Insufficient stock. Available: "
+        + available
+      );
+
+      qty.value = "";
+
+      div.querySelector(".subField").value =
+        "0.00";
+
+      return;
+    }
+
+    // SUBTOTAL
+    const subtotal =
+      qtyVal * price;
+
+    div.querySelector(".subField").value =
+      subtotal.toFixed(2);
+
+  }
+
+  // EVENTS
+  select.addEventListener(
+    "change",
+    calculate
+  );
+
+  qty.addEventListener(
+    "input",
+    calculate
+  );
+
+  // ADD BUTTON
+  div.querySelector(".addBtn").onclick =
+    ()=>addRowToTable(div);
+
+  // AUTO LOAD FIRST TIME
+  calculate();
+
 }
 
-/* ---------- Update Row ---------- */
+
+/* =========================
+   UPDATE ROW
+========================= */
+
 function updateRow(div){
-  const opt = div.querySelector(".medSelect").selectedOptions[0];
-  if(!opt) return;
 
-  const qty = num(div.querySelector(".qtyField").value);
-  const pricePerUnit = num(opt.dataset.single);
-  const available = num(opt.dataset.available);
-  const gstPercent = num(opt.dataset.gst);
+  const opt =
+    div.querySelector(".medSelect")
+      .selectedOptions[0];
 
-  div.querySelector(".unitField").value = opt.dataset.unit || "";
-  div.querySelector(".priceField").value = pricePerUnit.toFixed(2);
-
-  if(qty > available){
-    alert("Insufficient stock. Available: " + available);
-    div.querySelector(".qtyField").value = "";
-    div.querySelector(".subField").value = "0.00";
+  if(!opt || !opt.value){
     return;
   }
 
-  const subtotal = qty * pricePerUnit;
-  const gstAmount = (subtotal * gstPercent) / 100;
+  const qty =
+    num(div.querySelector(".qtyField").value);
 
-  div.querySelector(".subField").value = subtotal.toFixed(2);
+  const pricePerUnit =
+    num(opt.dataset.single);
 
-  div.dataset.gstAmount = gstAmount;
-  div.dataset.gstPercent = gstPercent;
+  const available =
+    num(opt.dataset.available);
+
+  const gstPercent =
+    num(opt.dataset.gst);
+
+  div.querySelector(".unitField").value =
+    opt.dataset.unit || "";
+
+  div.querySelector(".priceField").value =
+    pricePerUnit.toFixed(2);
+
+  if(qty > available){
+
+    alert(
+      "Insufficient stock. Available: "
+      + available
+    );
+
+    div.querySelector(".qtyField").value = "";
+
+    div.querySelector(".subField").value =
+      "0.00";
+
+    return;
+  }
+
+  const subtotal =
+    qty * pricePerUnit;
+
+  div.querySelector(".subField").value =
+    subtotal.toFixed(2);
+
 }
 
+/* =========================
+   ADD ITEM
+========================= */
 
-/* ---------- Add Row ---------- */
 function addRowToTable(div){
-  const opt = div.querySelector(".medSelect").selectedOptions[0];
-  if(!opt) return alert("Select a medicine");
-  const qty = num(div.querySelector(".qtyField").value);
-  if(qty <= 0) return alert("Invalid quantity");
-const gstPercent = num(opt.dataset.gst);
-const subtotal = qty * num(opt.dataset.single);
-const gstAmount = (subtotal * gstPercent) / 100;
 
-items.push({
-  id: opt.value,
-  name: opt.textContent.split("(")[0].trim(),
-  unit: opt.dataset.unit,
-  qty: qty,
-  selling_price: num(opt.dataset.single),
-  subtotal: subtotal,
-  gst_percent: gstPercent,
-  gst_amount: gstAmount
-});
+  const opt =
+    div.querySelector(".medSelect")
+      .selectedOptions[0];
 
+  if(!opt || !opt.value){
+    alert("Select medicine");
+    return;
+  }
+
+  const qty =
+    num(div.querySelector(".qtyField").value);
+
+  if(qty <= 0){
+    alert("Enter quantity");
+    return;
+  }
+
+  const price =
+    num(opt.dataset.single);
+
+  const subtotal =
+    qty * price;
+
+  const gstPercent =
+    num(opt.dataset.gst);
+
+  const gstAmount =
+    (subtotal * gstPercent) / 100;
+
+  items.push({
+
+    id: opt.value,
+
+    name: opt.dataset.name,
+
+    unit: opt.dataset.unit,
+
+    qty: qty,
+
+    selling_price: price,
+
+    subtotal: subtotal,
+
+    gst_percent: gstPercent,
+
+    gst_amount: gstAmount
+
+  });
 
   renderItems();
+
 }
 
-/* ---------- Render Items ---------- */
+/* =========================
+   RENDER TABLE
+========================= */
+
 function renderItems(){
-  const tb = document.querySelector("#itemsTable tbody");
+
+  const tb =
+    document.querySelector(
+      "#itemsTable tbody"
+    );
+
   tb.innerHTML = "";
+
   let subtotal = 0;
+
   let totalGST = 0;
 
   items.forEach((it,i)=>{
 
-    subtotal += it.subtotal;
-    totalGST += it.gst_amount;
+    subtotal += num(it.subtotal);
+
+    totalGST += num(it.gst_amount);
 
     tb.innerHTML += `
+
       <tr>
+
         <td>
           ${it.name}
-          <input type="hidden" name="stock_id[]" value="${it.id}">
-          <input type="hidden" name="unit[]" value="${it.unit}">
-          <input type="hidden" name="quantity[]" value="${it.qty}">
-          <input type="hidden" name="subtotal[]" value="${it.subtotal}">
-          <input type="hidden" name="gst_percent[]" value="${it.gst_percent}">
-          <input type="hidden" name="gst_amount[]" value="${it.gst_amount}">
+
+          <input type="hidden"
+                 name="stock_id[]"
+                 value="${it.id}">
+
+          <input type="hidden"
+                 name="unit[]"
+                 value="${it.unit}">
+
+          <input type="hidden"
+                 name="quantity[]"
+                 value="${it.qty}">
+
+          <input type="hidden"
+                 name="subtotal[]"
+                 value="${it.subtotal}">
+
+          <input type="hidden"
+                 name="gst_percent[]"
+                 value="${it.gst_percent}">
+
+          <input type="hidden"
+                 name="gst_amount[]"
+                 value="${it.gst_amount}">
         </td>
+
         <td>${it.unit}</td>
+
         <td>₹${it.selling_price.toFixed(2)}</td>
+
         <td>${it.qty}</td>
+
         <td>₹${it.subtotal.toFixed(2)}</td>
+
         <td class="text-center">
-          <button type="button"
-                  class="btn btn-danger btn-sm"
-                  onclick="removeItem(${i})">X</button>
+          <button
+            type="button"
+            class="btn btn-danger btn-sm"
+            onclick="removeItem(${i})">
+            X
+          </button>
         </td>
-      </tr>`;
+
+      </tr>
+
+    `;
+
   });
 
-  const total = subtotal + totalGST;
+  const total =
+    subtotal + totalGST;
 
-  document.getElementById("subtotalText").innerText = subtotal.toFixed(2);
-  document.getElementById("taxText").innerText = totalGST.toFixed(2);
-  document.getElementById("totalText").innerText = total.toFixed(2);
+  document.getElementById(
+    "subtotalText"
+  ).innerText = subtotal.toFixed(2);
 
-  document.getElementById("subtotalVal").value = subtotal.toFixed(2);
-  document.getElementById("taxVal").value = totalGST.toFixed(2);
-  document.getElementById("totalVal").value = total.toFixed(2);
+  document.getElementById(
+    "taxText"
+  ).innerText = totalGST.toFixed(2);
+
+  document.getElementById(
+    "totalText"
+  ).innerText = total.toFixed(2);
+
+  document.getElementById(
+    "subtotalVal"
+  ).value = subtotal.toFixed(2);
+
+  document.getElementById(
+    "taxVal"
+  ).value = totalGST.toFixed(2);
+
+  document.getElementById(
+    "totalVal"
+  ).value = total.toFixed(2);
+
 }
 
+/* =========================
+   REMOVE ITEM
+========================= */
 
 function removeItem(i){
+
   items.splice(i,1);
+
   renderItems();
+
 }
 
+/* =========================
+   CUSTOMER TYPE
+========================= */
 
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener(
+  "DOMContentLoaded",
+  function(){
 
-  const customerType = document.getElementById("customerType");
-  const patientBox = document.getElementById("patientBox");
-  const walkinBox = document.getElementById("walkinBox");
+    const customerType =
+      document.getElementById(
+        "customerType"
+      );
 
-  if (!customerType || !patientBox || !walkinBox) {
-    console.error("Billing toggle elements missing");
-    return;
+    const patientBox =
+      document.getElementById(
+        "patientBox"
+      );
+
+    const walkinBox =
+      document.getElementById(
+        "walkinBox"
+      );
+
+    customerType.addEventListener(
+      "change",
+      function(){
+
+        const isPatient =
+          this.value === "patient";
+
+        patientBox.classList.toggle(
+          "d-none",
+          !isPatient
+        );
+
+        walkinBox.classList.toggle(
+          "d-none",
+          isPatient
+        );
+
+      }
+    );
+
   }
+);
 
-  customerType.addEventListener("change", function () {
-    const isPatient = this.value === "patient";
-
-    patientBox.classList.toggle("d-none", !isPatient);
-    walkinBox.classList.toggle("d-none", isPatient);
-
-    if (!isPatient) {
-      document.getElementById("patientHidden").value = "";
-      document.getElementById("patientInput").value = "";
-      document.getElementById("patientAge").value = "";
-      document.getElementById("patientGender").value = "";
-    }
-  });
-
-});
 </script>
-
 </body>
 </html>
