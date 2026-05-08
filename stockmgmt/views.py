@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.db.models import Q
 from django.contrib.auth.mixins import LoginRequiredMixin
 from decimal import Decimal, InvalidOperation
-import re
+
 from django.http import JsonResponse
 from django.db import models
 
@@ -147,8 +147,6 @@ def stock_delete(request, pk):
     )
 
     return redirect("stockmgmt:stock_list")
-
-
 # --------------------------------------------------
 # Add Medicine (AJAX)
 # --------------------------------------------------
@@ -596,7 +594,8 @@ def bulk_import_stock(request):
 
                 pack_size = safe_decimal(row.get("package"))
                 number_of_packs = fix_quantity(row.get("quantity"))
-                selling_price = safe_decimal(row.get("price"))
+                selling_price = safe_decimal(row.get("total_price"))
+                unitprice_excel = safe_decimal(row.get("unit_price"))
 
                 # 🔥 ALLOW ZERO VALUES
                 if pack_size < 0:
@@ -610,6 +609,10 @@ def bulk_import_stock(request):
 
                 unit_price = selling_price
                 total_qty = pack_size * number_of_packs
+                if total_qty > 0:
+                    price_per_base_unit = selling_price / total_qty
+                else:
+                    price_per_base_unit = Decimal("0")
 
                 expiry_date = parse_expiry(row.get("expiry"))
 
@@ -647,37 +650,126 @@ def bulk_import_stock(request):
                 # -------------------------
                 # STOCK
                 # -------------------------
+                # -------------------------
+                # STOCK
+                # -------------------------
+
                 stock = Stock.objects.filter(
                     medicine=medicine,
                     batch_number=batch_number
                 ).first()
 
+                gst_percentage = medicine.gst_percentage or Decimal("0")
+
+                # SAME LOGIC AS CREATE VIEW
+                total_qty, gst_amount, selling_price_final, price_per_base = calculate_stock_values(
+                    pack_size,
+                    number_of_packs,
+                    unit_price,
+                    gst_percentage,
+                    selling_price
+                )
+
                 if stock:
-                    stock.total_base_quantity += total_qty
+
+                    stock.pack_size = pack_size
+
                     stock.number_of_packs += number_of_packs
+
+                    stock.total_base_quantity += total_qty
+
                     stock.unit_price = unit_price
-                    stock.selling_price = selling_price
+
+                    stock.selling_price = selling_price_final
+
+                    stock.gst_amount = gst_amount
+
+                    stock.price_per_base_unit = unitprice_excel
+
+                    stock.base_unit = base_unit
+
                     stock.manufacturer = manufacturer
+
                     stock.expiry_date = expiry_date
+
                     stock.updated_at = timezone.now()
+
+                    stock.last_updated_by = request.user
+
                     stock.save()
+
+                    # STOCK TRANSACTION
+                    StockTransaction.objects.create(
+                        stock_item=stock,
+                        transaction_type="ADJUSTMENT",
+                        quantity_change=total_qty,
+                        recorded_by=request.user,
+                        notes="Bulk import stock update"
+                    )
+
+                    # ACTIVITY
+                    ActivityHistory.objects.create(
+                        user=request.user,
+                        action="UPDATE",
+                        module="STOCK",
+                        record_id=stock.id,
+                        description=f"Stock #{stock.id} updated via bulk import"
+                    )
 
                     updated += 1
 
                 else:
-                    Stock.objects.create(
+
+                    stock = Stock.objects.create(
+
                         medicine=medicine,
+
                         batch_number=batch_number,
+
                         base_unit=base_unit,
+
                         pack_size=pack_size,
+
                         number_of_packs=number_of_packs,
+
                         total_base_quantity=total_qty,
+
                         unit_price=unit_price,
-                        selling_price=selling_price,
+
+                        selling_price=selling_price_final,
+
+                        gst_amount=gst_amount,
+
+                        price_per_base_unit=unitprice_excel,
+
+                        manufacture_date=None,
+
                         expiry_date=expiry_date,
-                        manufacturer=manufacturer,
+
                         supplier=None,
+
+                        manufacturer=manufacturer,
+
                         last_updated_by=request.user,
+
+                    )
+
+                    # STOCK TRANSACTION
+                    StockTransaction.objects.create(
+                        stock_item=stock,
+                        transaction_type="PURCHASE",
+                        quantity_change=total_qty,
+                        recorded_by=request.user,
+                        notes="Bulk import new stock"
+                    )
+
+                    # ACTIVITY
+                    ActivityHistory.objects.create(
+                        user=request.user,
+                        action="CREATE",
+                        module="STOCK",
+                        record_id=stock.id,
+                        description=f"Stock #{stock.id} created via bulk import"
                     )
 
                     created += 1
@@ -691,7 +783,6 @@ def bulk_import_stock(request):
         messages.error(request, f"Import failed: {str(e)}")
 
     return redirect("stockmgmt:stock_list")
-
 
 def medicine_check(request):
 
