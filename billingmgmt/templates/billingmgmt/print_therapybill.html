@@ -65,7 +65,7 @@ th { background:#f2f2f2; }
     {{ bill.patient.patient_name }}
   {% endif %}
 {% else %}
-  Walk-in Customer
+ {{ bill.walkin_name }}
 {% endif %}
 |
 <strong>Date:</strong> {{ bill.bill_date|date:"d-m-Y" }}
