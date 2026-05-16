@@ -328,72 +328,96 @@
       });
   }
 
-  // === STOCK DATA PROVIDED FROM BACKEND === //
+// =========================
+// STOCK DATA PROVIDED FROM BACKEND
+// =========================
 const STOCKS = {
   {% for s in stocks %}
   "{{ s.id }}": {
     id: "{{ s.id }}",
     name: "{{ s.medicine.name|escapejs }}",
-    unit: "{{ s.base_unit  }}",
+    unit: "{{ s.base_unit }}",
     price: "{{ s.selling_price }}",
-    qty: "{{ s.total_base_quantity  }}"
-  },
+    qty: "{{ s.total_base_quantity }}"
+  }{% if not forloop.last %},{% endif %}
   {% endfor %}
 };
 
-  // === ADD MEDICINE ROW === //
-  document.getElementById("addMedBtn").addEventListener("click", addMedRow);
+// =========================
+// SEARCHABLE MEDICINE ROW
+// =========================
+document.getElementById("addMedBtn").addEventListener("click", addMedRow);
 
- function addMedRow(prefill = {}) {
+function addMedRow(prefill = {}) {
   const container = document.getElementById("medContainer");
 
   const row = document.createElement("div");
   row.className = "row g-2 mb-2 med-row align-items-center";
 
-  // Medicine select
+  // =====================================
+  // MEDICINE SEARCH + DROPDOWN
+  // =====================================
   const stockCol = document.createElement("div");
-  stockCol.className = "col-md-3";
-  const stockSel = document.createElement("select");
-  stockSel.name = "stock_id[]";
-  stockSel.className = "form-control";
-  stockSel.innerHTML = '<option value="">Select Medicine</option>';
-  for (const id in STOCKS) {
-    const s = STOCKS[id];
-    const opt = document.createElement("option");
-    opt.value = id;
-    opt.text = `${s.name} ₹${s.price} — Avl:${s.qty}`;
-    stockSel.appendChild(opt);
-  }
-  stockCol.appendChild(stockSel);
+  stockCol.className = "col-md-3 position-relative";
+
+  const searchInput = document.createElement("input");
+  searchInput.type = "text";
+  searchInput.className = "form-control medicineSearch";
+  searchInput.placeholder = "Search medicine...";
+
+  const hiddenStockId = document.createElement("input");
+  hiddenStockId.type = "hidden";
+  hiddenStockId.name = "stock_id[]";
+
+  const dropdown = document.createElement("div");
+  dropdown.className = "list-group position-absolute w-100 shadow-sm";
+  dropdown.style.zIndex = "9999";
+  dropdown.style.maxHeight = "220px";
+  dropdown.style.overflowY = "auto";
+  dropdown.style.display = "none";
+  dropdown.style.top = "100%";
+  dropdown.style.left = "0";
+
+  stockCol.appendChild(searchInput);
+  stockCol.appendChild(hiddenStockId);
+  stockCol.appendChild(dropdown);
   row.appendChild(stockCol);
 
-  // Medicine name
+  // =====================================
+  // MEDICINE NAME
+  // =====================================
   const medNameCol = document.createElement("div");
   medNameCol.className = "col-md-2";
+
   const medNameInput = document.createElement("input");
   medNameInput.type = "text";
   medNameInput.name = "medicine_name[]";
-  medNameInput.placeholder = "Name";
   medNameInput.className = "form-control";
+  medNameInput.placeholder = "Name";
+  medNameInput.readOnly = true;
+
   medNameCol.appendChild(medNameInput);
   row.appendChild(medNameCol);
 
-  // ✅ UNIT FIELD
+  // =====================================
+  // UNIT
+  // =====================================
   const unitCol = document.createElement("div");
   unitCol.className = "col-md-1";
+
   const unitInput = document.createElement("input");
   unitInput.type = "text";
   unitInput.name = "unit[]";
-  unitInput.placeholder = "Unit";
   unitInput.className = "form-control";
+  unitInput.placeholder = "Unit";
   unitInput.readOnly = true;
+
   unitCol.appendChild(unitInput);
   row.appendChild(unitCol);
 
-  // Auto fill name + unit
-  stockSel.onchange = () => onStockChange(stockSel, medNameInput, unitInput);
-
-  // Dosage
+  // =====================================
+  // DOSAGE
+  // =====================================
   const dosageCol = document.createElement("div");
   dosageCol.className = "col-md-2";
 
@@ -414,11 +438,11 @@ const STOCKS = {
   const customDoseInput = document.createElement("input");
   customDoseInput.type = "text";
   customDoseInput.name = "custom_dosage[]";
-  customDoseInput.placeholder = "Custom";
   customDoseInput.className = "form-control mt-1 d-none";
+  customDoseInput.placeholder = "Custom";
 
-  dosageSelect.addEventListener("change", () => {
-    if (dosageSelect.value === "Other") {
+  dosageSelect.addEventListener("change", function () {
+    if (this.value === "Other") {
       customDoseInput.classList.remove("d-none");
     } else {
       customDoseInput.classList.add("d-none");
@@ -430,31 +454,43 @@ const STOCKS = {
   dosageCol.appendChild(customDoseInput);
   row.appendChild(dosageCol);
 
-  // Duration
+  // =====================================
+  // DURATION
+  // =====================================
   const durationCol = document.createElement("div");
   durationCol.className = "col-md-1";
+
   const durInput = document.createElement("input");
   durInput.type = "number";
   durInput.name = "duration[]";
-  durInput.placeholder = "Days";
   durInput.className = "form-control";
+  durInput.placeholder = "Days";
+
   durationCol.appendChild(durInput);
   row.appendChild(durationCol);
 
-  // Quantity
+  // =====================================
+  // QUANTITY
+  // =====================================
   const qtyCol = document.createElement("div");
   qtyCol.className = "col-md-1";
+
   const qtyInput = document.createElement("input");
   qtyInput.type = "number";
   qtyInput.name = "quantity[]";
-  qtyInput.placeholder = "Qty";
   qtyInput.className = "form-control";
+  qtyInput.placeholder = "Qty";
+  qtyInput.min = "1";
+
   qtyCol.appendChild(qtyInput);
   row.appendChild(qtyCol);
 
-  // Food timing
+  // =====================================
+  // FOOD TIMING
+  // =====================================
   const foodCol = document.createElement("div");
   foodCol.className = "col-md-1";
+
   const foodSel = document.createElement("select");
   foodSel.name = "food_timing[]";
   foodSel.className = "form-control";
@@ -463,73 +499,144 @@ const STOCKS = {
     <option value="Before Food">Before Food</option>
     <option value="After Food">After Food</option>
     <option value="With Food">With Food</option>
-    <option value="Other">Other</option>
   `;
+
   foodCol.appendChild(foodSel);
   row.appendChild(foodCol);
-  // Adjuvant
-const adjCol = document.createElement("div");
-adjCol.className = "col-md-1";
 
-const adjSel = document.createElement("select");
-adjSel.name = "adjuvant[]";
-adjSel.className = "form-control";
+  // =====================================
+  // ADJUVANT
+  // =====================================
+  const adjCol = document.createElement("div");
+  adjCol.className = "col-md-1";
 
-const adjDefault = document.createElement("option");
-adjDefault.value = "";
-adjDefault.text = "Adjuvant";
-adjSel.appendChild(adjDefault);
+  const adjSel = document.createElement("select");
+  adjSel.name = "adjuvant[]";
+  adjSel.className = "form-control";
 
-for (const id in ADJUVANTS) {
-  const opt = document.createElement("option");
-  opt.value = id;
-  opt.text = ADJUVANTS[id];
-  adjSel.appendChild(opt);
-}
+  const defaultOption = document.createElement("option");
+  defaultOption.value = "";
+  defaultOption.text = "Adjuvant";
+  adjSel.appendChild(defaultOption);
 
-adjCol.appendChild(adjSel);
-row.appendChild(adjCol);
-
-// Remove (dashboard-style delete icon with soft background)
-const remCol = document.createElement("div");
-remCol.className = "col-md-1 d-flex justify-content-center align-items-center";
-
-const rm = document.createElement("div");
-rm.className = "delete-icon";
-rm.innerHTML = `
-  <i class="material-symbols-rounded"
-     style="font-variation-settings:'FILL' 1;">
-    delete
-  </i>
-`;
-
-rm.onclick = () => container.removeChild(row);
-
-remCol.appendChild(rm);
-row.appendChild(remCol);
-
-
-
-  container.appendChild(row);
-}
-
-
-  // === AUTO FILL MEDICINE NAME === //
-  function onStockChange(sel, medNameInput, unitInput) {
-  const sid = sel.value;
-  if (!sid) {
-    medNameInput.value = "";
-    unitInput.value = "";
-    return;
+  for (const id in ADJUVANTS) {
+    const opt = document.createElement("option");
+    opt.value = id;
+    opt.text = ADJUVANTS[id];
+    adjSel.appendChild(opt);
   }
 
-  const s = STOCKS[sid];
-  medNameInput.value = s.name;
-  unitInput.value = s.unit;   // 👈 THIS IS YOUR MAIN REQUIREMENT
+  adjCol.appendChild(adjSel);
+  row.appendChild(adjCol);
+
+  // =====================================
+  // REMOVE BUTTON
+  // =====================================
+  const remCol = document.createElement("div");
+  remCol.className = "col-md-1 d-flex justify-content-center align-items-center";
+
+  const rm = document.createElement("div");
+  rm.className = "delete-icon";
+  rm.innerHTML = `
+    <i class="material-symbols-rounded"
+       style="font-variation-settings:'FILL' 1;">
+      delete
+    </i>
+  `;
+
+  rm.onclick = () => container.removeChild(row);
+
+  remCol.appendChild(rm);
+  row.appendChild(remCol);
+
+  // =====================================
+  // SEARCH FUNCTION
+  // =====================================
+  function renderDropdown(keyword = "") {
+    dropdown.innerHTML = "";
+
+    const search = keyword.toLowerCase().trim();
+
+    let count = 0;
+
+    for (const id in STOCKS) {
+      const stock = STOCKS[id];
+
+      const text = (
+        stock.name +
+        " " +
+        stock.unit +
+        " " +
+        stock.qty
+      ).toLowerCase();
+
+      if (search && !text.includes(search)) {
+        continue;
+      }
+
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "list-group-item list-group-item-action";
+      item.innerHTML = `
+        <strong>${stock.name}</strong><br>
+        <small>
+          ${stock.unit} |
+          Available: ${stock.qty}
+        </small>
+      `;
+
+      item.addEventListener("click", function () {
+        hiddenStockId.value = stock.id;
+        searchInput.value = stock.name;
+        medNameInput.value = stock.name;
+        unitInput.value = stock.unit;
+        dropdown.style.display = "none";
+      });
+
+      dropdown.appendChild(item);
+      count++;
+
+      if (count >= 20) break;
+    }
+
+    dropdown.style.display = count > 0 ? "block" : "none";
+  }
+
+  // Search typing
+  searchInput.addEventListener("input", function () {
+    hiddenStockId.value = "";
+    medNameInput.value = "";
+    unitInput.value = "";
+    renderDropdown(this.value);
+  });
+
+  // Show dropdown on focus
+  searchInput.addEventListener("focus", function () {
+    renderDropdown(this.value);
+  });
+
+  // Hide dropdown after click
+  searchInput.addEventListener("blur", function () {
+    setTimeout(() => {
+      dropdown.style.display = "none";
+    }, 200);
+  });
+
+  // Add row to container
+  container.appendChild(row);
+
+  // Prefill if needed
+  if (prefill.stock_id && STOCKS[prefill.stock_id]) {
+    const stock = STOCKS[prefill.stock_id];
+    hiddenStockId.value = stock.id;
+    searchInput.value = stock.name;
+    medNameInput.value = stock.name;
+    unitInput.value = stock.unit;
+  }
 }
 
-  // initial row
-  addMedRow();
+// Initial row
+addMedRow();
 </script>
 
 </body>
