@@ -572,6 +572,7 @@ class PatientListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         qs = Patient.objects.filter(is_active=True).order_by('-created_at')
+
         q = self.request.GET.get('q', '').strip()
         ptype = self.request.GET.get('type', '').strip()
         phone = self.request.GET.get('phone', '').strip()
@@ -580,27 +581,61 @@ class PatientListView(LoginRequiredMixin, ListView):
             qs = qs.filter(
                 models.Q(patient_name__icontains=q) |
                 models.Q(consultant_doctor__icontains=q) |
-                models.Q(department__icontains=q)
+                models.Q(department__icontains=q) |
+                models.Q(patient_unique_id__icontains=q)
             )
+
         if phone:
             qs = qs.filter(phone__icontains=phone)
+
         if ptype in ('OP', 'IP'):
             qs = qs.filter(patient_type=ptype)
+
         return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+
+        # Dashboard Counts
         ctx["total_patients"] = Patient.objects.filter(is_active=True).count()
-        ctx["inpatients"] = Patient.objects.filter(is_active=True, patient_type="IP").count()
-        ctx["outpatients"] = Patient.objects.filter(is_active=True, patient_type="OP").count()
-        ctx["discharged"] = InpatientAdmission.objects.filter(discharge_date__isnull=False).count()
-        ctx["patients"] = Patient.objects.filter(is_active=True).order_by('-id')[:10]
-        ctx["billings"] = BillingInvoice.objects.filter(is_void=False).order_by('-id')[:5]
-        ctx["pending_invoices"] = BillingInvoice.objects.filter(is_void=False, payment_status="PENDING").count()
-        ctx["total_invoices_amount"] = BillingInvoice.objects.filter(is_void=False).aggregate(total=models.Sum('total_amount'))['total'] or 0
+        ctx["inpatients"] = Patient.objects.filter(
+            is_active=True,
+            patient_type="IP"
+        ).count()
+
+        ctx["outpatients"] = Patient.objects.filter(
+            is_active=True,
+            patient_type="OP"
+        ).count()
+
+        ctx["discharged"] = InpatientAdmission.objects.filter(
+            discharge_date__isnull=False
+        ).count()
+
+        # Billing Summary
+        ctx["billings"] = BillingInvoice.objects.filter(
+            is_void=False
+        ).order_by('-id')[:5]
+
+        ctx["pending_invoices"] = BillingInvoice.objects.filter(
+            is_void=False,
+            payment_status="PENDING"
+        ).count()
+
+        ctx["total_invoices_amount"] = BillingInvoice.objects.filter(
+            is_void=False
+        ).aggregate(
+            total=models.Sum('total_amount')
+        )['total'] or 0
+
+        # Preserve Filters
         ctx['q'] = self.request.GET.get('q', '')
         ctx['phone'] = self.request.GET.get('phone', '')
         ctx['type'] = self.request.GET.get('type', '')
+
+        # IMPORTANT:
+        # Do NOT overwrite ctx["patients"]
+
         return ctx
 
 
