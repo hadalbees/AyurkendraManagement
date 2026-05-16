@@ -397,14 +397,31 @@ function renderManualBlankRow(
     "row g-2 align-items-end mb-2";
 
   div.innerHTML = `
+<div class="col-md-3">
+  <label>Medicine</label>
 
-    <div class="col-md-3">
-      <label>Medicine</label>
+  <!-- Search Box -->
+  <input type="text"
+         class="form-control medSearch"
+         placeholder="Search medicine..."
+         autocomplete="off"
+         value="${selectedName || ''}">
 
-      <select class="form-control medSelect">
-        ${options}
-      </select>
-    </div>
+  <!-- Hidden Select -->
+  <select class="form-control medSelect d-none">
+    ${options}
+  </select>
+
+  <!-- Dropdown List -->
+  <div class="medDropdown list-group position-absolute w-100 shadow-sm bg-white"
+       style="
+         z-index:9999;
+         max-height:250px;
+         overflow-y:auto;
+         display:none;
+       ">
+  </div>
+</div>
 
     <div class="col-md-2">
       <label>Unit</label>
@@ -458,6 +475,75 @@ function renderManualBlankRow(
   const qty =
     div.querySelector(".qtyField");
 
+    const searchInput =
+  div.querySelector(".medSearch");
+
+const dropdown =
+  div.querySelector(".medDropdown");
+
+// Render search results
+function renderMedicineDropdown(filter = "") {
+
+  dropdown.innerHTML = "";
+
+  const keyword = filter.toLowerCase().trim();
+
+  allMedicines.forEach(m => {
+
+    const text =
+      `${m.name} ${m.unit} ${m.available}`.toLowerCase();
+
+    if (!text.includes(keyword)) return;
+
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className =
+      "list-group-item list-group-item-action";
+
+    item.innerHTML = `
+      <strong>${m.name}</strong><br>
+      <small class="text-muted">
+        ${m.unit} | Available: ${m.available}
+      </small>
+    `;
+
+    item.onclick = function () {
+      searchInput.value = m.name;
+      select.value = m.id;
+      dropdown.style.display = "none";
+      calculate();
+    };
+
+    dropdown.appendChild(item);
+  });
+
+  dropdown.style.display =
+    dropdown.children.length ? "block" : "none";
+}
+
+// Show dropdown on focus
+searchInput.addEventListener("focus", function () {
+  renderMedicineDropdown(searchInput.value);
+});
+
+// Filter while typing
+searchInput.addEventListener("input", function () {
+  select.value = "";
+  renderMedicineDropdown(this.value);
+});
+
+// Hide dropdown after click
+searchInput.addEventListener("blur", function () {
+  setTimeout(() => {
+    dropdown.style.display = "none";
+  }, 200);
+});
+
+// Preselect in edit mode
+if (selectedMedicineId) {
+  select.value = selectedMedicineId;
+  searchInput.value = selectedName;
+}
   // ===== UPDATE FUNCTION =====
   function calculate(){
 
