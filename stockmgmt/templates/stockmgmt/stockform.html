@@ -32,7 +32,7 @@
   <div class="card shadow-sm border-0">
     <div class="card-body px-4 py-4">
 
-      <form method="post" id="stockForm" novalidate>
+      <form method="post" novalidate>
         {% csrf_token %}
 
         <div class="row g-4">
@@ -51,17 +51,51 @@
             {% if field.field.widget.input_type == "select" %}
 
                 {% if field.name == "medicine" %}
-                <select name="medicine" class="form-select" id="medicineSelect">
-                    <option value="">Select Medicine</option>
-                    {% for med in field.field.queryset %}
-                        <option value="{{ med.id }}"
-                                data-gst="{{ med.gst_percentage }}"
-                                {% if field.value|stringformat:"s" == med.id|stringformat:"s" %}selected{% endif %}>
-                            {{ med.name }} ({{ med.form_type }})
-                        </option>
-                    {% endfor %}
-                </select>
-                <small class="text-danger error-msg"></small>
+<div class="position-relative">
+
+    <!-- Search Box -->
+    <input type="text"
+           id="medicineSearch"
+           class="form-control"
+           placeholder="Search medicine..."
+           autocomplete="off"
+           value="{% if form.instance.pk %}{{ form.instance.medicine.name }}{% endif %}">
+
+    <!-- Hidden Selected Medicine ID -->
+    <input type="hidden"
+           name="medicine"
+           id="medicineSelect"
+           value="{% if form.instance.pk %}{{ form.instance.medicine.id }}{% endif %}">
+
+    <!-- Dropdown -->
+    <div id="medicineDropdown"
+         class="list-group position-absolute w-100 shadow-sm"
+         style="
+            z-index: 9999;
+            max-height: 250px;
+            overflow-y: auto;
+            display: none;
+            top: 100%;
+            left: 0;
+         ">
+
+        {% for med in field.field.queryset %}
+        <button type="button"
+                class="list-group-item list-group-item-action medicine-item"
+                data-id="{{ med.id }}"
+                data-name="{{ med.name|escapejs }}"
+                data-gst="{{ med.gst_percentage }}">
+            <strong>{{ med.name }}</strong>
+            <br>
+            <small class="text-muted">
+                {{ med.form_type }} | GST {{ med.gst_percentage }}%
+            </small>
+        </button>
+        {% endfor %}
+
+    </div>
+
+</div>
 
                 {% elif field.name == "base_unit" %}
                 <select name="base_unit" class="form-select">
@@ -73,7 +107,7 @@
                         </option>
                     {% endfor %}
                 </select>
-                <small class="text-danger error-msg"></small>
+
                 {% else %}
                 <select name="{{ field.name }}" class="form-select">
                     {% for obj in field.field.queryset %}
@@ -83,7 +117,6 @@
                         </option>
                     {% endfor %}
                 </select>
-                <small class="text-danger error-msg"></small>
                 {% endif %}
 
             <!-- DATE FIELDS -->
@@ -92,7 +125,7 @@
                        name="{{ field.name }}"
                        value="{% if field.value %}{{ field.value|date:'Y-m-d' }}{% endif %}"
                        class="form-control">
-                <small class="text-danger error-msg"></small>
+
             <!-- OTHER INPUT FIELDS -->
             {% else %}
                 <input type="{{ field.field.widget.input_type|default:'text' }}"
@@ -100,7 +133,6 @@
                        value="{{ field.value|default:'' }}"
                        class="form-control"
                        placeholder="{{ field.label }}">
-                       <small class="text-danger error-msg"></small>
             {% endif %}
 
             {% if field.help_text %}
@@ -166,9 +198,12 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
+    const medicineSearch = document.getElementById("medicineSearch");
+    const medicineSelect = document.getElementById("medicineSelect");
+    const medicineDropdown = document.getElementById("medicineDropdown");
+
     const unitPriceInput = document.querySelector('[name="unit_price"]');
     const sellingInput = document.querySelector('[name="selling_price"]');
-    const medicineSelect = document.getElementById("medicineSelect");
 
     const gstPercentPreview = document.getElementById("gst_percentage_preview");
     const gstAmountPreview = document.getElementById("gst_amount_preview");
@@ -176,113 +211,159 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let userEditedSelling = false;
 
+    // =====================================
+    // SELLING PRICE MANUAL EDIT
+    // =====================================
     if (sellingInput) {
         sellingInput.addEventListener("input", function () {
             userEditedSelling = true;
         });
     }
 
+    // =====================================
+    // MEDICINE SEARCH
+    // =====================================
+    if (medicineSearch && medicineDropdown) {
+
+        function showDropdown() {
+            medicineDropdown.style.display = "block";
+        }
+
+        function hideDropdown() {
+            setTimeout(() => {
+                medicineDropdown.style.display = "none";
+            }, 200);
+        }
+
+        function filterMedicines() {
+            const keyword = medicineSearch.value.toLowerCase().trim();
+            const items = medicineDropdown.querySelectorAll(".medicine-item");
+
+            let visibleCount = 0;
+
+            items.forEach(item => {
+                const text = item.innerText.toLowerCase();
+
+                if (text.includes(keyword)) {
+                    item.style.display = "block";
+                    visibleCount++;
+                } else {
+                    item.style.display = "none";
+                }
+            });
+
+            medicineDropdown.style.display =
+                visibleCount > 0 ? "block" : "none";
+        }
+
+        medicineSearch.addEventListener("focus", function () {
+            showDropdown();
+            filterMedicines();
+        });
+
+        medicineSearch.addEventListener("input", function () {
+            medicineSelect.value = "";
+            filterMedicines();
+        });
+
+        medicineSearch.addEventListener("blur", hideDropdown);
+
+        // Select medicine
+        medicineDropdown
+            .querySelectorAll(".medicine-item")
+            .forEach(item => {
+                item.addEventListener("click", function () {
+
+                    const medId = this.dataset.id;
+                    const medName = this.dataset.name;
+                    const gst = this.dataset.gst;
+
+                    medicineSearch.value = medName;
+                    medicineSelect.value = medId;
+
+                    // Save GST on hidden input
+                    medicineSelect.dataset.gst = gst;
+
+                    medicineDropdown.style.display = "none";
+
+                    calculateGST();
+                });
+            });
+    }
+
+    // =====================================
+    // GST CALCULATION
+    // =====================================
     function calculateGST() {
 
         if (!medicineSelect || !unitPriceInput) return;
 
-        let selectedOption = medicineSelect.options[medicineSelect.selectedIndex];
-        let gstPercent = parseFloat(selectedOption.dataset.gst) || 0;
-        let unitPrice = parseFloat(unitPriceInput.value) || 0;
+        const gstPercent =
+            parseFloat(medicineSelect.dataset.gst) || 0;
+
+        const unitPrice =
+            parseFloat(unitPriceInput.value) || 0;
 
         let gstAmount = 0;
 
         if (gstPercent > 0) {
-            gstAmount = (unitPrice * gstPercent) / (100 + gstPercent);
+            gstAmount =
+                (unitPrice * gstPercent) /
+                (100 + gstPercent);
         }
 
-        gstPercentPreview.value = gstPercent + " %";
-        gstAmountPreview.value = gstAmount.toFixed(2);
+        if (gstPercentPreview) {
+            gstPercentPreview.value =
+                gstPercent.toFixed(2) + " %";
+        }
 
-        // Auto fill selling price if not edited
+        if (gstAmountPreview) {
+            gstAmountPreview.value =
+                gstAmount.toFixed(2);
+        }
+
+        // Auto-fill selling price if not manually edited
         if (!userEditedSelling && sellingInput) {
-            sellingInput.value = unitPrice.toFixed(2);
+            sellingInput.value =
+                unitPrice.toFixed(2);
         }
 
-        autoSellingPreview.value = sellingInput ? sellingInput.value : unitPrice.toFixed(2);
+        if (autoSellingPreview) {
+            autoSellingPreview.value =
+                sellingInput
+                    ? sellingInput.value
+                    : unitPrice.toFixed(2);
+        }
     }
 
-    if (medicineSelect) medicineSelect.addEventListener("change", calculateGST);
-    if (unitPriceInput) unitPriceInput.addEventListener("input", calculateGST);
+    // =====================================
+    // UNIT PRICE CHANGE
+    // =====================================
+    if (unitPriceInput) {
+        unitPriceInput.addEventListener(
+            "input",
+            calculateGST
+        );
+    }
+
+    // =====================================
+    // EDIT MODE SUPPORT
+    // =====================================
+    if (medicineSelect && medicineSelect.value) {
+        const selectedButton =
+            medicineDropdown.querySelector(
+                `.medicine-item[data-id="${medicineSelect.value}"]`
+            );
+
+        if (selectedButton) {
+            medicineSelect.dataset.gst =
+                selectedButton.dataset.gst;
+        }
+    }
 
     calculateGST();
 });
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    const form = document.getElementById("stockForm");
-
-    if (!form) {
-        console.error("Form not found ❌");
-        return;
-    }
-
-    function setError(input, message) {
-        const wrapper = input.closest(".col-md-6");
-        const error = wrapper ? wrapper.querySelector(".error-msg") : null;
-
-        input.classList.add("is-invalid");
-
-        if (error) error.innerText = message;
-    }
-
-    function clearError(input) {
-        const wrapper = input.closest(".col-md-6");
-        const error = wrapper ? wrapper.querySelector(".error-msg") : null;
-
-        input.classList.remove("is-invalid");
-
-        if (error) error.innerText = "";
-    }
-
-    form.addEventListener("submit", function(e) {
-
-        let isValid = true;
-
-        const fields = form.querySelectorAll("input, select");
-
-        fields.forEach(field => {
-
-            clearError(field);
-
-            const label = field.closest(".col-md-6")?.querySelector("label");
-
-            const isRequired =
-                field.hasAttribute("required") ||
-                (label && label.innerText.includes("*"));
-
-            if (isRequired) {
-                if (!field.value || field.value.trim() === "") {
-                    setError(field, "This field is required");
-                    isValid = false;
-                }
-            }
-
-        });
-
-        // 🚨 FORCE STOP SUBMIT
-        if (!isValid) {
-            e.preventDefault();
-            e.stopPropagation();   // 🔥 IMPORTANT
-            console.log("Form blocked ❌");
-
-            // focus first error
-            form.querySelector(".is-invalid")?.focus();
-
-            return false;  // 🔥 EXTRA SAFETY
-        }
-
-        console.log("Form allowed ✅");
-
-    });
-
-});
-
 </script>
+
 </body>
 </html>
