@@ -48,7 +48,7 @@
                     {{ bill.patient.patient_name }}
                 {% endif %}
             {% else %}
-               {{ bill.walkin_name }}
+                {{ bill.walkin_name }}
             {% endif %}
         </div>
 
@@ -105,44 +105,93 @@
   </div>
 
   <!-- ================= BILL SUMMARY ================= -->
-  <div class="row justify-content-end">
-    <div class="col-md-4">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h6 class="fw-bold mb-3">Billing Summary</h6>
+<div class="row justify-content-end">
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h6 class="fw-bold mb-3">Billing Summary</h6>
 
-          <div class="d-flex justify-content-between">
-            <span>Subtotal</span>
-            <strong>₹{{ bill.subtotal }}</strong>
-          </div>
-
-          <div class="d-flex justify-content-between">
-            <span>Discount</span>
-            <strong>₹{{ bill.discount }}</strong>
-          </div>
-
-          <div class="d-flex justify-content-between">
-            <span>Tax</span>
-            <strong>₹{{ bill.tax }}</strong>
-          </div>
-<div class="d-flex justify-content-between">
-            <span>Payment Mode</span>
-            <strong>{{ bill.payment_mode }}</strong>
-          </div>
-          <div class="d-flex justify-content-between">
-            <span>Payment Status</span>
-            <strong>₹{{ bill.payment_status }}</strong>
-          </div>
-          <hr>
-
-          <div class="d-flex justify-content-between fs-5">
-            <strong>Total</strong>
-            <strong>₹{{ bill.total }}</strong>
-          </div>
+        <!-- Subtotal -->
+        <div class="d-flex justify-content-between mb-2">
+          <span>Subtotal</span>
+          <strong>₹ {{ bill.subtotal }}</strong>
         </div>
+
+        <!-- Discount -->
+        {% if bill.discount > 0 %}
+        <div class="d-flex justify-content-between mb-2">
+          <span>Discount</span>
+          <strong class="text-danger">
+            - ₹ {{ bill.discount }}
+          </strong>
+        </div>
+        {% endif %}
+
+        <!-- GST -->
+        {% if gst_percent > 0 %}
+        <div class="d-flex justify-content-between mb-2">
+          <span>GST ({{ gst_percent }}%)</span>
+          <strong>₹ {{ gst_amount }}</strong>
+        </div>
+        {% endif %}
+
+        <hr>
+
+        <!-- Grand Total -->
+        <div class="d-flex justify-content-between fs-5 mb-2">
+          <strong>Grand Total</strong>
+          <strong class="text-success">
+            ₹ {{ grand_total }}
+          </strong>
+        </div>
+
+        <!-- Advance Payment -->
+        {% if bill.advance_payment > 0 %}
+        <div class="d-flex justify-content-between mb-2">
+          <span>Advance Payment</span>
+          <strong class="text-primary">
+            ₹ {{ bill.advance_payment }}
+          </strong>
+        </div>
+        {% endif %}
+
+        <!-- Balance Amount -->
+        {% if bill.balance_amount > 0 %}
+        <div class="d-flex justify-content-between mb-2">
+          <span>Balance Amount</span>
+          <strong class="text-danger">
+            ₹ {{ bill.balance_amount }}
+          </strong>
+        </div>
+        {% endif %}
+
+        <hr>
+
+        <!-- Payment Mode -->
+        <div class="d-flex justify-content-between mb-2">
+          <span>Payment Mode</span>
+          <strong>{{ bill.payment_mode }}</strong>
+        </div>
+
+        <!-- Payment Status -->
+        <div class="d-flex justify-content-between">
+          <span>Payment Status</span>
+          <strong>
+            <span class="badge
+              {% if bill.payment_status == 'Paid' %}
+                bg-success
+              {% else %}
+                bg-warning text-dark
+              {% endif %}">
+              {{ bill.payment_status }}
+            </span>
+          </strong>
+        </div>
+
       </div>
     </div>
   </div>
+</div>
 
 </div>
 
