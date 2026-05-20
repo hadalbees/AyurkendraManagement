@@ -75,7 +75,7 @@
           <thead class="table-light">
             <tr>
               <th>#</th>
-              <th>Therapy</th>
+              <th>Particulars</th>
               <th>Unit Price</th>
               <th>Qty</th>
               <th>Subtotal</th>
@@ -86,7 +86,7 @@
             {% for item in bill.items.all %}
             <tr>
               <td>{{ forloop.counter }}</td>
-              <td>{{ item.therapy.name }}</td>
+              <td>{{ item.item_name }}</td>
               <td>₹{{ item.unit_price }}</td>
               <td>{{ item.quantity }}</td>
               <td>₹{{ item.subtotal }}</td>
