@@ -252,6 +252,7 @@
           <option value="Paid"
           {% if bill.payment_status == "Paid" %}selected{% endif %}>
           Paid</option>
+          <option value="Partialy Paid" {% if bill.payment_status == "Partialy Paid" %}selected{% endif %}>Partialy Paid</option>
         </select>
       </div>
 
