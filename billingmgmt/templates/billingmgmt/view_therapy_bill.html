@@ -138,12 +138,12 @@
         <hr>
 
         <!-- Grand Total -->
-        <div class="d-flex justify-content-between fs-5 mb-2">
-          <strong>Grand Total</strong>
-          <strong class="text-success">
-            ₹ {{ grand_total }}
-          </strong>
-        </div>
+      <div class="d-flex justify-content-between fs-5 mb-2">
+        <strong>Grand Total</strong>
+        <strong class="text-success">
+          ₹ {{ grand_total|default:bill.total }}
+        </strong>
+      </div>
 
         <!-- Show Advance Payment only if PARTIAL payment -->
         {% if bill.advance_payment > 0 and bill.advance_payment < grand_total %}
