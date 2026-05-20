@@ -1,4 +1,4 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import render,redirect,get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.db.models import Value, DecimalField
@@ -37,7 +37,7 @@ def account_dashboard(request):
     )["total"] or 0
 
     inpatient_income = InpatientBill.objects.aggregate(
-        total=Sum("total")
+        total=Sum("advance_payment")
     )["total"] or 0
 
     outpatient_income = OutpatientBill.objects.aggregate(
@@ -45,7 +45,7 @@ def account_dashboard(request):
     )["total"] or 0
 
     therapy_income = TherapyBill.objects.aggregate(
-        total=Sum("total")
+        total=Sum("advance_payment")
     )["total"] or 0
 
     # Convert to whole numbers
@@ -160,42 +160,53 @@ def income_list(request):
     })
 
 def expense_list(request):
-
     expenses = Expense.objects.all().order_by("-expense_date")
 
     from_date = request.GET.get("from_date")
     to_date = request.GET.get("to_date")
     category = request.GET.get("category")
 
-    # ===== FILTERS =====
+    # ---------------- FILTERS ----------------
     if from_date and to_date:
-        expenses = expenses.filter(expense_date__range=[from_date, to_date])
+        expenses = expenses.filter(
+            expense_date__range=[from_date, to_date]
+        )
 
     if category:
         expenses = expenses.filter(category=category)
 
-    # ===== TOTAL =====
-    total_expense = expenses.aggregate(total=Sum("amount"))["total"] or 0
-    total_expense = int(round(total_expense))
+    # ---------------- TOTAL ----------------
+    total_expense = expenses.aggregate(
+        total=Sum("amount")
+    )["total"] or 0
 
-    # ===== PDF EXPORT =====
+    # ---------------- PDF EXPORT ----------------
     if "export_pdf" in request.GET:
-        return export_expense_pdf(expenses, from_date, to_date, total_expense)
+        return export_expense_pdf(
+            expenses,
+            from_date,
+            to_date,
+            total_expense
+        )
 
-    # ===== PAGINATION =====
+    # ---------------- PAGINATION ----------------
     paginator = Paginator(expenses, 10)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    # ===== MONTHLY EXPENSE CHART =====
+    # ---------------- MONTHLY CHART ----------------
     monthly_map = defaultdict(float)
 
-    for row in Expense.objects.annotate(
+    chart_queryset = Expense.objects.annotate(
         month=TruncMonth("expense_date")
-    ).values("month").annotate(total=Sum("amount")):
+    ).values("month").annotate(
+        total=Sum("amount")
+    ).order_by("month")
+
+    for row in chart_queryset:
         if row["month"]:
-            m = calendar.month_abbr[row["month"].month]
-            monthly_map[m] += float(row["total"] or 0)
+            month_name = calendar.month_abbr[row["month"].month]
+            monthly_map[month_name] += float(row["total"] or 0)
 
     months = list(calendar.month_abbr)[1:]
     monthly_expense = [monthly_map[m] for m in months]
@@ -211,64 +222,17 @@ def expense_list(request):
         "monthly_expense": monthly_expense,
     }
 
-    return render(request, "accountmgmt/expense_list.html", context)
+    return render(
+        request,
+        "accountmgmt/expense_list.html",
+        context
+    )
 
 
-def export_expense_pdf(expenses, from_date, to_date, total_expense):
-    response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = 'attachment; filename="Expense_List.pdf"'
-
-    p = canvas.Canvas(response, pagesize=A4)
-    width, height = A4
-
-    y = height - 40
-
-    # ---- Title ----
-    p.setFont("Helvetica-Bold", 14)
-    p.drawString(40, y, "Expense Report")
-    y -= 20
-
-    p.setFont("Helvetica", 10)
-    if from_date and to_date:
-        p.drawString(40, y, f"Period: {from_date} to {to_date}")
-        y -= 20
-
-    # ---- Table Header ----
-    p.setFont("Helvetica-Bold", 10)
-    p.drawString(40, y, "Date")
-    p.drawString(120, y, "Category")
-    p.drawString(260, y, "Description")
-    p.drawString(470, y, "Amount")
-    y -= 15
-
-    p.line(40, y, 550, y)
-    y -= 15
-
-    # ---- Table Rows ----
-    p.setFont("Helvetica", 10)
-    for exp in expenses:
-        if y < 60:
-            p.showPage()
-            y = height - 40
-
-        p.drawString(40, y, exp.expense_date.strftime("%d-%m-%Y"))
-        p.drawString(120, y, str(exp.category or ""))
-        p.drawString(260, y, exp.description[:40])
-        p.drawRightString(530, y, f"{exp.amount}")
-        y -= 15
-
-    # ---- Total ----
-    y -= 10
-    p.line(350, y, 550, y)
-    y -= 15
-    p.setFont("Helvetica-Bold", 11)
-    p.drawRightString(530, y, f"Total : ₹ {total_expense}")
-
-    p.showPage()
-    p.save()
-    return response
-
-
+# =========================================================
+# EXPENSE ADD
+# =========================================================
+@login_required
 def expense_add(request):
     if request.method == "POST":
         expense = Expense.objects.create(
@@ -280,7 +244,7 @@ def expense_add(request):
             payment_mode=request.POST.get("payment_mode"),
             paid_by=request.user,
         )
-        # Save Activity History
+
         ActivityHistory.objects.create(
             user=request.user,
             action="CREATE",
@@ -288,10 +252,184 @@ def expense_add(request):
             record_id=expense.id,
             description=f"Expense #{expense.id} created by {request.user}"
         )
-        messages.success(request,"Expense added successfully")
+
+        messages.success(
+            request,
+            "Expense added successfully."
+        )
         return redirect("accountmgmt:expense_list")
 
-    return render(request, "accountmgmt/expense_add.html")
+    return render(
+        request,
+        "accountmgmt/expense_form.html"
+    )
+
+
+# =========================================================
+# EXPENSE EDIT
+# =========================================================
+def expense_edit(request, pk):
+    expense = get_object_or_404(Expense, pk=pk)
+
+    if request.method == "POST":
+        expense.expense_date = request.POST.get("expense_date")
+        expense.category = request.POST.get("category")
+        expense.description = request.POST.get("description")
+        expense.amount = request.POST.get("amount")
+        expense.payment_mode = request.POST.get("payment_mode")
+
+        # Replace attachment only if new file uploaded
+        if request.FILES.get("attachment"):
+            expense.attachment = request.FILES.get("attachment")
+
+        expense.save()
+
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="UPDATE",
+            module="EXPENSE",
+            record_id=expense.id,
+            description=f"Expense #{expense.id} updated by {request.user}"
+        )
+
+        messages.success(
+            request,
+            "Expense updated successfully."
+        )
+        return redirect("accountmgmt:expense_list")
+
+    return render(
+        request,
+        "accountmgmt/expense_form.html",
+        {
+            "object": expense
+        }
+    )
+
+
+# =========================================================
+# EXPENSE DELETE
+# =========================================================
+def expense_delete(request, pk):
+    expense = get_object_or_404(Expense, pk=pk)
+
+    if request.method == "POST":
+        expense_id = expense.id
+        expense.delete()
+
+        ActivityHistory.objects.create(
+            user=request.user,
+            action="DELETE",
+            module="EXPENSE",
+            record_id=expense_id,
+            description=f"Expense #{expense_id} deleted by {request.user}"
+        )
+
+        messages.success(
+            request,
+            "Expense deleted successfully."
+        )
+
+    return redirect("accountmgmt:expense_list")
+
+
+# =========================================================
+# PDF EXPORT
+# =========================================================
+def export_expense_pdf(
+    expenses,
+    from_date,
+    to_date,
+    total_expense
+):
+    response = HttpResponse(
+        content_type="application/pdf"
+    )
+    response["Content-Disposition"] = (
+        'attachment; filename="Expense_List.pdf"'
+    )
+
+    p = canvas.Canvas(response, pagesize=A4)
+    width, height = A4
+
+    y = height - 40
+
+    # Title
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(40, y, "Expense Report")
+    y -= 20
+
+    # Period
+    p.setFont("Helvetica", 10)
+    if from_date and to_date:
+        p.drawString(
+            40,
+            y,
+            f"Period: {from_date} to {to_date}"
+        )
+        y -= 20
+
+    # Header
+    p.setFont("Helvetica-Bold", 10)
+    p.drawString(40, y, "Date")
+    p.drawString(120, y, "Category")
+    p.drawString(260, y, "Description")
+    p.drawString(520, y, "Amount")
+    y -= 15
+
+    p.line(40, y, 550, y)
+    y -= 15
+
+    # Rows
+    p.setFont("Helvetica", 10)
+
+    for exp in expenses:
+        if y < 60:
+            p.showPage()
+            y = height - 40
+
+        p.drawString(
+            40,
+            y,
+            exp.expense_date.strftime("%d-%m-%Y")
+        )
+
+        p.drawString(
+            120,
+            y,
+            str(exp.category)
+        )
+
+        p.drawString(
+            260,
+            y,
+            (exp.description or "")[:35]
+        )
+
+        p.drawRightString(
+            540,
+            y,
+            f"{exp.amount}"
+        )
+
+        y -= 15
+
+    # Total
+    y -= 10
+    p.line(350, y, 550, y)
+    y -= 15
+
+    p.setFont("Helvetica-Bold", 11)
+    p.drawRightString(
+        540,
+        y,
+        f"Total: ₹ {total_expense}"
+    )
+
+    p.showPage()
+    p.save()
+
+    return response
 
 
 
