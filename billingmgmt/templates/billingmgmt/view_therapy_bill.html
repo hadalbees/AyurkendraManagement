@@ -75,7 +75,7 @@
           <thead class="table-light">
             <tr>
               <th>#</th>
-              <th>Therapy</th>
+              <th>Description</th>
               <th>Unit Price</th>
               <th>Qty</th>
               <th>Subtotal</th>
@@ -138,32 +138,36 @@
         <hr>
 
         <!-- Grand Total -->
-      <div class="d-flex justify-content-between fs-5 mb-2">
-        <strong>Grand Total</strong>
-        <strong class="text-success">
-          ₹ {{ grand_total|default:bill.total }}
-        </strong>
-      </div>
+<div class="d-flex justify-content-between fs-5 mb-2">
+  <strong>Grand Total</strong>
+  <strong class="text-success">
+    ₹ {{ grand_total|default:bill.total }}
+  </strong>
+</div>
 
-        <!-- Show Advance Payment only if PARTIAL payment -->
-        {% if bill.advance_payment > 0 and bill.advance_payment < grand_total %}
-        <div class="d-flex justify-content-between mb-2">
-          <span>Advance Payment</span>
-          <strong class="text-primary">
-            ₹ {{ bill.advance_payment }}
-          </strong>
-        </div>
-        {% endif %}
+<!-- Show Advance Payment only if:
+     1. advance_payment > 0
+     2. advance_payment is LESS than grand_total
+     (If full amount is paid as advance, this row will be hidden)
+-->
+{% if bill.advance_payment > 0 and bill.advance_payment < bill.total %}
+<div class="d-flex justify-content-between mb-2">
+  <span>Advance Payment</span>
+  <strong class="text-primary">
+    ₹ {{ bill.advance_payment }}
+  </strong>
+</div>
+{% endif %}
 
-        <!-- Show Balance Amount only if balance exists -->
-        {% if bill.balance_amount > 0 %}
-        <div class="d-flex justify-content-between mb-2">
-          <span>Balance Amount</span>
-          <strong class="text-danger">
-            ₹ {{ bill.balance_amount }}
-          </strong>
-        </div>
-        {% endif %}
+<!-- Show Balance Amount only if balance exists -->
+{% if bill.balance_amount > 0 %}
+<div class="d-flex justify-content-between mb-2">
+  <span>Balance Amount</span>
+  <strong class="text-danger">
+    ₹ {{ bill.balance_amount }}
+  </strong>
+</div>
+{% endif %}
 
         <hr>
 
