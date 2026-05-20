@@ -87,7 +87,7 @@
             {% for item in bill.items.all %}
             <tr>
               <td>{{ forloop.counter }}</td>
-              <td>{{ item.therapy.name }}</td>
+              <td>{{ item.medicine_name }}</td>
               <td>₹{{ item.unit_price }}</td>
               <td>{{ item.quantity }}</td>
               <td>₹{{ item.subtotal }}</td>
