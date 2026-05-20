@@ -145,8 +145,8 @@
           </strong>
         </div>
 
-        <!-- Advance Payment -->
-        {% if bill.advance_payment > 0 %}
+        <!-- Show Advance Payment only if PARTIAL payment -->
+        {% if bill.advance_payment > 0 and bill.advance_payment < grand_total %}
         <div class="d-flex justify-content-between mb-2">
           <span>Advance Payment</span>
           <strong class="text-primary">
@@ -155,7 +155,7 @@
         </div>
         {% endif %}
 
-        <!-- Balance Amount -->
+        <!-- Show Balance Amount only if balance exists -->
         {% if bill.balance_amount > 0 %}
         <div class="d-flex justify-content-between mb-2">
           <span>Balance Amount</span>
