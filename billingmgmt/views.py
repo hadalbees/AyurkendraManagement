@@ -251,7 +251,7 @@ def medical_billing_view(request):
                     MedicineItem.objects.create(
                         bill=bill,
                         medicine_name=stock.medicine.name,
-                        unit_price=stock.selling_price,
+                        unit_price=stock.price_per_base_unit,
                         quantity=qty,
                         subtotal=sub
                     )
