@@ -95,18 +95,29 @@
 
         <div class="col-md-3">
           <label class="form-label">Room Type</label>
-          <select id="roomType" class="form-control"
+          <select id="roomType"
+                  class="form-control"
                   onchange="updateRoomRate()">
-            <option value="">Select</option>
-            <option value="General" data-rate="1000">General – ₹1000/day</option>
-            <option value="Deluxe" data-rate="2000">Deluxe – ₹2000/day</option>
-            <option value="ICU" data-rate="3500">ICU – ₹3500/day</option>
+
+              <option value="">Select</option>
+
+              {% for room in room_types %}
+              <option value="{{ room.id }}"
+                      data-name="{{ room.name }}"
+                      data-rate="{{ room.daily_rate }}">
+                  {{ room.name }} - ₹{{ room.daily_rate }}/day
+              </option>
+              {% endfor %}
+
           </select>
         </div>
 
         <div class="col-md-2">
           <label class="form-label">Rate / Day</label>
-          <input id="roomRate" class="form-control" readonly>
+          <input type="number"
+            id="roomRate"
+            class="form-control"
+            readonly>
         </div>
 
         <div class="col-md-2">
@@ -364,35 +375,97 @@ function autoSetRoomDays(){
 }
 
 /* ---------- ROOM ---------- */
-function updateRoomRate(){
-  const o = roomType.selectedOptions[0];
-  roomRate.value = o ? o.dataset.rate : "";
-  calcRoomTotal();
+function updateRoomRate() {
+
+    const room =
+        document.getElementById("roomType");
+
+    const rate =
+        parseFloat(
+            room.selectedOptions[0]?.dataset.rate
+        ) || 0;
+
+    document.getElementById("roomRate").value =
+        rate.toFixed(2);
+
+    calcRoomTotal();
 }
 
-function calcRoomTotal(){
-  const rate = parseFloat(roomRate.value) || 0;
-  const days = parseFloat(roomDays.value) || 1;
-  roomTotal.value = (rate * days).toFixed(2);
+function calcRoomTotal() {
+
+    const rate =
+        parseFloat(
+            document.getElementById("roomRate").value
+        ) || 0;
+
+    let days =
+        parseFloat(
+            document.getElementById("roomDays").value
+        ) || 1;
+
+    if (days < 1) {
+        days = 1;
+        document.getElementById("roomDays").value = 1;
+    }
+
+    const total = rate * days;
+
+    document.getElementById("roomTotal").value =
+        total.toFixed(2);
 }
 
 function addRoomItem(){
-  if(!roomType.value) return alert("Select room");
 
-  items.push({
-    item_type: "room",
-    item_name: roomType.value + " Room",
-    unit_price: +roomRate.value,
-    quantity: +roomDays.value,
-    subtotal: +(roomTotal.value),
-    stock_id: ""
-  });
+    const roomSelect =
+        document.getElementById("roomType");
 
-  roomType.value = "";
-  roomRate.value = "";
-  roomDays.value = 1;
-  roomTotal.value = "";
-  renderItems();
+    if(!roomSelect.value){
+        alert("Select room");
+        return;
+    }
+
+    const roomName =
+        roomSelect.options[
+            roomSelect.selectedIndex
+        ].text.split(" - ")[0];
+
+    const rate =
+        parseFloat(
+            document.getElementById("roomRate").value
+        ) || 0;
+
+    const days =
+        parseFloat(
+            document.getElementById("roomDays").value
+        ) || 1;
+
+    const total =
+        parseFloat(
+            document.getElementById("roomTotal").value
+        ) || 0;
+
+    items.push({
+
+        item_type: "room",
+
+        item_name: roomName,
+
+        unit_price: rate,
+
+        quantity: days,
+
+        subtotal: total,
+
+        stock_id: ""
+
+    });
+
+    roomSelect.value = "";
+    roomRate.value = "";
+    roomDays.value = 1;
+    roomTotal.value = "";
+
+    renderItems();
 }
 
 /* ---------- PATIENT ---------- */

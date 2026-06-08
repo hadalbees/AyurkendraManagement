@@ -413,14 +413,16 @@ function renderManualBlankRow(
   </select>
 
   <!-- Dropdown List -->
-  <div class="medDropdown list-group position-absolute w-100 shadow-sm bg-white"
-       style="
-         z-index:9999;
-         max-height:250px;
-         overflow-y:auto;
-         display:none;
-       ">
-  </div>
+<div class="medDropdown list-group position-absolute w-100 shadow-sm bg-white"
+     style="
+       z-index:9999;
+       max-height:250px;
+       overflow-y:scroll;
+       overflow-x:hidden;
+       display:none;
+       pointer-events:auto;
+     ">
+</div>
 </div>
 
     <div class="col-md-2">
@@ -481,6 +483,16 @@ function renderManualBlankRow(
 const dropdown =
   div.querySelector(".medDropdown");
 
+  let mouseInsideDropdown = false;
+
+dropdown.addEventListener("mouseenter", () => {
+  mouseInsideDropdown = true;
+});
+
+dropdown.addEventListener("mouseleave", () => {
+  mouseInsideDropdown = false;
+});
+
 // Render search results
 function renderMedicineDropdown(filter = "") {
 
@@ -488,7 +500,11 @@ function renderMedicineDropdown(filter = "") {
 
   const keyword = filter.toLowerCase().trim();
 
-  allMedicines.forEach(m => {
+  const sortedMedicines = [...allMedicines].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
+  sortedMedicines.forEach(m => {
 
     const text =
       `${m.name} ${m.unit} ${m.available}`.toLowerCase();
@@ -534,9 +550,15 @@ searchInput.addEventListener("input", function () {
 
 // Hide dropdown after click
 searchInput.addEventListener("blur", function () {
+
   setTimeout(() => {
-    dropdown.style.display = "none";
+
+    if (!mouseInsideDropdown) {
+      dropdown.style.display = "none";
+    }
+
   }, 200);
+
 });
 
 // Preselect in edit mode
