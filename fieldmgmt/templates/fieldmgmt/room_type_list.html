@@ -1,0 +1,207 @@
+{% load static %}
+
+<!DOCTYPE html>
+
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">Room Type Management</h4>
+      <p class="text-muted text-sm mb-0">
+        Manage room types and daily charges
+      </p>
+    </div>
+
+
+<a href="{% url 'fieldmgmt:room_type_add' %}"
+   class="btn btn-success rounded-pill px-4"
+   style="background:#c1e7d2;color:#065f46;">
+  + Add Room Type
+</a>
+
+
+  </div>
+
+  <div class="card shadow-sm border-0">
+
+
+<div class="card-header bg-white border-0 pb-0">
+  <form method="GET">
+    <div class="row">
+      <div class="col-md-4">
+        <input type="text"
+               name="search"
+               value="{{ search }}"
+               class="form-control"
+               placeholder="Search Room Type">
+      </div>
+
+      <div class="col-md-2">
+        <button class="btn bg-gradient-dark">
+          Search
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="card-body p-0">
+
+  <div class="table-responsive">
+    <table class="table align-items-center mb-0">
+
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Serial No</th>
+          <th>Room Type</th>
+          <th>Daily Rate</th>
+          <th>Status</th>
+          <th class="text-center">Action</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        {% for room in room_types %}
+        <tr>
+
+          <td>{{ forloop.counter }}</td>
+
+          <td>{{ room.serial_no }}</td>
+
+          <td>
+            <div class="fw-semibold text-sm">
+              {{ room.name }}
+            </div>
+          </td>
+
+          <td>
+            ₹ {{ room.daily_rate }}
+          </td>
+
+          <td>
+            {% if room.is_active %}
+              <span class="badge bg-success">
+                Active
+              </span>
+            {% else %}
+              <span class="badge bg-secondary">
+                Inactive
+              </span>
+            {% endif %}
+          </td>
+
+          <td class="text-center">
+
+            <a href="{% url 'fieldmgmt:room_type_edit' room.id %}"
+               class="icon-btn edit"
+               title="Edit">
+
+              <i class="material-symbols-rounded edit-icon-color"
+                 style="font-variation-settings:'FILL' 1,'wght' 500;">
+                edit
+              </i>
+
+            </a>
+
+            <a href="{% url 'fieldmgmt:room_type_delete' room.id %}"
+               class="icon-btn delete"
+               title="Delete"
+               onclick="return confirm('Delete this room type?')">
+
+              <i class="material-symbols-rounded text-danger"
+                 style="font-variation-settings:'FILL' 1,'wght' 500;">
+                delete
+              </i>
+
+            </a>
+
+          </td>
+
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6"
+              class="text-center text-muted py-4">
+            No Room Types Available
+          </td>
+        </tr>
+        {% endfor %}
+
+      </tbody>
+
+    </table>
+  </div>
+
+  {% if room_types.paginator.num_pages > 1 %}
+  <div class="d-flex justify-content-between align-items-center p-3 border-top">
+
+    <div class="text-muted text-sm">
+      Showing
+      <strong>{{ room_types.start_index }}</strong>
+      to
+      <strong>{{ room_types.end_index }}</strong>
+      of
+      <strong>{{ room_types.paginator.count }}</strong>
+      room types
+    </div>
+
+    <nav>
+      <ul class="pagination mb-0">
+
+        {% if room_types.has_previous %}
+        <li class="page-item">
+          <a class="page-link"
+             href="?page={{ room_types.previous_page_number }}">
+            Previous
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">Previous</span>
+        </li>
+        {% endif %}
+
+        {% if room_types.has_next %}
+        <li class="page-item">
+          <a class="page-link"
+             href="?page={{ room_types.next_page_number }}">
+            Next
+          </a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+          <span class="page-link">Next</span>
+        </li>
+        {% endif %}
+
+      </ul>
+    </nav>
+
+  </div>
+  {% endif %}
+
+</div>
+
+
+  </div>
+
+</div>
+
+</main>
+
+{% include "includes/script.html" %}
+
+</body>
+</html>
