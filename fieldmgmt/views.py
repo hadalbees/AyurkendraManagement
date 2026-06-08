@@ -13,7 +13,8 @@ from .models import (
     ManufacturerMaster,
     SupplierMaster,
     TherapyMaster,
-    ActivityHistory
+    ActivityHistory,
+    RoomType
 )
 
 # ==================================================
@@ -655,3 +656,126 @@ def adjuvant_delete(request, id):
         description=f"Adjuvant #{adjuvant.id} deleted by {request.user}"
     )
     return redirect("fieldmgmt:adjuvant_list")
+
+def room_type_list(request):
+
+    search = request.GET.get("search", "")
+
+    room_types = RoomType.objects.all()
+
+    if search:
+        room_types = room_types.filter(
+            name__icontains=search
+        )
+
+    paginator = Paginator(room_types, 10)
+
+    page_number = request.GET.get("page")
+
+    room_types = paginator.get_page(page_number)
+
+    return render(
+        request,
+        "fieldmgmt/room_type_list.html",
+        {
+            "room_types": room_types,
+            "search": search
+        }
+    )
+    
+def room_type_add(request):
+
+    if request.method == "POST":
+
+        last = RoomType.objects.order_by("-id").first()
+
+        next_id = 1
+
+        if last:
+            next_id = last.id + 1
+
+        serial_no = f"RT{next_id:04d}"
+
+        RoomType.objects.create(
+            serial_no=serial_no,
+            name=request.POST.get("name"),
+            daily_rate=request.POST.get("daily_rate"),
+            description=request.POST.get("description"),
+            is_active=True if request.POST.get("is_active") else False
+        )
+
+        messages.success(
+            request,
+            "Room Type added successfully."
+        )
+
+        return redirect(
+            "fieldmgmt:room_type_list"
+        )
+
+    return render(
+        request,
+        "fieldmgmt/room_type_add.html"
+    )
+    
+def room_type_edit(request, id):
+
+    room = get_object_or_404(
+        RoomType,
+        id=id
+    )
+
+    if request.method == "POST":
+
+        room.name = request.POST.get("name")
+
+        room.daily_rate = request.POST.get(
+            "daily_rate"
+        )
+
+        room.description = request.POST.get(
+            "description"
+        )
+
+        room.is_active = (
+            True
+            if request.POST.get("is_active")
+            else False
+        )
+
+        room.save()
+
+        messages.success(
+            request,
+            "Room Type updated successfully."
+        )
+
+        return redirect(
+            "fieldmgmt:room_type_list"
+        )
+
+    return render(
+        request,
+        "fieldmgmt/room_type_edit.html",
+        {
+            "room": room
+        }
+    )
+    
+def room_type_delete(request, id):
+
+    room = get_object_or_404(
+        RoomType,
+        id=id
+    )
+
+    room.delete()
+
+    messages.success(
+        request,
+        "Room Type deleted successfully."
+    )
+
+    return redirect(
+        "fieldmgmt:room_type_list"
+    )

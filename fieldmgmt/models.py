@@ -138,3 +138,32 @@ class ActivityHistory(models.Model):
 
     def __str__(self):
         return f"{self.module} - {self.action} - {self.created_at}"
+    
+# fieldmgmt/models.py
+
+class RoomType(models.Model):
+    serial_no = models.CharField(max_length=20, unique=True)
+
+    name = models.CharField(max_length=100, unique=True)
+
+    daily_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2
+    )
+
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "room_type"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name

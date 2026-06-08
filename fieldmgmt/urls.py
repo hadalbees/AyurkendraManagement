@@ -57,4 +57,29 @@ urlpatterns = [
     path("adjuvant/add/", views.adjuvant_add, name="adjuvant_add"),
     path("adjuvant/edit/<int:id>/", views.adjuvant_edit, name="adjuvant_edit"),
     path("adjuvant/delete/<int:id>/", views.adjuvant_delete, name="adjuvant_delete"),
+    
+
+    path(
+        "room-types/",
+        views.room_type_list,
+        name="room_type_list"
+    ),
+
+    path(
+        "room-types/add/",
+        views.room_type_add,
+        name="room_type_add"
+    ),
+
+    path(
+        "room-types/edit/<int:id>/",
+        views.room_type_edit,
+        name="room_type_edit"
+    ),
+
+    path(
+        "room-types/delete/<int:id>/",
+        views.room_type_delete,
+        name="room_type_delete"
+    ),
 ]
