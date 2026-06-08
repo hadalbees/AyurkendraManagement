@@ -25,6 +25,7 @@ from django.db.models import Value, CharField
 from datetime import date
 from .models import HospitalSetting
 from fieldmgmt.models import IPOtherCharge,ActivityHistory
+from fieldmgmt.models import RoomType
 
 
 
@@ -438,6 +439,7 @@ def inpatient_billing_view(request):
         charges = IPOtherCharge.objects.filter(status=True)
         medicines = MedicalStock.objects.filter(quantity__gt=0).select_related('medicine')[:1000]
         therapies = TherapyMaster.objects.all()
+        room_types = RoomType.objects.filter(is_active=True)
 
         return render(request, "billingmgmt/inpatientbill.html", {
             "bill_no": bill_no,
@@ -446,6 +448,7 @@ def inpatient_billing_view(request):
             "therapies": therapies,
             "settings": settings,
             "charges": charges,
+            "room_types":room_types,
             "today": timezone.localdate(),
         })
 
