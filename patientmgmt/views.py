@@ -34,8 +34,6 @@ from reportlab.lib.utils import ImageReader
 from django.utils.timezone import now
 from billingmgmt.models import HospitalSetting
 from fieldmgmt.models import AppointmentType
-from django.db.models import Q
-from django.utils.dateparse import parse_date, parse_time
 
 from .models import (
     Appointment,
@@ -114,12 +112,14 @@ class PatientRegistrationView(LoginRequiredMixin, View):
 
         current_time = timezone.localtime().strftime("%I:%M %p")
 
+        # Get Doctor Role
+        doctor_role = Role.objects.filter(role_name__iexact="Doctor").first()
+
+        # Get all active doctors
         doctors = CustomUser.objects.filter(
-                    Q(role__role_name__icontains="Doctor") |
-                    Q(role__role_name__icontains="Consultant") |
-                    Q(role__role_name__icontains="Surgeon"),
-                    is_active=True
-                ).select_related('role').order_by('username').distinct()
+            role=doctor_role,
+            is_active=True
+        ) if doctor_role else []
         
         # ✅ Get Active Departments
         departments = Department.objects.filter(status=True).order_by("department_name")
@@ -932,43 +932,27 @@ def appointment_edit(request, pk):
     appointment_types = AppointmentType.objects.filter(status=True)
 
     if request.method == "POST":
-        # Get POST data
-        appointment_type_id = request.POST.get("appointment_type")
-        appointment_date = request.POST.get("appointment_date")
-        appointment_time = request.POST.get("appointment_time")
-        status = request.POST.get("status")
-        notes = request.POST.get("notes")
+        appt.appointment_type = request.POST.get("appointment_type")
+        appt.appointment_date = request.POST.get("appointment_date")
+        appt.appointment_time = request.POST.get("appointment_time")
+        appt.status = request.POST.get("status")
+        appt.notes = request.POST.get("notes")
+
         therapy_id = request.POST.get("therapy")
 
-        # ✅ Fetch AppointmentType instance
-        appointment_type = get_object_or_404(
-            AppointmentType, id=appointment_type_id
-        )
-        appt.appointment_type = appointment_type
-
-        # ✅ Convert and assign date & time
-        appt.appointment_date = parse_date(appointment_date)
-        appt.appointment_time = parse_time(appointment_time)
-
-        appt.status = status
-        appt.notes = notes
-
-        # ✅ Assign Therapy based on Appointment Type
-        if appointment_type.name.upper() in ["THERAPY", "BOTH"] and therapy_id:
-            appt.therapy = get_object_or_404(TherapyMaster, id=therapy_id)
+        # Only assign therapy if type is THERAPY or BOTH
+        if appt.appointment_type in ['THERAPY', 'BOTH'] and therapy_id:
+            appt.therapy = TherapyMaster.objects.get(id=therapy_id)
         else:
-            appt.therapy = None
+            appt.therapy = None  # Clear therapy if type is CONSULT
 
-        # Save the appointment
         appt.save()
-
-        # Log activity
         ActivityHistory.objects.create(
             user=request.user,
             action="UPDATE",
-            module="PATIENT APPOINTMENT",
+             module="PATIENT APPOINMENT",
             record_id=appt.id,
-            description=f"Appointment #{appt.id} updated by {request.user}"
+            description=f"Appoinment #{appt.id} updated by {request.user}"
         )
 
         return redirect("patientmgmt:appointment_list")
@@ -976,8 +960,10 @@ def appointment_edit(request, pk):
     return render(request, "patientmgmt/appointment_edit.html", {
         "appt": appt,
         "therapies": therapies,
-        "appointment_types": appointment_types
+        "appointment_types":appointment_types
     })
+
+
 # APPOINMENT DELETE
 def appointment_delete(request, pk):
     appt = get_object_or_404(Appointment, id=pk)
@@ -1066,63 +1052,66 @@ def get_patient_suggestions(request):
 
 
 def booked_slots(request):
+
     date = request.GET.get("date")
     doctor_id = request.GET.get("doctor")
     therapist_id = request.GET.get("therapist")
-    exclude_id = request.GET.get("exclude_id")
 
     if not date:
         return JsonResponse({"booked": []})
 
+    # Only active appointments should block
     appointments = Appointment.objects.filter(
         appointment_date=date,
         status__in=["PENDING", "CONFIRMED"]
     )
 
+    # If doctor selected → filter only that doctor
     if doctor_id:
         appointments = appointments.filter(doctor_id=doctor_id)
 
+    # If therapist selected → filter only that therapist
     if therapist_id:
         appointments = appointments.filter(therapist_id=therapist_id)
-
-    if exclude_id:
-        appointments = appointments.exclude(id=exclude_id)
 
     booked_times = appointments.values_list("appointment_time", flat=True)
 
     return JsonResponse({
         "booked": [t.strftime("%H:%M") for t in booked_times]
     })
-
 def get_doctors_by_role(request):
+
     role_name = request.GET.get("role", "").lower()
 
     if role_name == "doctor":
-        users = CustomUser.objects.filter(
+
+        doctors = CustomUser.objects.filter(
             Q(role__role_name__icontains="doctor") |
-            Q(role__role_name__icontains="consultant") |
-            Q(role__role_name__icontains="surgeon"),
+            Q(role__role_name__icontains="consultant"),
             is_active=True
         )
 
     elif role_name == "therapist":
-        users = CustomUser.objects.filter(
+
+        doctors = CustomUser.objects.filter(
             role__role_name__icontains="therapist",
             is_active=True
         )
 
     else:
-        users = CustomUser.objects.none()
+
+        doctors = CustomUser.objects.none()
 
     data = [
         {
-            "id": user.id,
-            "name": f"{user.get_full_name() or user.username} ({user.role.role_name})"
+            "id": d.id,
+            "name": d.get_full_name() or d.username
         }
-        for user in users
+        for d in doctors
     ]
 
     return JsonResponse({"doctors": data})
+
 
 def check_availability(request):
 
