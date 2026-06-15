@@ -3,7 +3,6 @@ from django.urls import reverse_lazy
 from django.views.generic import ListView, CreateView, UpdateView, View
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Q
 from django.contrib.auth.mixins import LoginRequiredMixin
 from decimal import Decimal, InvalidOperation
 
@@ -14,6 +13,7 @@ from fieldmgmt.models import AyurvedicType, ManufacturerMaster, SupplierMaster,A
 from .models import Stock, Medicine, StockTransaction
 import pandas as pd
 from django.db import transaction
+from django.db.models import Sum, Min, F, Q
 
 
 # --------------------------------------------------
@@ -63,75 +63,117 @@ class StockListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
 
-        qs = super().get_queryset().select_related(
-            "medicine",
-            "supplier",
-            "manufacturer"
+        qs = (
+            Stock.objects
+            .values(
+                "medicine_id",
+                "medicine__name",
+                "base_unit",
+                "pack_size",
+            )
+            .annotate(
+                total_qty=Sum("total_base_quantity"),
+                reorder_level=Min("medicine__reorder_level"),
+                nearest_expiry=Min("expiry_date"),
+            )
+            .order_by("medicine__name")
         )
 
-        q_name = self.request.GET.get("q", "").strip()
+        q = self.request.GET.get("q", "").strip()
         low_stock = self.request.GET.get("low_stock")
         near_expiry = self.request.GET.get("near_expiry")
 
-        # -----------------------------
         # Search
-        # -----------------------------
-        if q_name:
+        if q:
             qs = qs.filter(
-                Q(medicine__name__icontains=q_name) |
-                Q(batch_number__icontains=q_name)
+                Q(medicine__name__icontains=q)
             )
 
-        # -----------------------------
         # Low Stock
-        # -----------------------------
         if low_stock:
             qs = qs.filter(
-                total_base_quantity__lte=models.F(
-                    "medicine__reorder_level"
-                )
+                total_qty__lte=F("reorder_level")
             )
 
-        # -----------------------------
         # Near Expiry
-        # -----------------------------
         if near_expiry:
             today = timezone.localdate()
 
             qs = qs.filter(
-                expiry_date__isnull=False,
-                expiry_date__lte=today + timezone.timedelta(days=30)
+                nearest_expiry__isnull=False,
+                nearest_expiry__lte=today + timezone.timedelta(days=30)
             )
 
-        return qs.order_by("medicine__name")
+        return qs
 
     def get_context_data(self, **kwargs):
 
         ctx = super().get_context_data(**kwargs)
 
         ctx["q"] = self.request.GET.get("q", "")
-        ctx["low_stock"] = bool(
-            self.request.GET.get("low_stock")
-        )
-        ctx["near_expiry"] = bool(
-            self.request.GET.get("near_expiry")
-        )
+        ctx["low_stock"] = bool(self.request.GET.get("low_stock"))
+        ctx["near_expiry"] = bool(self.request.GET.get("near_expiry"))
 
-        ctx["ayurvedic_forms"] = AyurvedicType.objects.filter(
-            status=True
-        )
-
-        ctx["suppliers"] = SupplierMaster.objects.filter(
-            status=True
-        )
-
-        ctx["manufacturers"] = ManufacturerMaster.objects.filter(
-            status=True
-        )
+        ctx["ayurvedic_forms"] = AyurvedicType.objects.filter(status=True)
+        ctx["suppliers"] = SupplierMaster.objects.filter(status=True)
+        ctx["manufacturers"] = ManufacturerMaster.objects.filter(status=True)
 
         return ctx
+def stock_details(request, medicine_id):
 
+    medicine = get_object_or_404(
+        Medicine,
+        id=medicine_id
+    )
 
+    stocks = (
+        Stock.objects.filter(
+            medicine=medicine
+        )
+        .select_related(
+            "supplier",
+            "manufacturer"
+        )
+        .order_by("expiry_date")
+    )
+
+    total_qty = stocks.aggregate(
+        total=Sum("total_base_quantity")
+    )["total"] or 0
+
+    total_packs = stocks.aggregate(
+        total=Sum("number_of_packs")
+    )["total"] or 0
+
+    nearest = (
+        stocks.exclude(expiry_date=None)
+        .order_by("expiry_date")
+        .first()
+    )
+
+    context = {
+
+        "medicine": medicine,
+
+        "stocks": stocks,
+
+        "total_qty": total_qty,
+
+        "total_packs": total_packs,
+
+        "total_batches": stocks.count(),
+
+        "nearest_expiry": (
+            nearest.expiry_date if nearest else None
+        )
+
+    }
+
+    return render(
+        request,
+        "stockmgmt/stock_details.html",
+        context
+    )
 def stock_delete(request, pk):
 
     stock = get_object_or_404(Stock, pk=pk)
