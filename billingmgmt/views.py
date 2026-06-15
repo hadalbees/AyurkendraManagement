@@ -165,7 +165,7 @@ def medical_billing_view(request):
 
     medicines = Stock.objects.select_related("medicine").filter(
         total_base_quantity__gt=0
-    )
+    ).order_by("expiry_date")
 
     today = timezone.localdate()
     print("POST DATA:", request.POST)
@@ -176,9 +176,34 @@ def medical_billing_view(request):
             doctor_name = request.POST.get("doctor_name", "").strip()
             bill_date = request.POST.get("bill_date") or today
 
-            subtotal = Decimal(request.POST.get("subtotal", "0") or "0")
-            tax = Decimal(request.POST.get("tax", "0") or "0")
-            total = Decimal(request.POST.get("total", "0") or "0")
+            # ---------- BILL VALUES ----------
+
+            subtotal = Decimal(
+                request.POST.get("subtotal", "0") or "0"
+            )
+
+            discount_percent = Decimal(
+                request.POST.get("discount_percent", "0") or "0"
+            )
+
+            # Discount Amount
+            discount = (
+                subtotal * discount_percent / Decimal("100")
+            ).quantize(Decimal("0.01"))
+
+            subtotal_after_discount = subtotal - discount
+
+            # GST %
+            gst_percent = Decimal(
+                settings.consultation_gst or 0
+            )
+
+            tax = (
+                subtotal_after_discount * gst_percent / Decimal("100")
+            ).quantize(Decimal("0.01"))
+
+            total = subtotal_after_discount + tax
+
 
             payment_mode = request.POST.get("payment_mode") or "Cash"
             payment_status = request.POST.get("payment_status") or "Pending"
@@ -213,17 +238,33 @@ def medical_billing_view(request):
             with transaction.atomic():
 
                 bill = MedicalBill.objects.create(
+
                     bill_no=bill_no,
+
                     patient=patient,
+
                     doctor_name=doctor_name,
+
                     bill_date=bill_date,
+
                     subtotal=subtotal,
+
+                    discount_percent=discount_percent,
+
+                    discount=discount,
+
                     tax=tax,
+
                     total=total,
+
                     payment_mode=payment_mode,
+
                     payment_status=payment_status,
+
                     remarks=remarks,
+
                 )
+
                  # Activity History
                 ActivityHistory.objects.create(
                     user=request.user,
@@ -236,19 +277,21 @@ def medical_billing_view(request):
                 for i in range(len(stock_ids)):
 
                     sid = stock_ids[i]
-                    qty = Decimal(qtys[i])
-                    sub = Decimal(subs[i])
-                    unit = units[i]
+
+                    qty = Decimal(qtys[i] or "0")
+
+                    sub = Decimal(subs[i] or "0")
 
                     stock = Stock.objects.select_for_update().get(id=sid)
 
-                    # check stock
-                    if qty > stock.total_base_quantity:
+                    # Stock validation
+                    if stock.total_base_quantity < qty:
                         raise Exception(
-                            f"Insufficient stock for {stock.medicine.name}"
+                            f"Insufficient stock for {stock.medicine.name}. "
+                            f"Available: {stock.total_base_quantity}"
                         )
 
-                    # save item
+                    # Save bill item
                     MedicineItem.objects.create(
                         bill=bill,
                         medicine_name=stock.medicine.name,
@@ -257,9 +300,44 @@ def medical_billing_view(request):
                         subtotal=sub
                     )
 
-                    # reduce stock
-                    stock.total_base_quantity -= qty
-                    stock.save()
+                    required_qty = qty
+
+                    stocks = (
+                        Stock.objects
+                        .select_for_update()
+                        .filter(
+                            medicine=stock.medicine,
+                            total_base_quantity__gt=0
+                        )
+                        .order_by("expiry_date", "id")
+                    )
+
+                    for s in stocks:
+
+                        if required_qty <= 0:
+                            break
+
+                        available = s.total_base_quantity
+
+                        if available >= required_qty:
+
+                            s.total_base_quantity -= required_qty
+                            s.save(update_fields=["total_base_quantity"])
+
+                            required_qty = 0
+
+                        else:
+
+                            required_qty -= available
+
+                            s.total_base_quantity = 0
+
+                            s.save(update_fields=["total_base_quantity"])
+
+                    if required_qty > 0:
+                        raise Exception(
+                            f"Insufficient stock for {stock.medicine.name}"
+                        )
             
             return redirect("billingmgmt:print_bill", bill_no=bill.bill_no)
 
@@ -303,66 +381,104 @@ def print_bill(request, bill_no):
 
 def edit_medical_bill_view(request, bill_no):
 
-    bill = get_object_or_404(MedicalBill, bill_no=bill_no)
+    bill = get_object_or_404(
+        MedicalBill,
+        bill_no=bill_no
+    )
 
     patients = Patient.objects.filter(is_active=True)
 
-    medicines = Stock.objects.select_related("medicine").filter(
-        total_base_quantity__gt=0
-    )
+    # Don't filter by stock > 0 in edit page
+    medicines = Stock.objects.select_related(
+        "medicine"
+    ).all()
 
     settings = HospitalSetting.objects.first()
 
-    today = timezone.localdate()
-
-    items = MedicineItem.objects.filter(bill=bill)
+    items = MedicineItem.objects.filter(
+        bill=bill
+    )
 
     if request.method == "POST":
 
         try:
 
-            doctor_name = request.POST.get("doctor_name", "").strip()
+            doctor_name = request.POST.get("doctor_name", "")
             bill_date = request.POST.get("bill_date")
 
-            subtotal = Decimal(request.POST.get("subtotal", "0"))
-            tax = Decimal(request.POST.get("tax", "0"))
-            total = Decimal(request.POST.get("total", "0"))
+            subtotal = Decimal(
+                request.POST.get("subtotal") or "0"
+            )
+
+            tax = Decimal(
+                request.POST.get("tax") or "0"
+            )
+
+            total = Decimal(
+                request.POST.get("total") or "0"
+            )
 
             payment_mode = request.POST.get("payment_mode")
             payment_status = request.POST.get("payment_status")
 
+            stock_ids = request.POST.getlist("stock_id[]")
+            qtys = request.POST.getlist("quantity[]")
+            subs = request.POST.getlist("subtotal[]")
+
             with transaction.atomic():
 
-                # 🔹 Restore old stock
-                for old in items:
+                # ======================
+                # RESTORE OLD STOCK
+                # ======================
+
+                old_items = MedicineItem.objects.filter(
+                    bill=bill
+                )
+
+                for old in old_items:
 
                     stock = Stock.objects.filter(
                         medicine__name=old.medicine_name
                     ).first()
 
                     if stock:
+
                         stock.total_base_quantity += old.quantity
-                        stock.save()
 
-                items.delete()
+                        stock.save(
+                            update_fields=[
+                                "total_base_quantity"
+                            ]
+                        )
 
-                # 🔹 Save new medicines
-                stock_ids = request.POST.getlist("stock_id[]")
-                qtys = request.POST.getlist("quantity[]")
-                subs = request.POST.getlist("subtotal[]")
+                # ======================
+                # DELETE OLD ITEMS
+                # ======================
+
+                old_items.delete()
+
+                # ======================
+                # SAVE NEW ITEMS
+                # ======================
 
                 for i in range(len(stock_ids)):
 
-                    stock = Stock.objects.select_for_update().get(
+                    stock = Stock.objects.filter(
                         id=stock_ids[i]
-                    )
+                    ).first()
 
-                    qty = Decimal(qtys[i])
-                    sub = Decimal(subs[i])
+                    if not stock:
+                        continue
+
+                    qty = Decimal(qtys[i] or "0")
+                    sub = Decimal(subs[i] or "0")
 
                     if qty > stock.total_base_quantity:
+
                         raise Exception(
-                            f"Stock not available for {stock.medicine.name}"
+                            f"Only {stock.total_base_quantity} "
+                            f"{stock.base_unit} available "
+                            f"for {stock.medicine.name}"
                         )
 
                     MedicineItem.objects.create(
@@ -374,9 +490,17 @@ def edit_medical_bill_view(request, bill_no):
                     )
 
                     stock.total_base_quantity -= qty
-                    stock.save()
 
-                # 🔹 Update Bill
+                    stock.save(
+                        update_fields=[
+                            "total_base_quantity"
+                        ]
+                    )
+
+                # ======================
+                # UPDATE BILL
+                # ======================
+
                 bill.doctor_name = doctor_name
                 bill.bill_date = bill_date
                 bill.subtotal = subtotal
@@ -386,18 +510,23 @@ def edit_medical_bill_view(request, bill_no):
                 bill.payment_status = payment_status
 
                 bill.save()
+
                 ActivityHistory.objects.create(
                     user=request.user,
                     action="UPDATE",
                     module="MEDICAL BILL",
                     record_id=bill.id,
-                    description=f"Medical Bill #{bill.id} updated by {request.user}"
+                    description=f"Medical Bill #{bill.bill_no} updated by {request.user}"
                 )
 
-            return redirect("billingmgmt:print_bill", bill_no=bill.bill_no)
+            return redirect(
+                "billingmgmt:print_bill",
+                bill_no=bill.bill_no
+            )
 
         except Exception as e:
-            print("Edit bill error:", e)
+            print("Medical Bill Edit Error:", e)
+            raise e
 
     return render(
         request,
@@ -411,7 +540,6 @@ def edit_medical_bill_view(request, bill_no):
             "items": items,
         },
     )
-
 def generate_ip_bill_number():
     """Generate a unique InpatientBill number safely."""
     last = InpatientBill.objects.order_by('-id').first()
@@ -885,11 +1013,11 @@ def outpatient_billing_view(request):
         return HttpResponseBadRequest("Invalid Patient")
 
     # -------- REGISTRATION FEE --------
-    is_new_patient = patient.created_at.date() == timezone.localdate()
-    registration_fee = Decimal("50.00") if is_new_patient else Decimal("0.00")
+    registration_fee = Decimal(
+        request.POST.get("registration_fee") or "0"
+    )
 
     subtotal = subtotal + registration_fee
-
     # -------- DISCOUNT CALCULATION --------
     discount_amount = (
         subtotal * discount_percent / Decimal("100")
@@ -1022,8 +1150,9 @@ def edit_outpatient_bill_view(request, bill_no):
                 )
 
             # -------- REGISTRATION FEE --------
-            is_new_patient = bill.patient.created_at.date() == timezone.localdate()
-            registration_fee = Decimal("50.00") if is_new_patient else Decimal("0.00")
+            registration_fee = Decimal(
+                request.POST.get("registration_fee") or "0"
+            )
 
             subtotal = subtotal + registration_fee
 
