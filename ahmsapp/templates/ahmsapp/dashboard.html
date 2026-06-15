@@ -42,8 +42,10 @@
               </div>
             </div>
             <div class="progress mt-3 card-progress">
-              <div class="progress-bar bg-primary" style="width:70%"></div>
-            </div>
+              <div class="progress-bar bg-primary"
+                  style="width:{{ patient_progress }}%">
+              </div>
+          </div>
             <small class="text-muted">New registrations today</small>
           </div>
         </div>
@@ -63,8 +65,9 @@
               </div>
             </div>
             <div class="progress mt-3 card-progress">
-              <div class="progress-bar bg-success"
-                   style="width:{{ attendance_percentage }}%"></div>
+                <div class="progress-bar bg-success"
+                    style="width:{{ attendance_percentage }}%">
+                </div>
             </div>
             <small class="text-muted">Present staff today</small>
           </div>
@@ -84,9 +87,11 @@
                 <i class="material-symbols-rounded text-info">payments</i>
               </div>
             </div>
-            <div class="progress mt-3 card-progress">
-              <div class="progress-bar bg-info" style="width:60%"></div>
-            </div>
+           <div class="progress mt-3 card-progress">
+              <div class="progress-bar bg-info"
+                  style="width:{{ revenue_progress }}%">
+              </div>
+          </div>
             <small class="text-muted">Revenue generated today</small>
           </div>
         </div>
@@ -106,8 +111,10 @@
               </div>
             </div>
             <div class="progress mt-3 card-progress">
-              <div class="progress-bar bg-danger" style="width:40%"></div>
-            </div>
+              <div class="progress-bar bg-danger"
+                  style="width:{{ stock_progress }}%">
+              </div>
+          </div>
             <span class="badge bg-danger mt-2">Low Stock</span>
           </div>
         </div>
