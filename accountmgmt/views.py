@@ -23,6 +23,7 @@ from billingmgmt.models import (
 )
 from accountmgmt.models import Expense
 from fieldmgmt.models import ActivityHistory
+from patientmgmt.models import Patient
 
 from billingmgmt.models import MedicalBill, InpatientBill, OutpatientBill, TherapyBill
 # from accountmgmt.models import Expense  # create this model if not exists
@@ -86,78 +87,248 @@ def account_dashboard(request):
         "accountmgmt/account_dashboard.html",
         context
     )
-
 def income_list(request):
+
+    from_date = request.GET.get("from_date")
+    to_date = request.GET.get("to_date")
+    patient = request.GET.get("patient")
+    bill_type = request.GET.get("type")
 
     medical_bills = MedicalBill.objects.all()
     inpatient_bills = InpatientBill.objects.all()
     outpatient_bills = OutpatientBill.objects.all()
     therapy_bills = TherapyBill.objects.all()
 
-    # ===== TOTALS =====
-    total_medical = medical_bills.aggregate(total=Sum('total'))['total'] or 0
-    total_inpatient = inpatient_bills.aggregate(total=Sum('total'))['total'] or 0
-    total_outpatient = outpatient_bills.aggregate(total=Sum('total'))['total'] or 0
-    total_therapy = therapy_bills.aggregate(total=Sum('total'))['total'] or 0
+    # ---------------- DATE FILTER ----------------
 
-    # ===== NORMALIZE BILL TYPE + DATE (FIX) =====
+    if from_date:
+        medical_bills = medical_bills.filter(
+            bill_date__gte=from_date
+        )
+
+        inpatient_bills = inpatient_bills.filter(
+            admit_date__gte=from_date
+        )
+
+        outpatient_bills = outpatient_bills.filter(
+            visit_date__gte=from_date
+        )
+
+        therapy_bills = therapy_bills.filter(
+            bill_date__gte=from_date
+        )
+
+    if to_date:
+        medical_bills = medical_bills.filter(
+            bill_date__lte=to_date
+        )
+
+        inpatient_bills = inpatient_bills.filter(
+            admit_date__lte=to_date
+        )
+
+        outpatient_bills = outpatient_bills.filter(
+            visit_date__lte=to_date
+        )
+
+        therapy_bills = therapy_bills.filter(
+            bill_date__lte=to_date
+        )
+
+    # ---------------- PATIENT FILTER ----------------
+
+    if patient:
+
+        medical_bills = medical_bills.filter(
+            patient_id=patient
+        )
+
+        inpatient_bills = inpatient_bills.filter(
+            patient_id=patient
+        )
+
+        outpatient_bills = outpatient_bills.filter(
+            patient_id=patient
+        )
+
+        therapy_bills = therapy_bills.filter(
+            patient_id=patient
+        )
+
+    # ---------------- TYPE FILTER ----------------
+
+    if bill_type == "Medical":
+        inpatient_bills = InpatientBill.objects.none()
+        outpatient_bills = OutpatientBill.objects.none()
+        therapy_bills = TherapyBill.objects.none()
+
+    elif bill_type == "Inpatient":
+        medical_bills = MedicalBill.objects.none()
+        outpatient_bills = OutpatientBill.objects.none()
+        therapy_bills = TherapyBill.objects.none()
+
+    elif bill_type == "Outpatient":
+        medical_bills = MedicalBill.objects.none()
+        inpatient_bills = InpatientBill.objects.none()
+        therapy_bills = TherapyBill.objects.none()
+
+    elif bill_type == "Therapy":
+        medical_bills = MedicalBill.objects.none()
+        inpatient_bills = InpatientBill.objects.none()
+        outpatient_bills = OutpatientBill.objects.none()
+
+    # ---------------- TOTALS ----------------
+
+    total_medical = (
+        medical_bills.aggregate(
+            total=Sum("total")
+        )["total"] or 0
+    )
+
+    # Income = Advance Payment
+    total_inpatient = (
+        inpatient_bills.aggregate(
+            total=Sum("advance_payment")
+        )["total"] or 0
+    )
+
+    total_outpatient = (
+        outpatient_bills.aggregate(
+            total=Sum("total")
+        )["total"] or 0
+    )
+
+    # Income = Advance Payment
+    total_therapy = (
+        therapy_bills.aggregate(
+            total=Sum("advance_payment")
+        )["total"] or 0
+    )
+
+
+
+    # ---------------- DISPLAY DATE ----------------
+
     for b in medical_bills:
         b.bill_type = "Medical"
-        b.display_date = b.bill_date
+        b.display_date = b.bill_date or date.min
+        b.income_amount = b.total
 
     for b in inpatient_bills:
         b.bill_type = "Inpatient"
-        b.display_date = b.admit_date
+        b.display_date = b.admit_date or date.min
+        b.income_amount = b.advance_payment
 
     for b in outpatient_bills:
         b.bill_type = "Outpatient"
-        b.display_date = b.visit_date
+        b.display_date = b.visit_date or date.min
+        b.income_amount = b.total
 
     for b in therapy_bills:
         b.bill_type = "Therapy"
-        b.display_date = b.bill_date
+        b.display_date = b.bill_date or date.min
+        b.income_amount = b.advance_payment
 
-    # ===== MERGE ALL =====
-    all_bills = list(chain(
-        medical_bills,
-        inpatient_bills,
-        outpatient_bills,
-        therapy_bills
-    ))
 
-    all_bills.sort(key=lambda x: x.display_date, reverse=True)
+    # ---------------- MERGE ----------------
 
-    paginator = Paginator(all_bills, 10)
-    page_obj = paginator.get_page(request.GET.get("page"))
+    all_bills = list(
+        chain(
+            medical_bills,
+            inpatient_bills,
+            outpatient_bills,
+            therapy_bills,
+        )
+    )
 
-    # ===== MONTHLY SUMMARY =====
+    all_bills.sort(
+        key=lambda x: x.display_date,
+        reverse=True
+    )
+
+    paginator = Paginator(
+        all_bills,
+        10
+    )
+
+    page_obj = paginator.get_page(
+        request.GET.get("page")
+    )
+
+    # ---------------- MONTHLY CHART ----------------
+
     monthly_data = defaultdict(float)
 
-    def add_monthly(queryset, date_field):
-        for row in queryset.annotate(month=TruncMonth(date_field)) \
-                           .values("month") \
-                           .annotate(total=Sum("total")):
+    def add_monthly(queryset, field):
+
+        rows = (
+            queryset.annotate(
+                month=TruncMonth(field)
+            )
+            .values("month")
+            .annotate(total=Sum("total"))
+        )
+
+        for row in rows:
+
             if row["month"]:
-                m = calendar.month_abbr[row["month"].month]
-                monthly_data[m] += float(row["total"] or 0)
 
-    add_monthly(medical_bills, "bill_date")
-    add_monthly(inpatient_bills, "admit_date")
-    add_monthly(outpatient_bills, "visit_date")
-    add_monthly(therapy_bills, "bill_date")
+                month = calendar.month_abbr[
+                    row["month"].month
+                ]
 
-    months = list(calendar.month_abbr)[1:]
-    monthly_income = [monthly_data[m] for m in months]
+                monthly_data[month] += float(
+                    row["total"] or 0
+                )
 
-    return render(request, "accountmgmt/income_list.html", {
-        "page_obj": page_obj,
-        "total_medical": total_medical,
-        "total_inpatient": total_inpatient,
-        "total_outpatient": total_outpatient,
-        "total_therapy": total_therapy,
-        "months": months,
-        "monthly_income": monthly_income,
-    })
+    add_monthly(
+        medical_bills,
+        "bill_date"
+    )
+
+    add_monthly(
+        inpatient_bills,
+        "admit_date"
+    )
+
+    add_monthly(
+        outpatient_bills,
+        "visit_date"
+    )
+
+    add_monthly(
+        therapy_bills,
+        "bill_date"
+    )
+
+    months = list(
+        calendar.month_abbr
+    )[1:]
+
+    monthly_income = [
+        monthly_data[m]
+        for m in months
+    ]
+
+    patients = Patient.objects.filter(
+        is_active=True
+    )
+
+    return render(
+        request,
+        "accountmgmt/income_list.html",
+        {
+            "page_obj": page_obj,
+            "patients": patients,
+            "total_medical": total_medical,
+            "total_inpatient": total_inpatient,
+            "total_outpatient": total_outpatient,
+            "total_therapy": total_therapy,
+            "months": months,
+            "monthly_income": monthly_income,
+        },
+    )
+
 
 def expense_list(request):
     expenses = Expense.objects.all().order_by("-expense_date")
