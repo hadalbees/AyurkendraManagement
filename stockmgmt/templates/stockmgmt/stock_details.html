@@ -1,0 +1,454 @@
+{% load static %}
+<!DOCTYPE html>
+
+<html lang="en">
+
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+<div>
+
+<h2 class="fw-bold mb-1">
+
+{{ medicine.name }}
+
+</h2>
+
+<p class="text-muted">
+
+Medicine Stock Details
+
+</p>
+
+</div>
+
+<a href="{% url 'stockmgmt:stock_list' %}"
+
+class="btn btn-outline-dark rounded-pill">
+
+← Back
+
+</a>
+
+</div>
+
+<!-- Summary Cards -->
+
+<div class="row mb-4">
+
+<div class="col-lg-3">
+
+<div class="card shadow-sm border-0">
+
+<div class="card-body">
+
+<small class="text-muted">
+
+Total Quantity
+
+</small>
+
+<h3 class="fw-bold text-primary mt-2">
+
+{{ total_qty }}
+
+</h3>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-lg-3">
+
+<div class="card shadow-sm border-0">
+
+<div class="card-body">
+
+<small class="text-muted">
+
+Total Packs
+
+</small>
+
+<h3 class="fw-bold text-success mt-2">
+
+{{ total_packs }}
+
+</h3>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-lg-3">
+
+<div class="card shadow-sm border-0">
+
+<div class="card-body">
+
+<small class="text-muted">
+
+Total Batches
+
+</small>
+
+<h3 class="fw-bold text-danger mt-2">
+
+{{ total_batches }}
+
+</h3>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-lg-3">
+
+<div class="card shadow-sm border-0">
+
+<div class="card-body">
+
+<small class="text-muted">
+
+Nearest Expiry
+
+</small>
+
+<h5 class="fw-bold text-warning mt-2">
+
+{% if nearest_expiry %}
+
+{{ nearest_expiry|date:"d-m-Y" }}
+
+{% else %}
+
+-
+
+{% endif %}
+
+</h5>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- Medicine Information -->
+
+<div class="card shadow-sm border-0 mb-4">
+
+<div class="card-header bg-white">
+
+<h5 class="mb-0">
+
+Medicine Information
+
+</h5>
+
+</div>
+
+<div class="card-body">
+
+<div class="row">
+
+<div class="col-md-3">
+
+<label class="text-muted">
+
+Medicine
+
+</label>
+
+<h6>
+
+{{ medicine.name }}
+
+</h6>
+
+</div>
+
+<div class="col-md-3">
+
+<label class="text-muted">
+
+HSN Code
+
+</label>
+
+<h6>
+
+{{ medicine.hsn_code|default:"-" }}
+
+</h6>
+
+</div>
+
+<div class="col-md-2">
+
+<label class="text-muted">
+
+GST
+
+</label>
+
+<h6>
+
+{{ medicine.gst_percentage }} %
+
+</h6>
+
+</div>
+
+<div class="col-md-2">
+
+<label class="text-muted">
+
+Form Type
+
+</label>
+
+<h6>
+
+{{ medicine.get_form_type_display }}
+
+</h6>
+
+</div>
+
+<div class="col-md-2">
+
+<label class="text-muted">
+
+Reorder Level
+
+</label>
+
+<h6>
+
+{{ medicine.reorder_level }}
+
+</h6>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- Batch Table -->
+
+<div class="card shadow-sm border-0">
+
+<div class="card-header bg-white">
+
+<h5 class="mb-0">
+
+Batch Details
+
+</h5>
+
+</div>
+
+<div class="card-body p-0">
+
+<div class="table-responsive">
+
+<table class="table table-hover align-middle mb-0">
+
+<thead class="table-light">
+
+<tr>
+
+<th>S.No</th>
+
+<th>Batch No</th>
+
+<th>Supplier</th>
+
+<th>Manufacturer</th>
+
+<th>Qty</th>
+
+<th>Expiry</th>
+
+<th>Status</th>
+
+<th>Purchase</th>
+
+<th>Selling</th>
+
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+{% for stock in stocks %}
+
+<tr>
+
+<td>
+
+{{ forloop.counter }}
+
+</td>
+
+<td>
+
+<strong>
+
+{{ stock.batch_number }}
+
+</strong>
+
+</td>
+
+<td>
+
+{{ stock.supplier|default:"-" }}
+
+</td>
+
+<td>
+
+{{ stock.manufacturer|default:"-" }}
+
+</td>
+
+<td>
+
+{{ stock.total_base_quantity }}
+
+{{ stock.base_unit }}
+
+</td>
+
+<td>
+
+{% if stock.expiry_date %}
+
+{{ stock.expiry_date|date:"d-m-Y" }}
+
+{% else %}
+
+-
+
+{% endif %}
+
+</td>
+
+<td>
+
+{% if stock.is_low_stock %}
+
+<span class="badge bg-danger">
+
+Low Stock
+
+</span>
+
+{% elif stock.is_near_expiry %}
+
+<span class="badge bg-warning text-dark">
+
+Near Expiry
+
+</span>
+
+{% else %}
+
+<span class="badge bg-success">
+
+Available
+
+</span>
+
+{% endif %}
+
+</td>
+
+<td>
+
+₹ {{ stock.unit_price }}
+
+</td>
+
+<td>
+
+₹ {{ stock.selling_price }}
+
+</td>
+
+<td>
+
+<a href="{% url 'stockmgmt:stock_update' stock.id %}"
+
+class="btn btn-sm btn-primary rounded-pill">
+
+Edit
+
+</a>
+
+</td>
+
+</tr>
+
+{% empty %}
+
+<tr>
+
+<td colspan="10"
+
+class="text-center py-5">
+
+No Batch Found
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</main>
+
+{% include "includes/script.html" %}
+
+</body>
+
+</html>

@@ -125,129 +125,48 @@
       <div class="table-responsive">
        <table class="table table-hover align-items-center mb-0">
         <thead>
-          <tr>
-            <th>Batch No</th>
-            <th>Medicine</th>
-            <th>Base Unit</th>
-            <th>Pack Size</th>
-            <th>No. of Packs</th>
-            <th>Total Qty</th>
-            <th>Purchase Price</th>
-            <th>Selling Price</th>
-            <th>Expiry</th>
-            <th>Alerts</th>
-            <th class="text-center">Action</th>
-            <th class="text-center">Edit Medicine</th>
-          </tr>
-        </thead>
+<tr>
+    <th>S.No</th>
+    <th>Medicine</th>
+    <th>Base Unit</th>
+    <th>Pack Size</th>
+    <th>Total Qty</th>
+    <th>Action</th>
+</tr>
+</thead>
 
-        <tbody>
-          {% for stock in stocks %}
-          <tr>
+<tbody>
 
-            <td class="fw-semibold">{{ stock.batch_number }}</td>
-            <td>
-              {{ stock.medicine.name }}
-            </td>
-            <!-- Base Unit -->
-            <td>{{ stock.get_base_unit_display }}</td>
+{% for stock in stocks %}
 
-            <!-- Pack Size -->
-            <td>
-              {{ stock.pack_size }}
-              {{ stock.get_base_unit_display|lower }}
-            </td>
+<tr>
 
-            <!-- Number of Packs -->
-            <td>{{ stock.number_of_packs }}</td>
+<td>{{ forloop.counter }}</td>
 
-            <!-- Total Base Quantity -->
-            <td>
-              {{ stock.total_base_quantity }}
-              {{ stock.get_base_unit_display|lower }}
-              {% if stock.is_low_stock %}
-                <span class="badge bg-danger ms-1">Low</span>
-              {% endif %}
-            </td>
+<td>{{ stock.medicine__name }}</td>
 
-            <!-- Purchase Price -->
-            <td>₹ {{ stock.unit_price }}</td>
+<td>{{ stock.base_unit }}</td>
 
-            <!-- Selling Price -->
-            <td>₹ {{ stock.selling_price }}</td>
+<td>{{ stock.pack_size }}</td>
 
-            <!-- Expiry -->
-            <td>
-              {% if stock.expiry_date %}
-                {{ stock.expiry_date|date:"Y-m-d" }}
-              {% else %}
-                N/A
-              {% endif %}
-            </td>
+<td>{{ stock.total_qty }}</td>
 
-            <!-- Alerts -->
-            <td>
-              {% if stock.is_low_stock %}
-                <span class="badge bg-danger">Low Stock</span>
-              {% endif %}
-              {% if stock.is_near_expiry %}
-                <span class="badge bg-warning text-dark">Near Expiry</span>
-              {% endif %}
-            </td>
+<td>
 
-            <!-- Actions -->
-            <td class="text-center">
-              <a href="{% url 'stockmgmt:stock_update' stock.pk %}"
-                class="icon-btn edit"
-                title="Edit">
-                <i class="material-symbols-rounded edit-icon-color"
-                  style="font-variation-settings:'FILL' 1,'wght' 500;">
-                  edit
-                </i>
-              </a>
+<a href="{% url 'stockmgmt:stock_details' stock.medicine_id %}"
+class="btn btn-info btn-sm">
 
-              <a href="{% url 'stockmgmt:stock_delete' stock.pk %}"
-                class="icon-btn delete"
-                onclick="return confirm('Delete this stock?')"
-                title="Delete">
+View Stock
 
-                  <i class="material-symbols-rounded text-danger"
-                    style="font-variation-settings:'FILL' 1,'wght' 500;">
-                    delete
-                  </i>
+</a>
 
-              </a>
-            </td>
-            <td class="text-center">
-               <div class="" style="margin:0 auto;display:block;">
-                <i class="material-symbols-rounded icon-btn edit"
-                  data-bs-toggle="modal"
-                  data-bs-target="#editMedicineModal"
-                  onclick="loadMedicineData(
-                      '{{ stock.medicine.id }}',
-                      '{{ stock.medicine.name|escapejs }}',
-                      '{{ stock.medicine.hsn_code|escapejs }}',
-                      '{{ stock.medicine.form_type }}',
-                      '{{ stock.medicine.gst_percentage }}',
-                      '{{ stock.medicine.reorder_level }}',
-                      '{{ stock.medicine.expiry_days_alert }}',
-                      '{{ stock.medicine.description|escapejs }}'
-                  )">
-                  edit
-                </i>
+</td>
 
-              </div>
-            </td>
+</tr>
 
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="11" class="text-center text-muted py-4">
-              No stock records found.
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
+{% endfor %}
+
+</tbody>
       </table>
 
       </div>
