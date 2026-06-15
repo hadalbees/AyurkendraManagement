@@ -97,7 +97,7 @@
 <div class="row g-3 align-items-end position-relative">
 
 <div class="col-md-4 position-relative">
-<input id="itemName" class="form-control" placeholder="Therapy / Item">
+<input id="itemName" class="form-control" placeholder="Particulars">
 <div id="therapySuggestions"></div>
 </div>
 
@@ -160,19 +160,31 @@
       </select>
     </div>
   </div>
-<p>Subtotal: ₹ <span id="subTotal">0</span></p>
+  <div class="form-check mb-2" style="margin: 0 !important;padding: 0 !important;">
+    <input class="form-check-input"
+           type="checkbox"
+           id="newRegistration"
+           onchange="toggleRegistrationFee()">
+
+    <label class="form-check-label" for="newRegistration">
+        New Registration (+ ₹50)
+    </label>
+</div>
 
 <p id="regFeeRow" style="display:none;">
-Registration Fee: ₹ <span id="regFee">50</span>
+    Registration Fee:
+    ₹ <span id="regFee">50.00</span>
 </p>
+<p>Subtotal: ₹ <span id="subTotal">0</span></p>
 
-<p>
+{% comment %} <p>
 Discount (%)
 <input id="discountPercent" type="number" name="discount" value="0"
        style="width:60px" oninput="calcTotal()">
-</p>
+</p> {% endcomment %}
 
 <p>GST (<span id="gstPercentText">{{ settings.consultation_gst|default:0 }}</span>%): ₹ <span id="tax">0</span></p>
+
 <h5>Total: ₹ <span id="grandTotal">0</span></h5>
 
 </div>
@@ -206,28 +218,52 @@ patientName.addEventListener("input", function () {
   fetch("{% url 'billingmgmt:get_patient_suggestions' %}?q=" + q)
     .then(r => r.json())
     .then(data => {
-      patientSuggestions.innerHTML = data.map(p => `
+     patientSuggestions.innerHTML = data.map(p => `
       <div class="suggest-item"
-           onclick="selectPatient(${p.id},'${p.name}',${p.is_new_patient})">
-        ${p.name} - ${p.phone}
-      </div>`).join("");
+          onclick="selectPatient(${p.id},'${p.name}')">
+          ${p.name} - ${p.phone}
+      </div>
+      `).join("");
       patientSuggestions.style.display = "block";
     });
 });
 
-function selectPatient(id, name, isNew) {
-  patientName.value = name;
-  patientHidden.value = id;
-  patientSuggestions.style.display = "none";
-  handleRegistrationFee(isNew);
+function selectPatient(id, name) {
+
+    patientName.value = name;
+
+    patientHidden.value = id;
+
+    patientSuggestions.style.display = "none";
+
 }
 
 /* ================= REGISTRATION FEE ================= */
-function handleRegistrationFee(isNew) {
-  registrationFee = (isNew === true || isNew === 1) ? 50 : 0;
-  regFeeRow.style.display = registrationFee ? "block" : "none";
-  regFee.textContent = registrationFee.toFixed(2);
-  calcTotal();
+function toggleRegistrationFee(){
+
+    if(document.getElementById("newRegistration").checked){
+
+        registrationFee = 50;
+
+        regFeeRow.style.display = "block";
+
+    }
+    else{
+
+        registrationFee = 0;
+
+        regFeeRow.style.display = "none";
+
+    }
+
+    document.getElementById("regFee").innerHTML =
+        registrationFee.toFixed(2);
+
+    document.getElementById("regFeeInput").value =
+        registrationFee;
+
+    calcTotal();
+
 }
 
 /* ================= ITEMS ================= */
@@ -273,42 +309,47 @@ function renderItems() {
 }
 
 /* ================= TOTAL ================= */
-function calcTotal() {
+function calcTotal(){
 
-  const itemSubtotal = parseFloat(subTotal.textContent) || 0;
+    const itemSubtotal =
+        parseFloat(subTotal.textContent) || 0;
 
-  const gross = itemSubtotal + registrationFee;
+    const gross =
+        itemSubtotal + registrationFee;
 
-  const discountPct = parseFloat(discountPercent.value) || 0;
+    const gstPercent =
+        parseFloat(document.getElementById("gstPercent").value) || 0;
 
-  const discountAmount = gross * discountPct / 100;
+    const taxAmt =
+        gross * gstPercent / 100;
 
-  const afterDiscount = gross - discountAmount;
+    document.getElementById("tax").textContent =
+        taxAmt.toFixed(2);
 
-  const gstPercent =
-      parseFloat(document.getElementById("gstPercent").value) || 0;
+    document.getElementById("grandTotal").textContent =
+        (gross + taxAmt).toFixed(2);
 
-  const taxAmt = afterDiscount * gstPercent / 100;
-
-  tax.textContent = taxAmt.toFixed(2);
-
-  grandTotal.textContent =
-      (afterDiscount + taxAmt).toFixed(2);
 }
 
 /* ================= SUBMIT ================= */
-function submitBill() {
-  subtotalInput.value = subTotal.textContent;
+function submitBill(){
 
-  const discountPercent = document.getElementById("discountPercent").value;
+    subtotalInput.value =
+        subTotal.textContent;
 
-  discountInput.value = discountPercent;
+    discountInput.value = 0;
 
-  taxInput.value = tax.textContent;
-  totalInput.value = grandTotal.textContent;
-  regFeeInput.value = registrationFee;
+    taxInput.value =
+        tax.textContent;
 
-  billForm.submit();
+    totalInput.value =
+        grandTotal.textContent;
+
+    regFeeInput.value =
+        registrationFee;
+
+    billForm.submit();
+
 }
 </script>
 

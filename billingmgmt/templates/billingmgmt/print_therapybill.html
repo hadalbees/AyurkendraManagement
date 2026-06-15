@@ -65,7 +65,7 @@ th { background:#f2f2f2; }
     {{ bill.patient.patient_name }}
   {% endif %}
 {% else %}
- {{ bill.walkin_name }}
+  {{ bill.walkin_name }}
 {% endif %}
 |
 <strong>Date:</strong> {{ bill.bill_date|date:"d-m-Y" }}
@@ -114,18 +114,20 @@ th { background:#f2f2f2; }
 </p>
 {% endif %}
 
-<h3 class="right">Grand Total: ₹ {{ grand_total }}</h3>
-
-{% if bill.advance_payment > 0 %}
-<p class="right">
-  Advance Payment: ₹ {{ bill.advance_payment }}
-</p>
-{% endif %}
-
-{% if bill.balance_amount > 0 %}
 <h3 class="right">
-  Balance Amount: ₹ {{ bill.balance_amount }}
+    Grand Total: ₹ {{ grand_total }}
 </h3>
+
+{% if bill.payment_status == "Partialy Paid" %}
+
+<p class="right">
+    Advance Payment: ₹ {{ bill.advance_payment }}
+</p>
+
+<h3 class="right">
+    Balance Amount: ₹ {{ bill.balance_amount }}
+</h3>
+
 {% endif %}
 
 <p class="right">
@@ -136,15 +138,11 @@ th { background:#f2f2f2; }
   Payment Status: {{ bill.payment_status }}
 </p>
 
-  <div class="footer" style="position: absolute;bottom: 0;text-align: center;width: 100%;">
-  This is a computer-generated therapy bill and does not require a signature
-</div>
-  <div class="no-print" style="text-align:center; margin-top:20px;">
+<!-- ================= ACTION ================= -->
+<div class="no-print">
   <button onclick="window.print()">🖨 Print</button>
-  <a href="{% url 'billingmgmt:therapybilling' %}"
-     style="padding:6px 12px;border:1px solid #000;text-decoration:none;color:#000;">
-     ⬅ Back
-  </a>
+  <a href="{% url 'billingmgmt:therapybilling' %}">⬅ Back</a>
 </div>
+
 </body>
 </html>

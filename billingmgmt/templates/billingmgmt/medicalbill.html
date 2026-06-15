@@ -179,7 +179,20 @@
         <span>Subtotal</span>
         <strong>₹ <span id="subtotalText">0.00</span></strong>
       </div>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span>Discount (%)</span>
 
+        <input
+            type="number"
+            id="discountPercent"
+            name="discount_percent"
+            value="0"
+            min="0"
+            max="100"
+            class="form-control"
+            style="width:90px"
+            oninput="renderItems()">
+      </div>
       <div class="d-flex justify-content-between mb-2">
         <span>Total GST</span>
         <strong>₹ <span id="taxText">0.00</span></strong>
@@ -233,17 +246,20 @@
 <script>
 
 window.allMedicines = [
-  {% for m in medicines %}
-  {
+{% for m in medicines %}
+{
     id: "{{ m.id }}",
+    medicine_id: "{{ m.medicine.id }}",
     name: "{{ m.medicine.name|escapejs }}",
     unit: "{{ m.get_base_unit_display|escapejs }}",
     available: {{ m.total_base_quantity|default:0 }},
     selling_price: {{ m.selling_price|default:0 }},
     price_per_unit: {{ m.price_per_base_unit|default:0 }},
-    gst: {{ m.medicine.gst_percentage|default:0 }}
-  }{% if not forloop.last %},{% endif %}
-  {% endfor %}
+    gst: {{ m.medicine.gst_percentage|default:0 }},
+    expiry: "{{ m.expiry_date|date:'d-m-Y' }}"
+}
+{% if not forloop.last %},{% endif %}
+{% endfor %}
 ];
 
 window.items = [];
@@ -516,11 +532,23 @@ function renderMedicineDropdown(filter = "") {
     item.className =
       "list-group-item list-group-item-action";
 
-    item.innerHTML = `
-      <strong>${m.name}</strong><br>
-      <small class="text-muted">
-        ${m.unit} | Available: ${m.available}
-      </small>
+   item.innerHTML = `
+    <strong>${m.name}</strong><br>
+
+    <small class="text-muted">
+    Expiry :
+    <span class="text-danger fw-bold">
+    ${m.expiry}
+    </span>
+
+    &nbsp; | &nbsp;
+
+    Available :
+    <span class="text-success fw-bold">
+    ${m.available} ${m.unit}
+    </span>
+
+    </small>
     `;
 
     item.onclick = function () {
@@ -830,13 +858,24 @@ function renderItems(){
     `;
 
   });
+const discountPercent =
+    parseFloat(
+        document.getElementById("discountPercent").value
+    ) || 0;
 
-  const total =
-    subtotal + totalGST;
+const discountAmount =
+    subtotal * discountPercent / 100;
 
-  document.getElementById(
+const taxableAmount =
+    subtotal - discountAmount;
+
+const total =
+    taxableAmount + totalGST;
+
+document.getElementById(
     "subtotalText"
-  ).innerText = subtotal.toFixed(2);
+).innerText = taxableAmount.toFixed(2);
+
 
   document.getElementById(
     "taxText"

@@ -29,7 +29,7 @@ th { background:#f2f2f2; }
     <img src="{{ settings.hospital_logo.url }}" class="logo">
   {% endif %}
 
-  <div><strong>{{ settings.hospital_name }}</strong></div>
+  <strong>{{ settings.hospital_name }}</strong><br>
 
   <div class="address">
     {{ settings.address|linebreaksbr }}<br>
@@ -113,18 +113,20 @@ th { background:#f2f2f2; }
 </p>
 {% endif %}
 
-<h3 class="right">Grand Total: ₹ {{ grand_total }}</h3>
+<h3 class="right">
+    Grand Total: ₹ {{ grand_total }}
+</h3>
 
-{% if bill.advance_payment > 0 %}
-<p class="right">
-  Advance Payment: ₹ {{ bill.advance_payment }}
-</p>
-{% endif %}
+{% if bill.advance_payment > 0 and bill.balance_amount > 0 %}
 
-{% if bill.balance_amount > 0 %}
 <p class="right">
-  Balance Amount: ₹ {{ bill.balance_amount }}
+    Advance Payment: ₹ {{ bill.advance_payment }}
 </p>
+
+<p class="right">
+    Balance Amount: ₹ {{ bill.balance_amount }}
+</p>
+
 {% endif %}
 
 <p class="right">
@@ -135,15 +137,11 @@ th { background:#f2f2f2; }
   Payment Status: {{ bill.payment_status }}
 </p>
 
-   <div class="footer" style="position: absolute;bottom: 0;text-align: center;width: 100%;">
-  This is a computer-generated Inpatient bill and does not require a signature
-</div>
-  <div class="no-print" style="text-align:center; margin-top:20px;">
+<!-- ================= FOOTER ================= -->
+<div class="no-print">
   <button onclick="window.print()">🖨 Print</button>
-  <a href="{% url 'billingmgmt:inpatientbilling' %}"
-     style="padding:6px 12px;border:1px solid #000;text-decoration:none;color:#000;">
-     ⬅ Back
-  </a>
+  <a href="{% url 'billingmgmt:inpatientbilling' %}">⬅ Back</a>
 </div>
+
 </body>
 </html>
