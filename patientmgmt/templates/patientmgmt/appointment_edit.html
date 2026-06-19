@@ -69,18 +69,45 @@
           <div class="col-md-4">
             <label class="form-label">Appointment Type</label>
 
-            <select id="apptType" name="appointment_type" class="form-select" required>
-              <option value="">Select</option>
-              {% for a in appointment_types %}
-                <option value="{{ a.id }}"
-                        data-name="{{ a.name|upper }}"
-                        {% if appt.appointment_type and appt.appointment_type.id == a.id %}selected{% endif %}>
-                  {{ a.name }}
-                </option>
-              {% endfor %}
-            </select>
+         <select id="apptType"
+        name="appointment_type"
+        class="form-select">
+
+    {% for a in appointment_types %}
+
+    <option
+        value="{{ a.id }}"
+        data-name="{{ a.name|lower }}"
+        {% if appt.appointment_type.id == a.id %}selected{% endif %}>
+
+        {{ a.name }}
+
+    </option>
+
+    {% endfor %}
+
+</select>
 
           </div>
+          <div class="col-md-4" id="doctorDiv" style="display:none;">
+              <label class="form-label">Doctor</label>
+
+              <select
+                  id="doctorSelect"
+                  name="doctor"
+                  class="form-select">
+
+                  <option value="">Select Doctor</option>
+
+                  {% for d in doctors %}
+                  <option value="{{ d.id }}"
+                  {% if appt.doctor and appt.doctor.id == d.id %}selected{% endif %}>
+                      {{ d.username }}
+                  </option>
+                  {% endfor %}
+
+              </select>
+            </div>
 
           <div class="col-md-4" id="therapyDiv" style="display:none;">
             <label class="form-label">Therapy</label>
@@ -94,6 +121,26 @@
               {% endfor %}
             </select>
           </div>
+
+          <div class="col-md-4" id="therapistDiv" style="display:none;">
+    <label class="form-label">Therapist</label>
+
+    <select
+        id="therapistSelect"
+        name="therapist"
+        class="form-select">
+
+        <option value="">Select Therapist</option>
+
+        {% for t in therapists %}
+        <option value="{{ t.id }}"
+        {% if appt.therapist and appt.therapist.id == t.id %}selected{% endif %}>
+            {{ t.username }}
+        </option>
+        {% endfor %}
+
+    </select>
+</div>
 
           <div class="col-md-4">
             <label class="form-label">Status</label>
@@ -203,117 +250,247 @@
 
 <!-- ================= YOUR SCRIPT (UNCHANGED) ================= -->
 <script>
-document.getElementById("apptType").addEventListener("change", function () {
-  const selectedOption = this.options[this.selectedIndex];
-  const typeName = selectedOption.getAttribute("data-name");
+document.addEventListener("DOMContentLoaded", function () {
 
-  const therapyDiv = document.getElementById("therapyDiv");
+    const apptType = document.getElementById("apptType");
+    const doctorDiv = document.getElementById("doctorDiv");
+    const therapistDiv = document.getElementById("therapistDiv");
+    const therapyDiv = document.getElementById("therapyDiv");
 
-  if (!typeName) {
-    therapyDiv.style.display = "none";
-    return;
-  }
+    function loadFields(){
 
-  const type = typeName.toUpperCase();
+        const selected =
+            apptType.options[apptType.selectedIndex];
 
-  therapyDiv.style.display =
-    (type === "THERAPY" || type === "BOTH") ? "block" : "none";
+        const type =
+            (selected.dataset.name || "").toLowerCase();
+
+        doctorDiv.style.display = "none";
+        therapistDiv.style.display = "none";
+        therapyDiv.style.display = "none";
+
+        if(type=="consultation"){
+
+            doctorDiv.style.display="block";
+
+            loadDoctors(
+                "Doctor",
+                "doctorSelect"
+            );
+
+        }
+
+        else if(type=="treatment"){
+
+            therapyDiv.style.display="block";
+            therapistDiv.style.display="block";
+
+            loadDoctors(
+                "Therapist",
+                "therapistSelect"
+            );
+
+        }
+
+        else if(type=="both"){
+
+            doctorDiv.style.display="block";
+            therapyDiv.style.display="block";
+            therapistDiv.style.display="block";
+
+            loadDoctors(
+                "Doctor",
+                "doctorSelect"
+            );
+
+            loadDoctors(
+                "Therapist",
+                "therapistSelect"
+            );
+
+        }
+
+    }
+
+    apptType.addEventListener("change", loadFields);
+
+    loadFields();
+
 });
 
-// Trigger on page load
-window.addEventListener("load", () => {
-  document.getElementById("apptType").dispatchEvent(new Event("change"));
-});
-window.onload = () =>
-  document.getElementById("apptType").dispatchEvent(new Event("change"));
+function loadDoctors(roleName, selectId, selectedId = "") {
+
+    const select = document.getElementById(selectId);
+
+    if (!select)
+        return;
+
+    fetch(`/patient/get-doctors-by-role/?role=${roleName}`)
+
+        .then(res => res.json())
+
+        .then(data => {
+
+            select.innerHTML = `<option value="">Select ${roleName}</option>`;
+
+            data.doctors.forEach(item => {
+
+                let opt = document.createElement("option");
+
+                opt.value = item.id;
+
+                opt.textContent = item.name;
+
+                if (selectedId && selectedId == item.id)
+                    opt.selected = true;
+
+                select.appendChild(opt);
+
+            });
+
+        });
+
+}
 
 let bookedSlots = [];
+
 let selectedDate = "";
 
-function openSlotModal(){
-  selectedDate = document.getElementById("appointment_date").value;
-  document.getElementById("slotDate").value = selectedDate;
-  loadSlots();
-  new bootstrap.Modal(document.getElementById("slotModal")).show();
+function openSlotModal() {
+
+    selectedDate =
+        document.getElementById("appointment_date").value;
+
+    document.getElementById("slotDate").value =
+        selectedDate;
+
+    loadSlots();
+
+    new bootstrap.Modal(
+        document.getElementById("slotModal")
+    ).show();
+
 }
 
-function to12Hour(time){
-  let [h, m] = time.split(":");
-  h = parseInt(h);
-  const ap = h >= 12 ? "PM" : "AM";
-  h = h % 12 || 12;
-  return `${h}:${m} ${ap}`;
+function to12Hour(time) {
+
+    let [h, m] = time.split(":");
+
+    h = parseInt(h);
+
+    const ap = h >= 12 ? "PM" : "AM";
+
+    h = h % 12 || 12;
+
+    return `${h}:${m} ${ap}`;
+
 }
 
-function loadSlots(){
-  selectedDate = document.getElementById("slotDate").value;
-  if(!selectedDate) return;
+function loadSlots() {
 
-  const doctor = document.getElementById("doctorSelect")?.value || "";
-  const therapist = document.getElementById("therapistSelect")?.value || "";
+    selectedDate =
+        document.getElementById("slotDate").value;
 
-  fetch("{% url 'patientmgmt:booked_slots' %}?date="
-        + selectedDate
-        + "&doctor=" + doctor
-        + "&therapist=" + therapist)
-    .then(r => r.json())
-    .then(d => {
-      bookedSlots = d.booked || [];
-      renderSlots();
-    });
+    if (!selectedDate)
+        return;
+
+    const doctor =
+        document.getElementById("doctorSelect") ?
+        document.getElementById("doctorSelect").value : "";
+
+    const therapist =
+        document.getElementById("therapistSelect") ?
+        document.getElementById("therapistSelect").value : "";
+
+    fetch(`/patient/booked-slots/?date=${selectedDate}&doctor=${doctor}&therapist=${therapist}`)
+
+        .then(r => r.json())
+
+        .then(data => {
+
+            bookedSlots = data.booked || [];
+
+            renderSlots();
+
+        });
+
 }
 
-function renderSlots(){
-  const box = document.getElementById("slotsContainer");
-  box.innerHTML = "";
+function renderSlots() {
 
-  const currentDate = "{{ appt.appointment_date|date:'Y-m-d' }}";
-  const currentTime = "{{ appt.appointment_time|time:'H:i' }}";
+    const box =
+        document.getElementById("slotsContainer");
 
-  const startHour = 9;
-  const endHour = 18;
-  const interval = 30;
+    box.innerHTML = "";
 
-  for (let hour = startHour; hour < endHour; hour++) {
-    for (let minute = 0; minute < 60; minute += interval) {
+    const currentDate =
+        "{{ appt.appointment_date|date:'Y-m-d' }}";
 
-      const h = String(hour).padStart(2, "0");
-      const m = String(minute).padStart(2, "0");
+    const currentTime =
+        "{{ appt.appointment_time|time:'H:i' }}";
 
-      const time24 = `${h}:${m}`;
-      const time12 = to12Hour(time24);
+    for (let h = 9; h <= 18; h++) {
 
-      const isBooked =
-        bookedSlots.includes(time24) &&
-        !(selectedDate === currentDate && time24 === currentTime);
+        const t24 =
+            String(h).padStart(2, "0") + ":00";
 
-      const btn = document.createElement("button");
+        const t12 =
+            to12Hour(t24);
 
-      if (isBooked) {
-        btn.className = "btn btn-secondary btn-sm";
-        btn.textContent = `${time12} (Booked)`;
-        btn.disabled = true;
-      } else {
-        btn.className = "btn btn-outline-success btn-sm";
-        btn.textContent = time12;
-        btn.onclick = () => selectSlot(time24);
-      }
+        const isBooked =
+            bookedSlots.includes(t24)
+            &&
+            !(selectedDate == currentDate && t24 == currentTime);
 
-      box.appendChild(btn);
+        const btn =
+            document.createElement("button");
+
+        if (isBooked) {
+
+            btn.className =
+                "btn btn-secondary btn-sm";
+
+            btn.disabled = true;
+
+            btn.textContent =
+                t12 + " (Booked)";
+
+        }
+
+        else {
+
+            btn.className =
+                "btn btn-outline-success btn-sm";
+
+            btn.textContent =
+                t12;
+
+            btn.onclick = function () {
+
+                document.getElementById("appointment_date").value =
+                    selectedDate;
+
+                document.getElementById("appointment_time").value =
+                    t24;
+
+                document.getElementById("appointment_date_display").value =
+                    selectedDate;
+
+                document.getElementById("appointment_time_display").value =
+                    t24;
+
+                bootstrap.Modal.getInstance(
+                    document.getElementById("slotModal")
+                ).hide();
+
+            };
+
+        }
+
+        box.appendChild(btn);
+
     }
-  }
-}
 
-function selectSlot(time24){
-  document.getElementById("appointment_date").value = selectedDate;
-  document.getElementById("appointment_time").value = time24;
-
-  document.getElementById("appointment_date_display").value = selectedDate;
-  document.getElementById("appointment_time_display").value = time24;
-
-  bootstrap.Modal.getInstance(
-    document.getElementById("slotModal")
-  ).hide();
 }
 </script>
 

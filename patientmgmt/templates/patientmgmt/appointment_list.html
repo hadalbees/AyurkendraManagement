@@ -47,7 +47,7 @@
               <th>Patient</th>
               <th>Phone</th>
               <th>Type</th>
-              <th>Therapy</th>
+              <th>Therapy/Doctor</th>
               <th>Date</th>
               <th>Time</th>
               <th>Status</th>
@@ -77,9 +77,38 @@
                 </span>
               </td>
 
-              <td>
-                {{ a.therapy.name|default:"-" }}
-              </td>
+<td>
+
+{% if a.appointment_type %}
+
+    {% if a.appointment_type.name|lower == "consultation" %}
+        {{ a.doctor.username|default:"-" }}
+
+    {% elif a.appointment_type.name|lower == "treatment" %}
+        {{ a.therapy.name|default:"-" }}
+        {% if a.therapist %}
+         / {{a.therapist.username}}
+        {% endif %}
+    {% elif a.appointment_type.name|lower == "both" %}
+        {% if a.doctor %}
+            {{ a.doctor.username }}
+        {% endif %}
+
+        {% if a.doctor and a.therapy %}
+            /
+        {% endif %}
+
+        {% if a.therapy %}
+            {{ a.therapy.name }}
+        {% endif %}
+
+    {% endif %}
+
+{% else %}
+    -
+{% endif %}
+
+</td>
 
               <td>{{ a.appointment_date }}</td>
               <td>{{ a.appointment_time }}</td>
