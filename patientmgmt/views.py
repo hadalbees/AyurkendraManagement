@@ -793,39 +793,53 @@ class LiveCountsView(LoginRequiredMixin, View):
 # APPOINMENT LIST + FILTER
 def appointment_list(request):
 
-    status = request.GET.get('status', '')
-    date = request.GET.get('date', '')
-    search = request.GET.get('search', '')
+    status = request.GET.get("status", "")
+    date = request.GET.get("date", "")
+    search = request.GET.get("search", "")
 
-    appointments = Appointment.objects.select_related(
-        'patient', 'therapy'
-    ).order_by('-id')
+    appointments = (
+        Appointment.objects
+        .select_related(
+            "patient",
+            "doctor",
+            "therapist",
+            "therapy",
+            "appointment_type",
+        )
+        .order_by("-id")
+    )
 
     if status:
         appointments = appointments.filter(status=status)
 
     if date:
-        appointments = appointments.filter(appointment_date=date)
+        appointments = appointments.filter(
+            appointment_date=date
+        )
 
     if search:
         appointments = appointments.filter(
-            Q(patient__patient_name__icontains=search) |
-            Q(patient__phone__icontains=search) |
-            Q(patient__patient_unique_id__icontains=search) |
-            Q(patient__address__icontains=search)
+            Q(patient__patient_name__icontains=search)
+            | Q(patient__phone__icontains=search)
+            | Q(patient__patient_unique_id__icontains=search)
+            | Q(patient__address__icontains=search)
         )
 
-    paginator = Paginator(appointments, 10)  # ✅ 10 per page
-    page_number = request.GET.get('page')
+    paginator = Paginator(appointments, 10)
+    page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    return render(request, "patientmgmt/appointment_list.html", {
-        "appointments": page_obj,
-        "page_obj": page_obj,
-        "status": status,
-        "date": date,
-        "search": search
-    })
+    return render(
+        request,
+        "patientmgmt/appointment_list.html",
+        {
+            "appointments": page_obj,
+            "page_obj": page_obj,
+            "status": status,
+            "date": date,
+            "search": search,
+        },
+    )
 
 
 
@@ -894,8 +908,11 @@ def appointment_add(request):
 
         # ✅ Therapy selection
         therapy = None
-        if appt_type and appt_type.name in ['Therapy', 'Both'] and therapy_id:
-            therapy = TherapyMaster.objects.get(id=therapy_id)
+
+        if therapy_id:
+            therapy = TherapyMaster.objects.filter(
+                id=therapy_id
+            ).first()
 
         # ✅ Create Appointment
         appoinment = Appointment.objects.create(
@@ -927,42 +944,89 @@ def appointment_add(request):
 
 # APPOINMENT EDIT
 def appointment_edit(request, pk):
+
     appt = get_object_or_404(Appointment, id=pk)
+
     therapies = TherapyMaster.objects.filter(status=True)
     appointment_types = AppointmentType.objects.filter(status=True)
 
     if request.method == "POST":
-        appt.appointment_type = request.POST.get("appointment_type")
+
+        appt_type = AppointmentType.objects.get(
+            id=request.POST.get("appointment_type")
+        )
+
+        appt.appointment_type = appt_type
         appt.appointment_date = request.POST.get("appointment_date")
         appt.appointment_time = request.POST.get("appointment_time")
         appt.status = request.POST.get("status")
         appt.notes = request.POST.get("notes")
 
+        doctor_id = request.POST.get("doctor")
+        therapist_id = request.POST.get("therapist")
         therapy_id = request.POST.get("therapy")
 
-        # Only assign therapy if type is THERAPY or BOTH
-        if appt.appointment_type in ['THERAPY', 'BOTH'] and therapy_id:
-            appt.therapy = TherapyMaster.objects.get(id=therapy_id)
-        else:
-            appt.therapy = None  # Clear therapy if type is CONSULT
+        appt.doctor = None
+        appt.therapist = None
+        appt.therapy = None
+
+        type_name = appt_type.name.lower()
+
+        if type_name == "consultation":
+
+            if doctor_id:
+                appt.doctor = CustomUser.objects.get(id=doctor_id)
+
+        elif type_name == "treatment":
+
+            if therapist_id:
+                appt.therapist = CustomUser.objects.get(id=therapist_id)
+
+            if therapy_id:
+                appt.therapy = TherapyMaster.objects.get(id=therapy_id)
+
+        elif type_name == "both":
+
+            if doctor_id:
+                appt.doctor = CustomUser.objects.get(id=doctor_id)
+
+            if therapist_id:
+                appt.therapist = CustomUser.objects.get(id=therapist_id)
+
+            if therapy_id:
+                appt.therapy = TherapyMaster.objects.get(id=therapy_id)
 
         appt.save()
+
         ActivityHistory.objects.create(
             user=request.user,
             action="UPDATE",
-             module="PATIENT APPOINMENT",
+            module="PATIENT APPOINTMENT",
             record_id=appt.id,
-            description=f"Appoinment #{appt.id} updated by {request.user}"
+            description=f"Appointment #{appt.id} updated by {request.user}"
         )
 
         return redirect("patientmgmt:appointment_list")
+    doctors = CustomUser.objects.filter(
+        Q(role__role_name__icontains="doctor") |
+        Q(role__role_name__icontains="consultant")
+    )
 
-    return render(request, "patientmgmt/appointment_edit.html", {
-        "appt": appt,
-        "therapies": therapies,
-        "appointment_types":appointment_types
-    })
+    therapists = CustomUser.objects.filter(
+        Q(role__role_name__icontains="therapist")
+    )
 
+    return render(
+        request,
+        "patientmgmt/appointment_edit.html",
+        {
+            "appt": appt,
+            "therapies": therapies,
+            "appointment_types": appointment_types,
+            "doctors": doctors,
+            "therapists": therapists,
+        }
+    )
 
 # APPOINMENT DELETE
 def appointment_delete(request, pk):
