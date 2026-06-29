@@ -317,22 +317,13 @@ def medical_billing_view(request):
                         if required_qty <= 0:
                             break
 
-                        available = s.total_base_quantity
+                        deduct = min(s.total_base_quantity, required_qty)
 
-                        if available >= required_qty:
+                        s.total_base_quantity -= deduct
 
-                            s.total_base_quantity -= required_qty
-                            s.save(update_fields=["total_base_quantity"])
+                        s.save(update_fields=["total_base_quantity"])
 
-                            required_qty = 0
-
-                        else:
-
-                            required_qty -= available
-
-                            s.total_base_quantity = 0
-
-                            s.save(update_fields=["total_base_quantity"])
+                        required_qty -= deduct
 
                     if required_qty > 0:
                         raise Exception(
