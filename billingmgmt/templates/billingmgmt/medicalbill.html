@@ -551,12 +551,18 @@ function renderMedicineDropdown(filter = "") {
     </small>
     `;
 
-    item.onclick = function () {
-      searchInput.value = m.name;
-      select.value = m.id;
-      dropdown.style.display = "none";
-      calculate();
-    };
+item.onclick = function () {
+
+    searchInput.value = m.name;
+
+    select.value = m.id;
+
+    // Trigger change event
+    select.dispatchEvent(new Event("change"));
+
+    dropdown.style.display = "none";
+
+};
 
     dropdown.appendChild(item);
   });
@@ -595,56 +601,36 @@ if (selectedMedicineId) {
   searchInput.value = selectedName;
 }
   // ===== UPDATE FUNCTION =====
-  function calculate(){
+function calculate() {
 
-    const opt =
-      select.selectedOptions[0];
+    const medicine = allMedicines.find(
+        x => x.id == select.value
+    );
 
-    if(!opt || !opt.value){
-      return;
-    }
+    if (!medicine) return;
 
-    const price =
-      parseFloat(opt.dataset.single) || 0;
+    const qtyVal = parseFloat(qty.value) || 0;
 
-    const available =
-      parseFloat(opt.dataset.available) || 0;
-
-    const qtyVal =
-      parseFloat(qty.value) || 0;
-
-    // UNIT
     div.querySelector(".unitField").value =
-      opt.dataset.unit || "";
+        medicine.unit;
 
-    // PRICE
     div.querySelector(".priceField").value =
-      price.toFixed(2);
+        parseFloat(medicine.price_per_unit).toFixed(2);
 
-    // STOCK CHECK
-    if(qtyVal > available){
+    if (qtyVal > medicine.available) {
 
-      alert(
-        "Insufficient stock. Available: "
-        + available
-      );
+        alert("Insufficient stock. Available: " + medicine.available);
 
-      qty.value = "";
+        qty.value = "";
 
-      div.querySelector(".subField").value =
-        "0.00";
+        div.querySelector(".subField").value = "0.00";
 
-      return;
+        return;
     }
-
-    // SUBTOTAL
-    const subtotal =
-      qtyVal * price;
 
     div.querySelector(".subField").value =
-      subtotal.toFixed(2);
-
-  }
+        (qtyVal * medicine.price_per_unit).toFixed(2);
+}
 
   // EVENTS
   select.addEventListener(
