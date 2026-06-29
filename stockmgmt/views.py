@@ -316,40 +316,51 @@ def update_medicine(request):
         messages.success(request, "Medicine updated successfully.")
 
     return redirect("stockmgmt:stock_list")
-
-def calculate_stock_values(pack_size, number_of_packs, unit_price, gst_percentage, selling_price):
-
+def calculate_stock_values(
+    pack_size,
+    number_of_packs,
+    unit_price,
+    gst_percentage,
+    selling_price,
+):
     pack_size = Decimal(pack_size or 0)
     number_of_packs = Decimal(number_of_packs or 0)
     unit_price = Decimal(unit_price or 0)
     gst_percentage = Decimal(gst_percentage or 0)
 
+    # Total quantity in base units (Example: 450ml × 4 = 1800ml)
     total_base_quantity = pack_size * number_of_packs
 
-    # GST INCLUDED extraction formula
+    # GST Amount
     if gst_percentage > 0:
-        gst_amount = (unit_price * gst_percentage) / (Decimal("100") + gst_percentage)
+        gst_amount = (
+            unit_price * gst_percentage
+        ) / (Decimal("100") + gst_percentage)
     else:
         gst_amount = Decimal("0")
 
-    # Selling price auto if empty
+    # Selling price
     if not selling_price or Decimal(selling_price) == 0:
         selling_price = unit_price
     else:
         selling_price = Decimal(selling_price)
 
-    if total_base_quantity > 0:
-        price_per_base_unit = selling_price / total_base_quantity
-    else:
-        price_per_base_unit = Decimal("0")
+    # Billing uses pack price
+    price_per_base_unit = selling_price
 
-    return total_base_quantity, gst_amount, selling_price, price_per_base_unit
+    return (
+        total_base_quantity,
+        gst_amount,
+        selling_price,
+        price_per_base_unit,
+    )
 
 # --------------------------------------------------
 # Stock Create View
 # --------------------------------------------------
 class StockCreateView(LoginRequiredMixin, CreateView):
     model = Stock
+
     fields = [
         "medicine",
         "batch_number",
@@ -363,39 +374,47 @@ class StockCreateView(LoginRequiredMixin, CreateView):
         "supplier",
         "manufacturer",
     ]
+
     template_name = "stockmgmt/stockform.html"
     success_url = reverse_lazy("stockmgmt:stock_list")
 
     def form_valid(self, form):
+
         obj = form.save(commit=False)
 
         gst_percentage = obj.medicine.gst_percentage
 
-        total_qty, gst_amount, selling_price, price_per_base = calculate_stock_values(
+        (
+            obj.total_base_quantity,
+            obj.gst_amount,
+            obj.selling_price,
+            obj.price_per_base_unit,
+        ) = calculate_stock_values(
             obj.pack_size,
             obj.number_of_packs,
             obj.unit_price,
             gst_percentage,
-            obj.selling_price
+            obj.selling_price,
         )
 
-        obj.total_base_quantity = total_qty
-        obj.gst_amount = gst_amount
-        obj.selling_price = selling_price
-        obj.price_per_base_unit = price_per_base
         obj.last_updated_by = self.request.user
 
         obj.save()
+
         ActivityHistory.objects.create(
             user=self.request.user,
             action="CREATE",
             module="STOCK",
             record_id=obj.id,
-            description=f"Stock #{obj.id} created by {self.request.user}"
+            description=f"Stock #{obj.id} created by {self.request.user}",
         )
 
-        messages.success(self.request, "Stock added successfully.")
-        return super().form_valid(form)
+        messages.success(
+            self.request,
+            "Stock added successfully."
+        )
+
+        return redirect(self.success_url)
 
 
 # --------------------------------------------------
@@ -403,6 +422,7 @@ class StockCreateView(LoginRequiredMixin, CreateView):
 # --------------------------------------------------
 class StockUpdateView(LoginRequiredMixin, UpdateView):
     model = Stock
+
     fields = [
         "medicine",
         "batch_number",
@@ -416,39 +436,47 @@ class StockUpdateView(LoginRequiredMixin, UpdateView):
         "supplier",
         "manufacturer",
     ]
+
     template_name = "stockmgmt/stockform.html"
     success_url = reverse_lazy("stockmgmt:stock_list")
 
     def form_valid(self, form):
+
         obj = form.save(commit=False)
 
         gst_percentage = obj.medicine.gst_percentage
 
-        total_qty, gst_amount, selling_price, price_per_base = calculate_stock_values(
+        (
+            obj.total_base_quantity,
+            obj.gst_amount,
+            obj.selling_price,
+            obj.price_per_base_unit,
+        ) = calculate_stock_values(
             obj.pack_size,
             obj.number_of_packs,
             obj.unit_price,
             gst_percentage,
-            obj.selling_price
+            obj.selling_price,
         )
 
-        obj.total_base_quantity = total_qty
-        obj.gst_amount = gst_amount
-        obj.selling_price = selling_price
-        obj.price_per_base_unit = price_per_base
         obj.last_updated_by = self.request.user
 
         obj.save()
+
         ActivityHistory.objects.create(
             user=self.request.user,
             action="UPDATE",
             module="STOCK",
             record_id=obj.id,
-            description=f"Stock #{obj.id} updated by {self.request.user}"
+            description=f"Stock #{obj.id} updated by {self.request.user}",
         )
-        messages.success(self.request, "Stock updated successfully.")
-        return super().form_valid(form)
 
+        messages.success(
+            self.request,
+            "Stock updated successfully."
+        )
+
+        return redirect(self.success_url)
 
 # --------------------------------------------------
 # Stock Dispense View
