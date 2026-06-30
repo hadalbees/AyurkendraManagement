@@ -211,20 +211,29 @@ def medical_billing_view(request):
 
             # -------- CUSTOMER TYPE --------
             customer_type = request.POST.get("customer_type", "patient")
+
             patient = None
+            customer_name = ""
+            customer_age = None
+            customer_gender = ""
 
             if customer_type == "patient":
 
                 patient_id = request.POST.get("patient_id")
-
-                if not patient_id:
-                    return redirect("billingmgmt:medicalbilling")
 
                 patient = get_object_or_404(
                     Patient,
                     patient_unique_id=patient_id,
                     is_active=True
                 )
+
+            else:
+
+                customer_name = request.POST.get("walkin_name", "").strip()
+
+                customer_age = request.POST.get("customer_age")
+
+                customer_gender = request.POST.get("customer_gender")
 
             # -------- MEDICINE DATA --------
             stock_ids = request.POST.getlist("stock_id[]")
@@ -242,6 +251,12 @@ def medical_billing_view(request):
                     bill_no=bill_no,
 
                     patient=patient,
+                    
+                    customer_name=customer_name,
+
+                    customer_age=customer_age,
+
+                    customer_gender=customer_gender,
 
                     doctor_name=doctor_name,
 

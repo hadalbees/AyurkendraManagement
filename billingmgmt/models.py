@@ -15,6 +15,9 @@ class MedicalBill(models.Model):
         null=True,
         blank=True
     )
+    customer_name = models.CharField(max_length=150, blank=True, null=True)
+    customer_age = models.PositiveIntegerField(blank=True, null=True)
+    customer_gender = models.CharField(max_length=20, blank=True, null=True)
 
     doctor_name = models.CharField(max_length=150, blank=True)
     bill_date = models.DateField()
