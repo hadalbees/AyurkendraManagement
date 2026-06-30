@@ -86,16 +86,25 @@ table.bill-table th { background: #f2f2f2; }
     <td>
       <strong>Patient Name:</strong>
       {% if bill.patient %}
-        {{ bill.patient.patient_name }}
-      {% else %}
-        Walk-in Customer
-      {% endif %}
+    {{ bill.patient.patient_name }}
+{% else %}
+    {{ bill.customer_name }}
+{% endif %}
     </td>
     <td>
       <strong>Age / Sex:</strong>
       {% if bill.patient %}
-        {{ bill.patient.age }} / {{ bill.patient.get_gender_display }}
-      {% endif %}
+    {{ bill.patient.age }} /
+    {% if bill.patient.gender == "M" %}
+        Male
+    {% elif bill.patient.gender == "F" %}
+        Female
+    {% else %}
+        {{ bill.patient.gender }}
+    {% endif %}
+{% else %}
+    {{ bill.customer_age }} / {{ bill.customer_gender }}
+{% endif %}
     </td>
     <td><strong>Date:</strong> {{ bill.bill_date|date:"d-m-Y" }}</td>
   </tr>
@@ -175,15 +184,21 @@ table.bill-table th { background: #f2f2f2; }
 {% endwith %}
 {% endwith %}
 {% endwith %}
-<div class="footer" style="position: absolute;bottom: 0;text-align: center;width: 100%;">
-  This is a computer-generated medical bill and does not require a signature
+
+<!-- ================= FOOTER ================= -->
+<div class="footer">
+  Thank you for visiting {{ settings.hospital_name }}<br>
+  Get Well Soon 🙏
 </div>
-  <div class="no-print" style="text-align:center; margin-top:20px;">
+
+<!-- ================= PRINT ================= -->
+<div class="no-print" style="text-align:center; margin-top:20px;">
   <button onclick="window.print()">🖨 Print</button>
   <a href="{% url 'billingmgmt:medicalbilling' %}"
      style="padding:6px 12px;border:1px solid #000;text-decoration:none;color:#000;">
      ⬅ Back
   </a>
 </div>
+
 </body>
 </html>

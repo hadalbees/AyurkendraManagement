@@ -76,14 +76,29 @@
 
 
           <div class="col-md-2">
-            <label class="form-label">Age</label>
-            <input class="form-control" id="patientAge">
-          </div>
+    <label class="form-label">Age</label>
 
-          <div class="col-md-2">
-            <label class="form-label">Gender</label>
-            <input class="form-control" id="patientGender">
-          </div>
+    <input
+        type="number"
+        class="form-control"
+        id="patientAge"
+        name="customer_age">
+</div>
+<div class="col-md-2">
+    <label class="form-label">Gender</label>
+
+    <select
+        class="form-select"
+        id="patientGender"
+        name="customer_gender">
+
+        <option value="">Select</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+        <option value="Other">Other</option>
+
+    </select>
+</div>
 
           <div class="col-md-4">
             <label class="form-label">Doctor Name</label>
@@ -307,20 +322,43 @@ function selectPatient(id,name){
 
   document.getElementById("patientDropdown").style.display="none";
 
-  fetch(`/billing/get-patient/?patient_id=${id}`)
-    .then(res=>res.json())
-    .then(d=>{
+fetch(`/billing/get-patient/?patient_id=${id}`)
+    .then(res => res.json())
+    .then(d => {
 
-      if(!d.error){
+        if (!d.error) {
 
-        document.getElementById("patientAge").value =
-          d.age || "";
+           document.getElementById("patientAge").value =
+            d.age || "";
 
-        document.getElementById("patientGender").value =
-          d.gender || "";
+            const genderSelect = document.getElementById("patientGender");
 
-        loadPrescriptionItems(id);
-      }
+            const gender = (d.gender || "").toUpperCase().trim();
+
+            switch (gender) {
+
+                case "M":
+                case "MALE":
+                    genderSelect.value = "Male";
+                    break;
+
+                case "F":
+                case "FEMALE":
+                    genderSelect.value = "Female";
+                    break;
+
+                case "O":
+                case "OTHER":
+                    genderSelect.value = "Other";
+                    break;
+
+                default:
+                    genderSelect.value = "";
+            }
+
+            loadPrescriptionItems(id);
+
+        }
 
     });
 
@@ -899,47 +937,39 @@ function removeItem(i){
    CUSTOMER TYPE
 ========================= */
 
-document.addEventListener(
-  "DOMContentLoaded",
-  function(){
+document.addEventListener("DOMContentLoaded", function () {
 
-    const customerType =
-      document.getElementById(
-        "customerType"
-      );
+    const customerType = document.getElementById("customerType");
+    const patientBox = document.getElementById("patientBox");
+    const walkinBox = document.getElementById("walkinBox");
 
-    const patientBox =
-      document.getElementById(
-        "patientBox"
-      );
+    customerType.addEventListener("change", function () {
 
-    const walkinBox =
-      document.getElementById(
-        "walkinBox"
-      );
+    const isPatient = this.value === "patient";
 
-    customerType.addEventListener(
-      "change",
-      function(){
+    patientBox.classList.toggle("d-none", !isPatient);
+    walkinBox.classList.toggle("d-none", isPatient);
 
-        const isPatient =
-          this.value === "patient";
+    if (!isPatient) {
 
-        patientBox.classList.toggle(
-          "d-none",
-          !isPatient
-        );
+        document.getElementById("patientInput").value = "";
+        document.getElementById("patientHidden").value = "";
 
-        walkinBox.classList.toggle(
-          "d-none",
-          isPatient
-        );
+        document.getElementById("patientAge").value = "";
+        document.getElementById("patientGender").value = "";
 
-      }
-    );
+        document.getElementById("patientAge").removeAttribute("readonly");
+        document.getElementById("patientGender").removeAttribute("disabled");
 
-  }
-);
+    } else {
+
+        document.getElementById("patientAge").setAttribute("readonly", true);
+        document.getElementById("patientGender").setAttribute("disabled", true);
+
+    }
+
+});
+});
 
 </script>
 </body>

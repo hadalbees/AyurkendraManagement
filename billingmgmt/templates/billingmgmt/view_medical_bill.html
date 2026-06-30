@@ -41,16 +41,11 @@
       <div class="row text-sm">
         <div class="col-md-4">
           <strong>Patient Name:</strong><br>
-           {% if bill.patient %}
-                {% if bill.patient.prefix|default:'' and bill.patient.prefix|last == '.' %}
-                    {{ bill.patient.prefix|title }} {{ bill.patient.patient_name }}
-                {% else %}
-                    {{ bill.patient.patient_name }}
-                {% endif %}
-            {% else %}
-                Walk-in Customer
-            {% endif %}
-
+          {% if bill.patient %}
+              {{ bill.patient.patient_name }}
+          {% else %}
+              {{ bill.customer_name }}
+          {% endif %}
         </div>
 
         <div class="col-md-4">

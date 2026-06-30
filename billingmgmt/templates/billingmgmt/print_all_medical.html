@@ -121,21 +121,24 @@
     <td>
       <strong>Patient Name:</strong>
       {% if bill.patient %}
-        {% if bill.patient.prefix and bill.patient.prefix|last == '.' %}
-          {{ bill.patient.prefix }} {{ bill.patient.patient_name }}
-        {% else %}
           {{ bill.patient.patient_name }}
-        {% endif %}
       {% else %}
-        Walk-in Customer
+          {{ bill.customer_name }}
       {% endif %}
     </td>
     <td>
       <strong>Age / Sex:</strong>
       {% if bill.patient %}
-        {{ bill.patient.age }} / {{ bill.patient.get_gender_display }}
+          {{ bill.patient.age }} /
+          {% if bill.patient.gender == "M" %}
+              Male
+          {% elif bill.patient.gender == "F" %}
+              Female
+          {% else %}
+              {{ bill.patient.gender }}
+          {% endif %}
       {% else %}
-        -
+          {{ bill.customer_age }} / {{ bill.customer_gender }}
       {% endif %}
     </td>
     <td><strong>Date:</strong> {{ bill.bill_date|date:"d-m-Y" }}</td>

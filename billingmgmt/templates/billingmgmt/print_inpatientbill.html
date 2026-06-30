@@ -6,141 +6,802 @@
 <title>Inpatient Bill - {{ bill.bill_no }}</title>
 
 <style>
-@page { size:A4; margin:15mm; }
-body { font-family:"Times New Roman", serif; font-size:14px; }
-.header { text-align:center; border-bottom:1px solid #000; padding-bottom:6px; }
-.logo { width:180px; margin-bottom:5px; }
-.address { font-size:12px; }
-.gst { font-size:12px; font-weight:bold; margin-top:4px; }
-table { width:100%; border-collapse:collapse; margin-top:12px; }
-th, td { border:1px solid #000; padding:6px; text-align:center; }
-th { background:#f2f2f2; }
-.right { text-align:right; }
-.no-print { margin-top:20px; text-align:center; }
-@media print { .no-print{display:none;} }
+@page{
+    size:A4;
+    margin:8mm;
+}
+
+body{
+    font-family:Arial,Helvetica,sans-serif;
+    font-size:12px;
+    color:#222;
+    margin:0;
+    padding:0;
+    line-height:1.25;
+}
+
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:2px solid #1b5e20;
+    padding-bottom:6px;
+    margin-bottom:8px;
+}
+
+.logo{
+    width:180px;
+}
+
+.center-area h2{
+    margin:0;
+    font-size:18px;
+}
+
+.center-area p{
+    margin:2px 0;
+    font-size:11px;
+    line-height:1.3;
+}
+
+.right-area p{
+    margin:3px 0;
+    font-size:11px;
+}
+
+.title{
+    text-align:center;
+    font-size:18px;
+    font-weight:bold;
+    color:#1b5e20;
+    margin:8px 0;
+}
+
+.patient-card{
+    width:100%;
+    border-collapse:collapse;
+    border:1px solid #1b5e20;
+    margin-bottom:10px;
+}
+
+.patient-card td{
+    border:1px solid #ccc;
+    padding:5px 8px;
+    vertical-align:top;
+}
+
+.label{
+    font-size:11px;
+    color:#555;
+    font-weight:bold;
+    margin-bottom:2px;
+}
+
+.value{
+    font-size:12px;
+    font-weight:600;
+}
+
+.section-title{
+    font-size:15px;
+    font-weight:bold;
+    color:#1b5e20;
+    text-align:center;
+    margin:10px 0 6px;
+}
+
+.section-title:before,
+.section-title:after{
+    width:60px;
+    margin:0 8px 4px;
+}
+
+.table{
+    width:100%;
+    border-collapse:collapse;
+    margin-bottom:8px;
+}
+
+.table th{
+    background:#edf5ef;
+    border:1px solid #1b5e20;
+    padding:5px;
+    font-size:12px;
+}
+
+.table td{
+    border:1px solid #888;
+    padding:5px;
+    font-size:12px;
+}
+
+.summary{
+    width:32%;
+    float:right;
+    border:1px solid #1b5e20;
+}
+
+.summary-header{
+    background:#1b5e20;
+    color:#fff;
+    padding:6px;
+    font-size:15px;
+    text-align:center;
+}
+
+.summary td{
+    padding:5px 8px;
+    font-size:12px;
+    border-bottom:1px dashed #ddd;
+}
+
+.grand{
+    font-size:16px;
+}
+
+.footer{
+    clear:both;
+    margin-top:15px;
+    padding-top:6px;
+    border-top:1px solid #999;
+    font-size:11px;
+    text-align:center;
+}
+
+.signature{
+    width:100%;
+    margin-top:20px;
+}
+
+.signature td{
+    padding-top:25px;
+    text-align:center;
+}
+
+.no-print{
+    margin-top:10px;
+    text-align:center;
+}
+
+@media print{
+
+    body{
+        zoom:96%;
+    }
+
+    .no-print{
+        display:none;
+    }
+
+    .header,
+    .patient-card,
+    .table,
+    .summary,
+    .footer{
+        page-break-inside:avoid;
+    }
+}
+
 </style>
+
 </head>
 
 <body>
 
 <!-- ================= HEADER ================= -->
+
 <div class="header">
+
+<div class="logo-area">
+
   {% if settings.hospital_logo %}
     <img src="{{ settings.hospital_logo.url }}" class="logo">
+  {% else %}
+    <img src="{% static 'img/logos/logohms.png' %}" class="logo">
   {% endif %}
 
-  <strong>{{ settings.hospital_name }}</strong><br>
-
-  <div class="address">
-    {{ settings.address|linebreaksbr }}<br>
-    Ph: {{ settings.phone }}{% if settings.email %} | {{ settings.email }}{% endif %}
-  </div>
-
-  <div class="gst">
-    GST No: {{ settings.gst_number }} <br>
-    Reg No: {{ settings.registration_number }}
-  </div>
-
-  <h3>INPATIENT BILL</h3>
 </div>
 
-<!-- ================= PATIENT INFO ================= -->
+<div class="center-area">
+
+<h2>{{ settings.hospital_name }}</h2>
+
 <p>
-<strong>Bill No:</strong> {{ bill.bill_no }} |
-<strong>Date:</strong> {{ bill.created_at|date:"d-m-Y" }}<br>
 
-<strong>Patient:</strong> {{ bill.patient.patient_name }} |
-<strong>Age/Sex:</strong> {{ bill.patient.age }} / {{ bill.patient.get_gender_display }}<br>
+{{ settings.address }}<br>
 
-<strong>Doctor:</strong> {{ bill.doctor_name }}<br>
-<strong>Admit:</strong> {{ bill.admit_date }} |
-<strong>Discharge:</strong> {{ bill.discharge_date }}
+📞 {{ settings.phone }}
+
+{% if settings.email %}
+
+|
+
+✉ {{ settings.email }}
+
+{% endif %}
+
 </p>
 
-<!-- ================= ROOM CHARGES ================= -->
-<h4>Room Charges</h4>
-<table>
-<thead>
-<tr><th>Description</th><th>Rate</th><th>Days</th><th>Amount</th></tr>
-</thead>
-<tbody>
-{% for r in room_items %}
+</div>
+
+<div class="right-area">
+
+{% if settings.gst_number %}
+
+<p>
+
+GST No : {{ settings.gst_number }}
+
+</p>
+
+{% endif %}
+
+{% if settings.registration_number %}
+
+<p>
+
+Reg No : {{ settings.registration_number }}
+
+</p>
+
+{% endif %}
+
+</div>
+
+</div>
+
+<div class="title">
+
+INPATIENT BILL
+
+</div>
+
+<!-- ================= PATIENT INFORMATION ================= -->
+
+<table class="patient-card">
+
 <tr>
-<td>{{ r.item_name }}</td>
-<td>{{ r.unit_price }}</td>
-<td>{{ r.quantity }}</td>
-<td>{{ r.subtotal }}</td>
+
+<td>
+
+<div class="label">Bill No</div>
+
+<div class="value">
+
+{{ bill.bill_no }}
+
+</div>
+
+</td>
+
+<td>
+
+<div class="label">Bill Date</div>
+
+<div class="value">
+
+{{ bill.created_at|date:"d-m-Y" }}
+
+</div>
+
+</td>
+
+<td>
+
+<div class="label">UHID / Patient ID</div>
+
+<div class="value">
+
+{% if bill.patient %}
+
+{{ bill.patient.patient_unique_id }}
+
+{% else %}
+
+Walk-in
+
+{% endif %}
+
+</div>
+
+</td>
+
+<td>
+
+<div class="label">Doctor</div>
+
+<div class="value">
+
+{{ bill.doctor_name|default:"-" }}
+
+</div>
+
+</td>
+
 </tr>
-{% empty %}
-<tr><td colspan="4">No Room Charges</td></tr>
-{% endfor %}
-</tbody>
+
+<tr>
+
+<td>
+
+<div class="label">Patient Name</div>
+
+<div class="value">
+
+{% if bill.patient %}
+
+{{ bill.patient.patient_name }}
+
+{% else %}
+
+{{ bill.customer_name|default:"Walk-in Customer" }}
+
+{% endif %}
+
+</div>
+
+</td>
+
+<td>
+
+<div class="label">Age / Gender</div>
+
+<div class="value">
+
+{% if bill.patient %}
+
+{{ bill.patient.age }}
+
+/
+
+{% if bill.patient.gender == "M" %}
+
+Male
+
+{% elif bill.patient.gender == "F" %}
+
+Female
+
+{% else %}
+
+{{ bill.patient.gender }}
+
+{% endif %}
+
+{% else %}
+
+{{ bill.customer_age|default:"-" }}
+
+/
+
+{{ bill.customer_gender|default:"-" }}
+
+{% endif %}
+
+</div>
+
+</td>
+
+<td>
+
+<div class="label">Mobile Number</div>
+
+<div class="value">
+
+{% if bill.patient.phone %}
+
+{{ bill.patient.phone }}
+
+{% else %}
+
+-
+
+{% endif %}
+
+</div>
+
+</td>
+
+<td>
+
+<div class="label">Admit Date</div>
+
+<div class="value">
+
+{{ bill.admit_date|date:"d M, Y"|default:"-" }}
+
+</div>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td colspan="2">
+
+<div class="label">Address</div>
+
+<div class="value">
+
+{% if bill.patient.address %}
+
+{{ bill.patient.address }}
+
+{% else %}
+
+-
+
+{% endif %}
+
+</div>
+
+</td>
+
+<td>
+
+<div class="label">Discharge Date</div>
+
+<div class="value">
+
+{% if bill.discharge_date %}
+
+{{ bill.discharge_date|date:"d M, Y" }}
+
+{% else %}
+
+-
+
+{% endif %}
+
+</div>
+
+</td>
+
+<td>
+
+<div class="label">Payment Status</div>
+
+<div class="value">
+
+{{ bill.payment_status }}
+
+</div>
+
+</td>
+
+</tr>
+
 </table>
+
+<!-- ROOM CHARGES STARTS BELOW -->
+ <!-- ================= ROOM CHARGES ================= -->
+
+<div class="section-title">
+    Room Charges
+</div>
+
+<table class="table">
+
+    <thead>
+
+        <tr>
+
+            <th style="width:8%;">S.No</th>
+
+            <th>Description</th>
+
+            <th style="width:15%;">Rate (₹)</th>
+
+            <th style="width:12%;">Days</th>
+
+            <th style="width:18%;">Amount (₹)</th>
+
+        </tr>
+
+    </thead>
+
+    <tbody>
+
+        {% for room in room_items %}
+
+        <tr>
+
+            <td>{{ forloop.counter }}</td>
+
+            <td style="text-align:left;">
+                {{ room.item_name }}
+            </td>
+
+            <td class="right">
+                {{ room.unit_price }}
+            </td>
+
+            <td>
+                {{ room.quantity }}
+            </td>
+
+            <td class="right">
+                {{ room.subtotal }}
+            </td>
+
+        </tr>
+
+        {% empty %}
+
+        <tr>
+
+            <td colspan="5"
+                style="padding:20px;text-align:center;color:#777;">
+
+                No Room Charges
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
+</table>
+
+
 
 <!-- ================= OTHER CHARGES ================= -->
-<h4>Other Charges</h4>
-<table>
-<thead>
-<tr><th>Description</th><th>Type</th><th>Rate</th><th>Qty</th><th>Amount</th></tr>
-</thead>
-<tbody>
-{% for it in other_items %}
-<tr>
-<td>{{ it.item_name }}</td>
-<td>{{ it.get_item_type_display }}</td>
-<td>{{ it.unit_price }}</td>
-<td>{{ it.quantity }}</td>
-<td>{{ it.subtotal }}</td>
-</tr>
-{% endfor %}
-</tbody>
+
+<div class="section-title">
+
+    Other Charges
+
+</div>
+
+<table class="table">
+
+    <thead>
+
+        <tr>
+
+            <th style="width:8%;">S.No</th>
+
+            <th>Description</th>
+
+            <th style="width:15%;">Type</th>
+
+            <th style="width:12%;">Qty</th>
+
+            <th style="width:15%;">Rate (₹)</th>
+
+            <th style="width:18%;">Amount (₹)</th>
+
+        </tr>
+
+    </thead>
+
+    <tbody>
+
+        {% for item in other_items %}
+
+        <tr>
+
+            <td>{{ forloop.counter }}</td>
+
+            <td style="text-align:left;">
+                {{ item.item_name }}
+            </td>
+
+            <td>
+                {{ item.get_item_type_display }}
+            </td>
+
+            <td>
+                {{ item.quantity }}
+            </td>
+
+            <td class="right">
+                {{ item.unit_price }}
+            </td>
+
+            <td class="right">
+                {{ item.subtotal }}
+            </td>
+
+        </tr>
+
+        {% empty %}
+
+        <tr>
+
+            <td colspan="6"
+                style="padding:20px;text-align:center;color:#777;">
+
+                No Other Charges
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </tbody>
+
 </table>
 
-<!-- ================= TOTALS ================= -->
-<p class="right">Subtotal: ₹ {{ subtotal }}</p>
 
-<p class="right">
-  CGST ({{ cgst_percent }}%): ₹ {{ cgst }}
-</p>
+<div style="margin-top:25px; display:flex; justify-content:space-between; align-items:flex-start;">
 
-<p class="right">
-  SGST ({{ sgst_percent }}%): ₹ {{ sgst }}
-</p>
+    <div style="width:60%;">
 
-{% if bill.discount > 0 %}
-<p class="right">
-  Discount ({{ bill.discount_percent }} %): ₹ {{ bill.discount }}
-</p>
-{% endif %}
+        {% if bill.remarks %}
 
-<h3 class="right">
-    Grand Total: ₹ {{ grand_total }}
-</h3>
+        <div style="border:1px solid #ccc;padding:12px;border-radius:6px;">
 
-{% if bill.advance_payment > 0 and bill.balance_amount > 0 %}
+            <strong>Remarks</strong>
 
-<p class="right">
-    Advance Payment: ₹ {{ bill.advance_payment }}
-</p>
+            <hr style="margin:8px 0;">
 
-<p class="right">
-    Balance Amount: ₹ {{ bill.balance_amount }}
-</p>
+            {{ bill.remarks }}
 
-{% endif %}
+        </div>
 
-<p class="right">
-  Payment Mode: {{ bill.payment_mode }}
-</p>
+        {% endif %}
 
-<p class="right">
-  Payment Status: {{ bill.payment_status }}
-</p>
+    </div>
 
-<!-- ================= FOOTER ================= -->
+    <!-- Bill Summary starts in Part 3 -->
+         <!-- ================= BILL SUMMARY ================= -->
+
+    <div class="summary">
+
+        <div class="summary-header">
+            Billing Summary
+        </div>
+
+        <table>
+
+            <tr>
+                <td>Subtotal</td>
+                <td class="right">₹ {{ subtotal|floatformat:2 }}</td>
+            </tr>
+
+            {% if bill.discount > 0 %}
+            <tr>
+                <td>Discount ({{ bill.discount_percent }}%)</td>
+                <td class="right">- ₹ {{ bill.discount|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
+
+            {% if cgst > 0 %}
+            <tr>
+                <td>CGST ({{ cgst_percent }}%)</td>
+                <td class="right">₹ {{ cgst|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
+
+            {% if sgst > 0 %}
+            <tr>
+                <td>SGST ({{ sgst_percent }}%)</td>
+                <td class="right">₹ {{ sgst|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
+
+            <tr style="background:#f6f6f6;">
+                <td><strong>Grand Total</strong></td>
+                <td class="right grand">
+                    ₹ {{ grand_total|floatformat:2 }}
+                </td>
+            </tr>
+
+            {% if bill.advance_payment %}
+            <tr>
+                <td>Advance Payment</td>
+                <td class="right">
+                    ₹ {{ bill.advance_payment|floatformat:2 }}
+                </td>
+            </tr>
+            {% endif %}
+
+            {% if bill.balance_amount %}
+            <tr>
+                <td>Balance Amount</td>
+                <td class="right">
+                    ₹ {{ bill.balance_amount|floatformat:2 }}
+                </td>
+            </tr>
+            {% endif %}
+
+            <tr>
+                <td>Payment Mode</td>
+                <td class="right">
+                    {{ bill.payment_mode }}
+                </td>
+            </tr>
+
+            <tr>
+                <td>Payment Status</td>
+                <td class="right">
+
+                    {% if bill.payment_status == "Paid" %}
+                        <span style="color:green;font-weight:bold;">
+                            {{ bill.payment_status }}
+                        </span>
+
+                    {% elif bill.payment_status == "Pending" %}
+                        <span style="color:#d97706;font-weight:bold;">
+                            {{ bill.payment_status }}
+                        </span>
+
+                    {% else %}
+                        {{ bill.payment_status }}
+                    {% endif %}
+
+                </td>
+            </tr>
+
+        </table>
+
+    </div>
+
+</div>
+
+<!-- ================= THANK YOU ================= -->
+
+<div style="clear:both;"></div>
+
+<div style="
+margin-top:35px;
+padding:12px;
+text-align:center;
+background:#edf8ef;
+border:1px solid #1b5e20;
+border-radius:6px;
+font-size:14px;
+">
+
+    <strong>
+        Thank You For Choosing {{ settings.hospital_name }}
+    </strong>
+
+    <br>
+
+    <span style="font-size:12px;">
+        We wish you a speedy recovery.
+    </span>
+
+</div>
+
+<!-- ================= PRINT ================= -->
+
 <div class="no-print">
-  <button onclick="window.print()">🖨 Print</button>
-  <a href="{% url 'billingmgmt:inpatientbilling' %}">⬅ Back</a>
+
+<button onclick="window.print()"
+style="
+background:#1b5e20;
+color:#fff;
+padding:10px 18px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+margin-right:10px;
+">
+
+🖨 Print Bill
+
+</button>
+
+<a href="{% url 'billingmgmt:inpatientbilling' %}"
+style="
+padding:10px 18px;
+border:1px solid #1b5e20;
+text-decoration:none;
+color:#1b5e20;
+border-radius:5px;
+">
+
+⬅ Back
+
+</a>
+
 </div>
 
 </body>

@@ -68,6 +68,9 @@ th { background:#f2f2f2; }
 {% endif %}
 |
 <strong>Date:</strong> {{ bill.visit_date|date:"d-m-Y" }}
+<strong>Mobile Number:</strong> {{ bill.patient.phone}}
+<strong>Address:</strong> {{ bill.patient.address }}
+
 </p>
 
 <!-- ================= ITEMS ================= -->
@@ -115,15 +118,11 @@ th { background:#f2f2f2; }
 </p>
 <h3 class="right">Total: ₹ {{ grand_total }}</h3>
 
-  <div class="footer" style="position: absolute;bottom: 0;text-align: center;width: 100%;">
-  This is a computer-generated Outpatient bill and does not require a signature
-</div>
-  <div class="no-print" style="text-align:center; margin-top:20px;">
+<!-- ================= ACTION ================= -->
+<div class="no-print">
   <button onclick="window.print()">🖨 Print</button>
-  <a href="{% url 'billingmgmt:outpatientbilling' %}"
-     style="padding:6px 12px;border:1px solid #000;text-decoration:none;color:#000;">
-     ⬅ Back
-  </a>
+  <a href="{% url 'billingmgmt:outpatientbilling' %}">⬅ Back</a>
 </div>
+
 </body>
 </html>

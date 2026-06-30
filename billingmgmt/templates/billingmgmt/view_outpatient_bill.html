@@ -56,6 +56,14 @@
           <strong>Bill Date:</strong><br>
           {{ bill.created_at|date:"d M Y, h:i A" }}
         </div>
+        <div class="col-md-4">
+          <strong>Mobile Number:</strong><br>
+          {{ bill.patient.phone }}
+        </div>
+        <div class="col-md-4">
+          <strong>Address:</strong><br>
+          {{ bill.patient.address }}
+        </div>
 
         <div class="col-md-4">
           <strong>Payment Status:</strong><br>
