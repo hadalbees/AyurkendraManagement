@@ -117,9 +117,10 @@ class PatientRegistrationView(LoginRequiredMixin, View):
 
         # Get all active doctors
         doctors = CustomUser.objects.filter(
-            role=doctor_role,
+            Q(role__role_name__icontains="Doctor") |
+            Q(role__role_name__icontains="Consultant"),
             is_active=True
-        ) if doctor_role else []
+        )
         
         # ✅ Get Active Departments
         departments = Department.objects.filter(status=True).order_by("department_name")
