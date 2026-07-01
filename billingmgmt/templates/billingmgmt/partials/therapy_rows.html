@@ -3,11 +3,15 @@
   <td>{{ forloop.counter }}</td>
   <td>{{ bill.bill_no }}</td>
   <td>
-    {% if bill.patient %}
-      {{ bill.patient.patient_name }}
+{% if bill.patient %}
+    {% if bill.patient.prefix|default:'' and bill.patient.prefix|last == '.' %}
+    {{ bill.patient.patient_name }}
     {% else %}
-      Walk-in
+        {{ bill.patient.patient_name }}
     {% endif %}
+{% else %}
+    {{ bill.walkin_name }}
+{% endif %}
   </td>
   <td>{{ bill.created_at|date:"d M Y, h:i A" }}</td>
   <td>₹{{ bill.total }}</td>
