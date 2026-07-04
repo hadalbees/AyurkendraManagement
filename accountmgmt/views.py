@@ -228,7 +228,7 @@ def income_list(request):
         b.bill_type = "Therapy"
         b.display_date = b.bill_date or date.min
         b.income_amount = (
-            b.total_amount
+            b.total
             if not b.advance_payment or b.advance_payment == 0
             else b.advance_payment
         )
