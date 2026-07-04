@@ -227,7 +227,11 @@ def income_list(request):
     for b in therapy_bills:
         b.bill_type = "Therapy"
         b.display_date = b.bill_date or date.min
-        b.income_amount = b.advance_payment
+        b.income_amount = (
+            b.total_amount
+            if not b.advance_payment or b.advance_payment == 0
+            else b.advance_payment
+        )
 
 
     # ---------------- MERGE ----------------
