@@ -1,453 +1,463 @@
 {% load static %}
 <!DOCTYPE html>
-
 <html lang="en">
 
 {% include "includes/head.html" %}
 
+<style>
+    body {
+        background-color: #f8f9fa !important;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .bg-custom-green {
+        background-color: #065f46 !important;
+    }
+
+    .text-custom-green {
+        color: #065f46 !important;
+    }
+
+    .btn-custom-green {
+        background-color: #065f46 !important;
+        color: #fff !important;
+        border: none;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 4px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-custom-green:hover {
+        background-color: #054835 !important;
+        color: #fff !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-outline-custom-green {
+        border: 1px solid #065f46 !important;
+        color: #065f46 !important;
+        background: transparent;
+        font-weight: 600;
+        border-radius: 4px;
+        padding: 8px 16px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-outline-custom-green:hover {
+        background-color: #e6f4ea !important;
+        color: #065f46 !important;
+    }
+
+    .hospital-table th {
+        background-color: #065f46 !important;
+        color: #ffffff !important;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 0.85rem;
+        padding: 12px 10px;
+        border: 1px solid #eef2f6;
+    }
+
+    .hospital-table td {
+        text-align: center;
+        vertical-align: middle;
+        padding: 12px 10px;
+        font-size: 0.85rem;
+        border: 1px solid #eef2f6;
+        color: #475569;
+    }
+
+    .hospital-table tbody tr:nth-of-type(even) {
+        background-color: #f8fafc;
+    }
+
+    .badge-status {
+        font-weight: 600;
+        font-size: 0.75rem;
+        padding: 6px 12px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-success-custom {
+        background-color: #d1e7dd !important;
+        color: #0f5132 !important;
+    }
+
+    .badge-warning-custom {
+        background-color: #fff3cd !important;
+        color: #664d03 !important;
+    }
+
+    .badge-danger-custom {
+        background-color: #f8d7da !important;
+        color: #842029 !important;
+    }
+</style>
+
 <body class="g-sidenav-show bg-gray-100">
 
-{% include "includes/sidebar.html" %}
-
-<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
-
-{% include "includes/header.html" %}
-
-<div class="container-fluid py-4">
-
-<div class="d-flex justify-content-between align-items-center mb-4">
-
-<div>
-
-<h2 class="fw-bold mb-1">
-
-{{ medicine.name }}
-
-</h2>
-
-<p class="text-muted">
-
-Medicine Stock Details
-
-</p>
-
-</div>
-
-<a href="{% url 'stockmgmt:stock_list' %}"
-
-class="btn btn-outline-dark rounded-pill">
-
-← Back
-
-</a>
-
-</div>
-
-<!-- Summary Cards -->
-
-<div class="row mb-4">
-
-<div class="col-lg-3">
-
-<div class="card shadow-sm border-0">
-
-<div class="card-body">
-
-<small class="text-muted">
-
-Total Quantity
-
-</small>
-
-<h3 class="fw-bold text-primary mt-2">
-
-{{ total_qty }}
-
-</h3>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-lg-3">
-
-<div class="card shadow-sm border-0">
-
-<div class="card-body">
-
-<small class="text-muted">
-
-Total Packs
-
-</small>
-
-<h3 class="fw-bold text-success mt-2">
-
-{{ total_packs }}
-
-</h3>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-lg-3">
-
-<div class="card shadow-sm border-0">
-
-<div class="card-body">
-
-<small class="text-muted">
-
-Total Batches
-
-</small>
-
-<h3 class="fw-bold text-danger mt-2">
-
-{{ total_batches }}
-
-</h3>
-
-</div>
-
-</div>
-
-</div>
-
-<div class="col-lg-3">
-
-<div class="card shadow-sm border-0">
-
-<div class="card-body">
-
-<small class="text-muted">
-
-Nearest Expiry
-
-</small>
-
-<h5 class="fw-bold text-warning mt-2">
-
-{% if nearest_expiry %}
-
-{{ nearest_expiry|date:"d-m-Y" }}
-
-{% else %}
-
--
-
-{% endif %}
-
-</h5>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-<!-- Medicine Information -->
-
-<div class="card shadow-sm border-0 mb-4">
-
-<div class="card-header bg-white">
-
-<h5 class="mb-0">
-
-Medicine Information
-
-</h5>
-
-</div>
-
-<div class="card-body">
-
-<div class="row">
-
-<div class="col-md-3">
-
-<label class="text-muted">
-
-Medicine
-
-</label>
-
-<h6>
-
-{{ medicine.name }}
-
-</h6>
-
-</div>
-
-<div class="col-md-3">
-
-<label class="text-muted">
-
-HSN Code
-
-</label>
-
-<h6>
-
-{{ medicine.hsn_code|default:"-" }}
-
-</h6>
-
-</div>
-
-<div class="col-md-2">
-
-<label class="text-muted">
-
-GST
-
-</label>
-
-<h6>
-
-{{ medicine.gst_percentage }} %
-
-</h6>
-
-</div>
-
-<div class="col-md-2">
-
-<label class="text-muted">
-
-Form Type
-
-</label>
-
-<h6>
-
-{{ medicine.get_form_type_display }}
-
-</h6>
-
-</div>
-
-<div class="col-md-2">
-
-<label class="text-muted">
-
-Reorder Level
-
-</label>
-
-<h6>
-
-{{ medicine.reorder_level }}
-
-</h6>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-<!-- Batch Table -->
-
-<div class="card shadow-sm border-0">
-
-<div class="card-header bg-white">
-
-<h5 class="mb-0">
-
-Batch Details
-
-</h5>
-
-</div>
-
-<div class="card-body p-0">
-
-<div class="table-responsive">
-
-<table class="table table-hover align-middle mb-0">
-
-<thead class="table-light">
-
-<tr>
-
-<th>S.No</th>
-
-<th>Batch No</th>
-
-<th>Supplier</th>
-
-<th>Manufacturer</th>
-
-<th>Qty</th>
-
-<th>Expiry</th>
-
-<th>Status</th>
-
-<th>Purchase</th>
-
-<th>Selling</th>
-
-<th>Action</th>
-
-</tr>
-
-</thead>
-
-<tbody>
-
-{% for stock in stocks %}
-
-<tr>
-
-<td>
-
-{{ forloop.counter }}
-
-</td>
-
-<td>
-
-<strong>
-
-{{ stock.batch_number }}
-
-</strong>
-
-</td>
-
-<td>
-
-{{ stock.supplier|default:"-" }}
-
-</td>
-
-<td>
-
-{{ stock.manufacturer|default:"-" }}
-
-</td>
-
-<td>
-
-{{ stock.total_base_quantity }}
-
-{{ stock.base_unit }}
-
-</td>
-
-<td>
-
-{% if stock.expiry_date %}
-
-{{ stock.expiry_date|date:"d-m-Y" }}
-
-{% else %}
-
--
-
-{% endif %}
-
-</td>
-
-<td>
-
-{% if stock.is_low_stock %}
-
-<span class="badge bg-danger">
-
-Low Stock
-
-</span>
-
-{% elif stock.is_near_expiry %}
-
-<span class="badge bg-warning text-dark">
-
-Near Expiry
-
-</span>
-
-{% else %}
-
-<span class="badge bg-success">
-
-Available
-
-</span>
-
-{% endif %}
-
-</td>
-
-<td>
-
-₹ {{ stock.unit_price }}
-
-</td>
-
-<td>
-
-₹ {{ stock.selling_price }}
-
-</td>
-
-<td>
-
-<a href="{% url 'stockmgmt:stock_update' stock.id %}"
-
-class="btn btn-sm btn-primary rounded-pill">
-
-Edit
-
-</a>
-
-</td>
-
-</tr>
-
-{% empty %}
-
-<tr>
-
-<td colspan="10"
-
-class="text-center py-5">
-
-No Batch Found
-
-</td>
-
-</tr>
-
-{% endfor %}
-
-</tbody>
-
-</table>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</main>
-
-{% include "includes/script.html" %}
+    {% include "includes/sidebar.html" %}
+
+    <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+
+        {% include "includes/header.html" %}
+
+        <div class="container-fluid py-4">
+
+            <!-- ================================================= -->
+            <!-- PAGE HEADER -->
+            <!-- ================================================= -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1 text-dark fs-4">Stock Details</h3>
+                    <p class="text-muted mb-0 small fw-semibold text-uppercase">
+                        Stock Management &gt; Stock Details
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'stockmgmt:stock_list' %}"
+                        class="btn btn-outline-custom-green d-flex align-items-center gap-2">
+                        <i class="fas fa-arrow-left"></i> Back to Stock List
+                    </a>
+                    {% if stocks.first %}
+                    <a href="{% url 'stockmgmt:stock_update' stocks.first.id %}"
+                        class="btn btn-custom-green d-flex align-items-center gap-2">
+                        <i class="fas fa-edit"></i> Edit Stock
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- ================================================= -->
+            <!-- SUMMARY CARDS -->
+            <!-- ================================================= -->
+            <div class="row g-3 mb-4">
+                <!-- Current Stock -->
+                <div class="col-xl-3 col-sm-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body p-3 d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 48px; height: 48px; background-color: #ecfdf5; color: #10b981; min-width: 48px;">
+                                <i class="fas fa-cubes fs-5"></i>
+                            </div>
+                            <div>
+                                <small class="text-muted fw-semibold d-block text-uppercase"
+                                    style="font-size: 0.65rem; letter-spacing: 0.5px;">Current Stock</small>
+                                <h4 class="fw-bold mb-0 text-success">{{ summary.total_qty|floatformat:2 }} <span
+                                        class="fs-6 fw-semibold text-muted">{{ base_unit }}</span></h4>
+                                <small class="text-muted" style="font-size: 0.75rem;">Available Quantity</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Batches -->
+                <div class="col-xl-3 col-sm-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body p-3 d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 48px; height: 48px; background-color: #f5f3ff; color: #8b5cf6; min-width: 48px;">
+                                <i class="fas fa-layer-group fs-5"></i>
+                            </div>
+                            <div>
+                                <small class="text-muted fw-semibold d-block text-uppercase"
+                                    style="font-size: 0.65rem; letter-spacing: 0.5px;">Total Batches</small>
+                                <h4 class="fw-bold mb-0 text-dark">{{ summary.batches }}</h4>
+                                <small class="text-muted" style="font-size: 0.75rem;">Active Batches</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Packs -->
+                <div class="col-xl-3 col-sm-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body p-3 d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 48px; height: 48px; background-color: #eff6ff; color: #3b82f6; min-width: 48px;">
+                                <i class="fas fa-box fs-5"></i>
+                            </div>
+                            <div>
+                                <small class="text-muted fw-semibold d-block text-uppercase"
+                                    style="font-size: 0.65rem; letter-spacing: 0.5px;">Total Packs</small>
+                                <h4 class="fw-bold mb-0 text-dark">{{ summary.total_packs|floatformat:2 }}</h4>
+                                <small class="text-muted" style="font-size: 0.75rem;">Total Packs</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nearest Expiry -->
+                <div class="col-xl-3 col-sm-6">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body p-3 d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                style="width: 48px; height: 48px; background-color: #fffbeb; color: #f59e0b; min-width: 48px;">
+                                <i class="fas fa-calendar-alt fs-5"></i>
+                            </div>
+                            <div>
+                                <small class="text-muted fw-semibold d-block text-uppercase"
+                                    style="font-size: 0.65rem; letter-spacing: 0.5px;">Nearest Expiry</small>
+                                <h4
+                                    class="fw-bold mb-0 {% if nearest_stock and nearest_stock.days_to_expiry < 30 %}text-danger{% else %}text-warning{% endif %}">
+                                    {{ nearest_expiry|date:"d-m-Y"|default:"-" }}
+                                </h4>
+                                <small
+                                    class="fw-semibold {% if nearest_stock and nearest_stock.days_to_expiry < 30 %}text-danger{% else %}text-muted{% endif %}"
+                                    style="font-size: 0.75rem;">
+                                    {% if nearest_stock %}
+                                    {{ nearest_stock.days_to_expiry }} Days Left
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================= -->
+            <!-- MEDICINE INFORMATION -->
+            <!-- ================================================= -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 border-bottom border-light">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-custom-green bg-opacity-10 text-success p-2 rounded">
+                            <i class="fas fa-prescription-bottle text-success fs-6"></i>
+                        </span>
+                        <h5 class="mb-0 fw-bold text-dark fs-6">Medicine Information</h5>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="row g-4 align-items-center mb-4">
+                        <!-- Medicine Image column -->
+                        <div class="col-md-2 d-flex justify-content-center">
+                            <div class="d-flex align-items-center justify-content-center bg-light rounded-3 p-3 shadow-sm border border-light"
+                                style="width: 130px; height: 160px;">
+                                <i class="fas fa-prescription-bottle-alt text-success" style="font-size: 4.5rem;"></i>
+                            </div>
+                        </div>
+
+                        <!-- Info details column -->
+                        <div class="col-md-10">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <h4 class="fw-bold mb-0 text-dark">{{ medicine.name }}</h4>
+                                <span
+                                    class="badge bg-success bg-opacity-10 text-success px-2.5 py-1 fs-8 rounded">Active</span>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-sm-3 col-6">
+                                    <small class="text-muted fw-semibold d-block small text-uppercase"
+                                        style="font-size: 0.65rem;">Form Type</small>
+                                    <span class="fw-bold text-dark">{{ medicine.get_form_type_display }}</span>
+                                </div>
+                                <div class="col-sm-3 col-6">
+                                    <small class="text-muted fw-semibold d-block small text-uppercase"
+                                        style="font-size: 0.65rem;">GST</small>
+                                    <span class="fw-bold text-dark">{{ medicine.gst_percentage }} %</span>
+                                </div>
+                                <div class="col-sm-3 col-6">
+                                    <small class="text-muted fw-semibold d-block small text-uppercase"
+                                        style="font-size: 0.65rem;">HSN Code</small>
+                                    <span class="fw-bold text-dark">{{ medicine.hsn_code|default:"-" }}</span>
+                                </div>
+                                <div class="col-sm-3 col-6">
+                                    <small class="text-muted fw-semibold d-block small text-uppercase"
+                                        style="font-size: 0.65rem;">Reorder Level</small>
+                                    <span class="fw-bold text-dark">{{ medicine.reorder_level }}</span>
+                                </div>
+                                <div class="col-sm-3 col-6 mt-3">
+                                    <small class="text-muted fw-semibold d-block small text-uppercase"
+                                        style="font-size: 0.65rem;">Ayurvedic Type</small>
+                                    <span class="fw-bold text-dark">{{ medicine.ayurvedic_type.name|default:"-" }}</span>
+                                </div>
+                                <div class="col-sm-9 col-12 mt-3">
+                                    <small class="text-muted fw-semibold d-block small text-uppercase"
+                                        style="font-size: 0.65rem;">Description</small>
+                                    <span class="text-muted">{{ medicine.description|default:"-" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================= -->
+            <!-- BATCH TABLE -->
+            <!-- ================================================= -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div
+                    class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom border-light">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-custom-green bg-opacity-10 text-success p-2 rounded">
+                            <i class="fas fa-layer-group text-success fs-6"></i>
+                        </span>
+                        <h5 class="mb-0 fw-bold text-dark fs-6">Batch Information</h5>
+                    </div>
+                    <span
+                        class="badge bg-light text-custom-green border border-success border-opacity-20 px-3 py-2 fs-7 rounded-pill">
+                        {{ summary.batches }} Batches
+                    </span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered hospital-table mb-0">
+                        <thead>
+                            <tr>
+                                <th width="60">#</th>
+                                <th>Batch No.</th>
+                                <th>Supplier</th>
+                                <th>Manufacturer</th>
+                                <th>Qty ({{ base_unit }})</th>
+                                <th>Packs</th>
+                                <th>Purchase Price</th>
+                                <th>Selling Price</th>
+                                <th>Expiry Date</th>
+                                <th>Status</th>
+                                <th width="100">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stock in stocks %}
+                            <tr class="align-middle">
+                                <td class="text-center">{{ forloop.counter }}</td>
+                                <td>
+                                    <div class="text-start ps-2">
+                                        <strong class="text-dark d-block">{{ stock.batch_number }}</strong>
+                                        <small class="text-muted" style="font-size: 0.72rem;">Added: {{ stock.created_at|date:"d-m-Y" }}</small>
+                                    </div>
+                                </td>
+                                <td>{{ stock.supplier.name|default:"-" }}</td>
+                                <td>{{ stock.manufacturer.name|default:"-" }}</td>
+                                <td>
+                                    <span class="fw-bold text-success">{{ stock.total_base_quantity|floatformat:2 }}
+                                        <span class="fs-8 text-muted fw-normal">{{ stock.base_unit }}</span></span>
+                                </td>
+                                <td>{{ stock.number_of_packs|floatformat:2 }}</td>
+                                <td class="fw-semibold text-dark">₹ {{ stock.unit_price|floatformat:2 }}</td>
+                                <td class="fw-semibold text-dark">₹ {{ stock.selling_price|floatformat:2 }}</td>
+                                <td>
+                                    {% if stock.expiry_date %}
+                                    <span class="fw-semibold text-dark d-block">{{ stock.expiry_date|date:"d-m-Y" }}</span>
+                                    <small
+                                        class="{% if stock.days_to_expiry < 30 %}text-danger fw-bold{% else %}text-muted{% endif %}"
+                                        style="font-size: 0.72rem;">
+                                        {{ stock.days_to_expiry }} Days Left
+                                    </small>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if stock.expiry_date and stock.expiry_date < today %} <span
+                                        class="badge badge-status badge-danger-custom">Expired</span>
+                                        {% elif stock.is_near_expiry %}
+                                        <span class="badge badge-status badge-warning-custom">Near Expiry</span>
+                                        {% elif stock.is_low_stock %}
+                                        <span class="badge badge-status badge-danger-custom">Low Stock</span>
+                                        {% else %}
+                                        <span class="badge badge-status badge-success-custom">Available</span>
+                                        {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex justify-content-center gap-1.5">
+                                        <a href="{% url 'stockmgmt:stock_update' stock.id %}"
+                                            class="btn btn-sm btn-light border px-2 py-1" title="Edit"
+                                            style="margin-bottom:0;">
+                                            <i class="fas fa-edit text-muted"></i>
+                                        </a>
+                                        <a href="{% url 'stockmgmt:stock_delete' stock.id %}"
+                                            class="btn btn-sm btn-light border px-2 py-1 text-danger"
+                                            onclick="return confirm('Delete this batch?');" title="Delete"
+                                            style="margin-bottom:0;">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="11" class="text-center py-5">
+                                    <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+                                    <h5>No Batch Available</h5>
+                                    <p class="text-muted">Add a new stock batch to begin inventory tracking.</p>
+                                    <a href="{% url 'stockmgmt:stock_add' %}" class="btn btn-custom-green rounded-pill">
+                                        <i class="fas fa-plus-circle me-1"></i> Add Batch
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bottom summary indicators -->
+            <div class="row g-3 mt-1">
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body text-center py-3.5">
+                            <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                                <span
+                                    class="badge bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center"
+                                    style="width: 28px; height: 28px;">
+                                    <i class="fas fa-file-invoice-dollar fs-8"></i>
+                                </span>
+                                <small class="text-muted fw-semibold text-uppercase"
+                                    style="font-size: 0.68rem; letter-spacing: 0.5px;">Total Purchase Value</small>
+                            </div>
+                            <h4 class="fw-bold text-custom-green mb-0">₹ {{ summary.total_purchase|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body text-center py-3.5">
+                            <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                                <span
+                                    class="badge bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center"
+                                    style="width: 28px; height: 28px;">
+                                    <i class="fas fa-wallet fs-8"></i>
+                                </span>
+                                <small class="text-muted fw-semibold text-uppercase"
+                                    style="font-size: 0.68rem; letter-spacing: 0.5px;">Total Selling Value</small>
+                            </div>
+                            <h4 class="fw-bold text-success mb-0">₹ {{ summary.total_selling|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body text-center py-3.5">
+                            <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                                <span
+                                    class="badge bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center"
+                                    style="width: 28px; height: 28px;">
+                                    <i class="fas fa-chart-line fs-8"></i>
+                                </span>
+                                <small class="text-muted fw-semibold text-uppercase"
+                                    style="font-size: 0.68rem; letter-spacing: 0.5px;">Estimated Profit</small>
+                            </div>
+                            <h4 class="fw-bold text-primary mb-0">₹ {{ estimated_profit|floatformat:2 }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    {% include "includes/script.html" %}
 
 </body>
 

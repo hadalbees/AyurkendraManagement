@@ -1,0 +1,153 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stock Inventory Report - {% now "d-m-Y" %}</title>
+    <!-- Google Fonts -->
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700,900" />
+    <!-- Main Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fff;
+            color: #2c2f38;
+            padding: 24px;
+        }
+        .report-header {
+            border-bottom: 3px solid #065f46;
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+        .report-title {
+            color: #065f46;
+            font-weight: 700;
+        }
+        .table th {
+            background-color: #065f46 !important;
+            color: #ffffff !important;
+            border: 1px solid #dee2e6 !important;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        .table td {
+            border: 1px solid #dee2e6 !important;
+            font-size: 0.85rem;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                padding: 0;
+            }
+            .table th {
+                background-color: #065f46 !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Print Control Buttons -->
+        <div class="d-flex justify-content-between align-items-center mb-4 no-print bg-light p-3 rounded border">
+            <div>
+                <h6 class="mb-0 fw-bold"><i class="fas fa-file-pdf text-danger me-2"></i>Print Preview</h6>
+                <small class="text-muted">Use the buttons on the right to print or close this window.</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button onclick="window.print();" class="btn btn-success px-4 py-2 fw-semibold">
+                    <i class="fas fa-print me-2"></i>Print / Save to PDF
+                </button>
+                <button onclick="window.close();" class="btn btn-outline-secondary px-4 py-2 fw-semibold">
+                    Close
+                </button>
+            </div>
+        </div>
+
+        <!-- Report Branding and Header -->
+        <div class="report-header d-flex justify-content-between align-items-end">
+            <div>
+                <h2 class="report-title mb-1">Aayur Kendra</h2>
+                <h5 class="text-secondary fw-semibold mb-0">Pharmacy Stock Inventory Report</h5>
+            </div>
+            <div class="text-end">
+                <p class="mb-1 small fw-bold">Date: {% now "d-m-Y H:i" %}</p>
+                <p class="mb-0 small text-muted">Total Distinct Items: {{ stocks|length }}</p>
+            </div>
+        </div>
+
+        <!-- Inventory Table -->
+        <table class="table table-bordered table-striped align-middle">
+            <thead>
+                <tr>
+                    <th width="60">#</th>
+                    <th class="text-start">Medicine Details</th>
+                    <th class="text-center">Stock</th>
+                    <th class="text-center">Purchase Price</th>
+                    <th class="text-center">Selling Price</th>
+                    <th class="text-center">Expiry Date</th>
+                    <th class="text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in stocks %}
+                <tr>
+                    <td class="text-center fw-semibold">{{ forloop.counter }}</td>
+                    <td>
+                        <div class="fw-bold text-dark">{{ stock.medicine__name }}</div>
+                        <div class="text-muted small">HSN: {{ stock.medicine__hsn_code|default:"-" }} | GST: {{ stock.medicine__gst_percentage }}%</div>
+                    </td>
+                    <td class="text-center fw-bold text-dark">
+                        {{ stock.total_qty|floatformat:2 }} <span class="text-muted fw-normal" style="font-size: 0.8rem;">{{ stock.base_unit }}</span>
+                    </td>
+                    <td class="text-center fw-semibold">₹ {{ stock.purchase_price|floatformat:2 }}</td>
+                    <td class="text-center fw-semibold">₹ {{ stock.selling_price|floatformat:2 }}</td>
+                    <td class="text-center text-muted fw-semibold">
+                        {% if stock.nearest_expiry %}
+                            {{ stock.nearest_expiry|date:"d-m-Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if stock.nearest_expiry and stock.nearest_expiry < today %}
+                            <span class="text-danger fw-bold">Expired</span>
+                        {% elif stock.total_qty == 0 %}
+                            <span class="text-secondary fw-bold">Zero Stock</span>
+                        {% elif stock.total_qty <= stock.medicine__reorder_level %}
+                            <span class="text-warning fw-bold">Low Stock</span>
+                        {% else %}
+                            <span class="text-success fw-bold">Available</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="fas fa-box-open fs-2 mb-2 d-block"></i>
+                        No inventory matching the current filters was found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- JavaScript to trigger system print dialog -->
+    <script>
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.print();
+            }, 300);
+        });
+    </script>
+</body>
+</html>

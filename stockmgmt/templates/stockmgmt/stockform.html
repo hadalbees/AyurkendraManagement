@@ -1,369 +1,571 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 {% include "includes/head.html" %}
 
+<style>
+    body {
+        background-color: #f8f9fa !important;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .bg-custom-green {
+        background-color: #065f46 !important;
+    }
+
+    .text-custom-green {
+        color: #065f46 !important;
+    }
+
+    .btn-custom-green {
+        background-color: #065f46 !important;
+        color: #fff !important;
+        border: none;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 4px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-custom-green:hover {
+        background-color: #054835 !important;
+        color: #fff !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-outline-custom-green {
+        border: 1px solid #065f46 !important;
+        color: #065f46 !important;
+        background: transparent;
+        font-weight: 600;
+        border-radius: 4px;
+        padding: 8px 16px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-outline-custom-green:hover {
+        background-color: #e6f4ea !important;
+        color: #065f46 !important;
+    }
+</style>
+
 <body class="g-sidenav-show bg-gray-100">
+
 {% include "includes/sidebar.html" %}
 
 <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+
 {% include "includes/header.html" %}
 
 <div class="container-fluid py-4">
-
-  <!-- PAGE HEADER -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h4 class="fw-bold mb-1">
-        {% if form.instance.pk %}Edit Stock{% else %}Add Stock{% endif %}
-      </h4>
-      <p class="text-muted text-sm mb-0">
-        Manage medicine stock, pack size and pricing
-      </p>
-    </div>
-
-    <a href="{% url 'stockmgmt:stock_list' %}"
-       class="btn btn-outline-secondary rounded-pill px-4">
-      ← Back
-    </a>
-  </div>
-
-  <!-- FORM CARD -->
-  <div class="card shadow-sm border-0">
-    <div class="card-body px-4 py-4">
-
-      <form method="post" novalidate>
-        {% csrf_token %}
-
-        <div class="row g-4">
-
-          {% for field in form %}
-          <div class="col-md-6">
-
-            <label class="form-label fw-semibold mb-1">
-              {{ field.label }}
-              {% if field.field.required %}
-                <span class="text-danger">*</span>
-              {% endif %}
-            </label>
-
-            <!-- SELECT FIELDS -->
-            {% if field.field.widget.input_type == "select" %}
-
-                {% if field.name == "medicine" %}
-<div class="position-relative">
-
-    <!-- Search Box -->
-    <input type="text"
-           id="medicineSearch"
-           class="form-control"
-           placeholder="Search medicine..."
-           autocomplete="off"
-           value="{% if form.instance.pk %}{{ form.instance.medicine.name }}{% endif %}">
-
-    <!-- Hidden Selected Medicine ID -->
-    <input type="hidden"
-           name="medicine"
-           id="medicineSelect"
-           value="{% if form.instance.pk %}{{ form.instance.medicine.id }}{% endif %}">
-
-    <!-- Dropdown -->
-    <div id="medicineDropdown"
-         class="list-group position-absolute w-100 shadow-sm"
-         style="
-            z-index: 9999;
-            max-height: 250px;
-            overflow-y: auto;
-            display: none;
-            top: 100%;
-            left: 0;
-         ">
-
-        {% for med in field.field.queryset %}
-        <button type="button"
-                class="list-group-item list-group-item-action medicine-item"
-                data-id="{{ med.id }}"
-                data-name="{{ med.name|escapejs }}"
-                data-gst="{{ med.gst_percentage }}">
-            <strong>{{ med.name }}</strong>
-            <br>
-            <small class="text-muted">
-                {{ med.form_type }} | GST {{ med.gst_percentage }}%
-            </small>
-        </button>
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% elif message.tags == 'info' %}alert-info{% else %}alert-secondary{% endif %} alert-dismissible fade show shadow-sm" role="alert">
+                <i class="{% if message.tags == 'success' %}fas fa-check-circle{% elif message.tags == 'error' %}fas fa-times-circle{% elif message.tags == 'warning' %}fas fa-exclamation-triangle{% elif message.tags == 'info' %}fas fa-info-circle{% else %}fas fa-bell{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
         {% endfor %}
-
     </div>
+    {% endif %}
 
-</div>
+    <!-- Form layout wrapper -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 border-bottom border-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="fw-bold mb-1 text-dark fs-4">
+                        {% if object %}Edit Stock{% else %}Add Stock / Medicine Stock Entry{% endif %}
+                    </h3>
+                    <p class="text-muted mb-0 small fw-semibold text-uppercase">
+                        Stock Management &gt; {% if object %}Edit Stock{% else %}Add Stock{% endif %}
+                    </p>
+                </div>
+                <div>
+                    <a href="{% url 'stockmgmt:stock_list' %}" class="btn btn-outline-custom-green d-flex align-items-center gap-2">
+                        <i class="fas fa-arrow-left"></i> Back to Stock List
+                    </a>
+                </div>
+            </div>
+        </div>
 
-                {% elif field.name == "base_unit" %}
-                <select name="base_unit" class="form-select">
-                    <option value="">Select Base Unit</option>
-                    {% for key, value in field.field.choices %}
-                        <option value="{{ key }}"
-                            {% if field.value == key %}selected{% endif %}>
-                            {{ value }}
-                        </option>
-                    {% endfor %}
-                </select>
+        <div class="card-body bg-light-gray p-4">
+            {% if object %}
+            <form method="post" action="{% url 'stockmgmt:stock_update' object.id %}">
+            {% else %}
+            <form method="post" action="{% url 'stockmgmt:stock_add' %}">
+            {% endif %}
+            {% csrf_token %}
+            <input type="hidden" id="is_edit" value="{% if view.object %}1{% else %}0{% endif %}">
 
-                {% else %}
-                <select name="{{ field.name }}" class="form-select">
-                    {% for obj in field.field.queryset %}
-                        <option value="{{ obj.id }}"
-                            {% if field.value|stringformat:"s" == obj.id|stringformat:"s" %}selected{% endif %}>
-                            {{ obj }}
-                        </option>
-                    {% endfor %}
-                </select>
+            <!-- Today's Date, User, Godown, Currency Stats row -->
+            <div class="row g-3 mb-4">
+                <div class="col-xl-3 col-sm-6">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body p-3">
+                            <div class="row align-items-center">
+                                <div class="col-8">
+                                    <p class="text-xs mb-0 text-uppercase font-weight-bold text-muted small">Today's Date</p>
+                                    <h6 class="font-weight-bolder mb-0 text-dark">{% now "d M Y" %}</h6>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <div class="icon bg-success bg-opacity-10 text-center rounded-circle d-flex align-items-center justify-content-center ms-auto" style="width: 48px; height: 48px;">
+                                        <i class="fas fa-calendar-alt text-success fs-5"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-sm-6">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body p-3">
+                            <div class="row align-items-center">
+                                <div class="col-8">
+                                    <p class="text-xs mb-0 text-uppercase font-weight-bold text-muted small">User</p>
+                                    <h6 class="font-weight-bolder mb-0 text-dark">{{ request.user.username|default:"Administrator" }}</h6>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <div class="icon bg-info bg-opacity-10 text-center rounded-circle d-flex align-items-center justify-content-center ms-auto" style="width: 48px; height: 48px;">
+                                        <i class="fas fa-user text-info fs-5"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-sm-6">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body p-3">
+                            <div class="row align-items-center">
+                                <div class="col-8">
+                                    <p class="text-xs mb-0 text-uppercase font-weight-bold text-muted small">Godown</p>
+                                    <h6 class="font-weight-bolder mb-0 text-dark">Main Store</h6>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <div class="icon bg-primary bg-opacity-10 text-center rounded-circle d-flex align-items-center justify-content-center ms-auto" style="width: 48px; height: 48px;">
+                                        <i class="fas fa-warehouse text-primary fs-5"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-sm-6">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body p-3">
+                            <div class="row align-items-center">
+                                <div class="col-8">
+                                    <p class="text-xs mb-0 text-uppercase font-weight-bold text-muted small">Currency</p>
+                                    <h6 class="font-weight-bolder mb-0 text-dark">INR (₹)</h6>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <div class="icon bg-danger bg-opacity-10 text-center rounded-circle d-flex align-items-center justify-content-center ms-auto" style="width: 48px; height: 48px;">
+                                        <i class="fas fa-rupee-sign text-danger fs-5"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main grid split layout -->
+            <div class="row g-4">
+                <!-- Left column -->
+                <div class="col-lg-7">
+                    <!-- Medicine Information Card -->
+                    <div class="card shadow-sm border-0 mb-4">
+                        <div class="card-header bg-custom-green text-white py-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-white text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.85rem;">1</span>
+                                <h5 class="mb-0 fw-bold text-white fs-6">Medicine Information</h5>
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3">
+                                <!-- Medicine Autocomplete Search -->
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-muted small mb-1">Medicine <span class="text-danger">*</span></label>
+                                    <div class="position-relative">
+                                        <input type="text" id="medicineSearch" class="form-control" autocomplete="off" placeholder="Search medicine name / type to search..." value="{{ object.medicine.name }}" required>
+                                        <input type="hidden" id="id_medicine" name="medicine" value="{{ object.medicine.id }}">
+                                        
+                                        <!-- Keep hidden input for medicine_name to satisfy js binding -->
+                                        <input type="hidden" id="medicine_name" value="{{ object.medicine.name }}">
+
+                                        <div id="medicineDropdown" class="list-group position-absolute w-100 shadow-lg border border-light rounded-3 mt-1" style="display:none; max-height:250px; overflow-y:auto; z-index:9999;">
+                                            {% for med in medicines %}
+                                            <button type="button" class="list-group-item list-group-item-action medicine-item py-2 px-3 border-bottom border-light"
+                                                data-id="{{ med.id }}"
+                                                data-name="{{ med.name }}"
+                                                data-form="{{ med.form_type }}"
+                                                data-hsn="{{ med.hsn_code }}"
+                                                data-gst="{{ med.gst_percentage }}"
+                                                data-reorder="{{ med.reorder_level }}"
+                                                data-expiry="{{ med.expiry_days_alert }}"
+                                                data-stock="{{ med.stock_total }}"
+                                                data-ayurvedic="{{ med.ayurvedic_type.name|default:'' }}"
+                                                data-description="{{ med.description|default:'' }}">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong class="text-dark d-block mb-1">{{ med.name }}</strong>
+                                                        <span class="badge bg-light text-muted fw-semibold small">{{ med.form_type }}</span>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-custom-green text-white mb-1">GST {{ med.gst_percentage }}%</span>
+                                                        <small class="text-muted d-block fw-semibold">Stock: {{ med.stock_total }}</small>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- HSN Code -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">HSN Code</label>
+                                    <input type="text" id="medicine_hsn" class="form-control bg-light text-muted" value="{{ object.medicine.hsn_code }}" readonly placeholder="Enter HSN Code">
+                                </div>
+                                
+                                <!-- Ayurvedic Type -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Ayurvedic Type</label>
+                                    <input type="text" id="medicine_ayurvedic" class="form-control bg-light text-muted" value="{{ object.medicine.ayurvedic_type.name|default:'' }}" readonly placeholder="Select Ayurvedic Type">
+                                </div>
+                                
+                                <!-- Medicine Form -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Medicine Form</label>
+                                    <input type="text" id="medicine_form" class="form-control bg-light text-muted" value="{{ object.medicine.get_form_type_display }}" readonly placeholder="Select Form">
+                                </div>
+                                
+                                <!-- Description -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Description</label>
+                                    <input type="text" id="medicine_description" class="form-control bg-light text-muted" value="{{ object.medicine.description|default:'' }}" readonly placeholder="Enter description (optional)">
+                                </div>
+                                
+                                <!-- GST % -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">GST %</label>
+                                    <input type="text" id="medicine_gst" class="form-control bg-light text-muted" value="{{ object.medicine.gst_percentage }}" readonly placeholder="Select GST %">
+                                </div>
+                                
+                                <!-- Expiry Alert (Days) -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Expiry Alert (Days)</label>
+                                    <input type="text" id="medicine_expiry" class="form-control bg-light text-muted" value="{% if object.medicine %}{{ object.medicine.expiry_days_alert }} Days{% endif %}" readonly placeholder="Enter days for expiry alert">
+                                </div>
+                                
+                                <!-- Reorder Level -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Reorder Level</label>
+                                    <input type="text" id="medicine_reorder" class="form-control bg-light text-muted" value="{{ object.medicine.reorder_level }}" readonly placeholder="Enter reorder level">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Purchase Details Card -->
+                    <div class="card shadow-sm border-0 mb-4">
+                        <div class="card-header text-white py-3" style="background-color: #f59e0b !important;">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-white text-warning rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.85rem;">3</span>
+                                <h5 class="mb-0 fw-bold text-white fs-6">Purchase Details</h5>
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3">
+                                <!-- Pack Size -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Pack Size <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" id="id_pack_size" name="pack_size" class="form-control" value="{{ object.pack_size }}" placeholder="Enter pack size" required>
+                                    <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Example: 450 ml / 100 gm / 10 tablets</small>
+                                </div>
+                                
+                                <!-- Number of Packs -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Number of Packs <span class="text-danger">*</span></label>
+                                    <input type="number" step="0.01" id="id_number_of_packs" name="number_of_packs" class="form-control" value="{{ object.number_of_packs }}" placeholder="Enter number of packs" required>
+                                </div>
+                                
+                                <!-- Purchase Price / Pack -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Purchase Price / Pack <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light text-muted border-end-0">₹</span>
+                                        <input type="number" step="0.01" id="id_unit_price" name="unit_price" class="form-control border-start-0 ps-1" value="{{ object.unit_price }}" placeholder="Enter purchase price" required>
+                                    </div>
+                                </div>
+                                
+                                <!-- Selling Price / Pack -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Selling Price / Pack <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light text-muted border-end-0">₹</span>
+                                        <input type="number" step="0.01" id="id_selling_price" name="selling_price" class="form-control border-start-0 ps-1" value="{{ object.selling_price }}" placeholder="Enter selling price" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right column -->
+                <div class="col-lg-5">
+                    <!-- Batch Information Card -->
+                    <div class="card shadow-sm border-0 mb-4">
+                        <div class="card-header bg-primary text-white py-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-white text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.85rem;">2</span>
+                                <h5 class="mb-0 fw-bold text-white fs-6">Batch Information</h5>
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3">
+                                <!-- Batch Number -->
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-muted small mb-1">Batch Number <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="text" id="batch_number" name="batch_number" class="form-control" placeholder="Enter batch number" value="{{ object.batch_number }}" required>
+                                        <button class="btn btn-custom-green mb-0" type="button" id="btn-generate-batch">
+                                            <i class="fas fa-cog me-1"></i> Auto Generate
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Mfg Date -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Mfg. Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="manufacture_date" name="manufacture_date" value="{% if object.manufacture_date %}{{ object.manufacture_date|date:'Y-m-d' }}{% endif %}" required>
+                                </div>
+                                
+                                <!-- Expiry Date -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Expiry Date <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="expiry_date" name="expiry_date" value="{% if object.expiry_date %}{{ object.expiry_date|date:'Y-m-d' }}{% endif %}" required>
+                                </div>
+                                
+                                <!-- Supplier -->
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-muted small mb-1">Supplier <span class="text-danger">*</span></label>
+                                    <select id="supplier" name="supplier" class="form-select" required>
+                                        <option value="">Select Supplier</option>
+                                        {% for supplier in suppliers %}
+                                        <option value="{{ supplier.id }}" {% if object.supplier and supplier.id == object.supplier.id %}selected{% endif %}>
+                                            {{ supplier.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <!-- Manufacturer -->
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-muted small mb-1">Manufacturer <span class="text-danger">*</span></label>
+                                    <select id="manufacturer" name="manufacturer" class="form-select" required>
+                                        <option value="">Select Manufacturer</option>
+                                        {% for manufacturer in manufacturers %}
+                                        <option value="{{ manufacturer.id }}" {% if object.manufacturer and manufacturer.id == object.manufacturer.id %}selected{% endif %}>
+                                            {{ manufacturer.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <!-- Base Unit -->
+                                <div class="col-12">
+                                    <label class="form-label fw-bold text-muted small mb-1">Base Unit <span class="text-danger">*</span></label>
+                                    <select id="base_unit" name="base_unit" class="form-select" required>
+                                        <option value="ml" {% if object.base_unit == "ml" %}selected{% endif %}>Millilitre (ml)</option>
+                                        <option value="g" {% if object.base_unit == "g" %}selected{% endif %}>Gram (g)</option>
+                                        <option value="piece" {% if object.base_unit == "piece" %}selected{% endif %}>Piece / Tablet</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Stock Summary (Auto Calculated) Card -->
+                    <div class="card shadow-sm border-0 mb-4">
+                        <div class="card-header text-white py-3" style="background-color: #ef4444 !important;">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-white text-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 0.85rem;">4</span>
+                                <h5 class="mb-0 fw-bold text-white fs-6">Stock Summary (Auto Calculated)</h5>
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-3">
+                                <!-- Total Base Quantity -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Total Base Quantity</label>
+                                    <input type="text" id="stock_added" class="form-control bg-light" readonly value="{{ object.total_base_quantity|default:'0.00' }}">
+                                </div>
+                                
+                                <!-- Price / Base Unit -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Price / Base Unit</label>
+                                    <input type="text" id="price_per_unit" class="form-control bg-light" readonly value="{{ object.price_per_base_unit|default:'0.00' }}">
+                                </div>
+                                
+                                <!-- Purchase Value -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Purchase Value</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light text-muted border-end-0">₹</span>
+                                        <input type="text" id="purchase_total" class="form-control bg-light border-start-0 ps-1" readonly value="{{ object.unit_price|default:'0.00' }}">
+                                    </div>
+                                </div>
+                                
+                                <!-- GST Amount -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">GST Amount</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light text-muted border-end-0">₹</span>
+                                        <input type="text" id="gst_amount" class="form-control bg-light border-start-0 ps-1" readonly value="{{ object.gst_amount|default:'0.00' }}">
+                                    </div>
+                                </div>
+                                
+                                <!-- Total Cost (After GST) -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Total Cost (After GST)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light text-muted border-end-0">₹</span>
+                                        <input type="text" id="cost_after_gst" class="form-control bg-light border-start-0 ps-1" readonly value="{{ object.unit_price|default:'0.00' }}">
+                                    </div>
+                                </div>
+                                
+                                <!-- Profit / Pack -->
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-muted small mb-1">Profit / Pack</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light text-muted border-end-0">₹</span>
+                                        <div class="form-control bg-light border-start-0 ps-1" readonly style="line-height: 1.5;">
+                                            <span id="profit_card">
+                                                {% if view.object %}
+                                                    {{ object.selling_price|add:"-0"|floatformat:2 }}
+                                                {% else %}
+                                                    0.00
+                                                {% endif %}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Note Alert Banner -->
+            <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4 py-3" style="background-color: #eff6ff; color: #1e40af;">
+                <i class="fas fa-info-circle fa-lg me-3"></i>
+                <div class="fw-semibold small">
+                    Note: Stock quantity and values are calculated automatically based on the details provided above.
+                </div>
+            </div>
+
+            <!-- Footer Action Buttons -->
+            <div class="d-flex justify-content-end gap-3 pt-3 border-top border-light">
+                <a href="{% url 'stockmgmt:stock_list' %}" class="btn btn-light border text-secondary btn-lg px-4 fs-6 fw-semibold">
+                    Cancel
+                </a>
+                
+                {% if not object %}
+                <button type="submit" name="save_add" value="1" class="btn btn-outline-custom-green btn-lg px-4 fs-6">
+                    <i class="fas fa-plus-circle me-1"></i> Save &amp; Add Another
+                </button>
                 {% endif %}
 
-            <!-- DATE FIELDS -->
-            {% elif field.name == "manufacture_date" or field.name == "expiry_date" %}
-                <input type="date"
-                       name="{{ field.name }}"
-                       value="{% if field.value %}{{ field.value|date:'Y-m-d' }}{% endif %}"
-                       class="form-control">
+                <button type="submit" class="btn btn-custom-green btn-lg px-5 fs-6 shadow-sm">
+                    {% if object %}
+                        <i class="fas fa-edit me-1"></i> Update Stock
+                    {% else %}
+                        <i class="fas fa-save me-1"></i> Save Stock
+                    {% endif %}
+                </button>
+            </div>
 
-            <!-- OTHER INPUT FIELDS -->
-            {% else %}
-                <input type="{{ field.field.widget.input_type|default:'text' }}"
-                       name="{{ field.name }}"
-                       value="{{ field.value|default:'' }}"
-                       class="form-control"
-                       placeholder="{{ field.label }}">
-            {% endif %}
+            <!-- Hidden inputs/outputs to satisfy stock_add.js DOM element bindings -->
+            <div style="display: none;">
+                <span id="current_stock">0</span>
+                <span id="added_stock">0</span>
+                <span id="total_stock">0</span>
+                <span id="purchase_price_card">0.00</span>
+                <span id="selling_price_card">0.00</span>
+                <span id="gst_percent">0</span>
+            </div>
 
-            {% if field.help_text %}
-              <small class="text-muted d-block mt-1">
-                {{ field.help_text }}
-              </small>
-            {% endif %}
-
-            {% for error in field.errors %}
-              <div class="text-danger small mt-1">
-                {{ error }}
-              </div>
-            {% endfor %}
-
-          </div>
-          {% endfor %}
-
-          <!-- GST Preview Section -->
-          <div class="col-md-6">
-            <label class="form-label fw-semibold mb-1">GST %</label>
-            <input type="text" id="gst_percentage_preview"
-                   class="form-control bg-light" readonly>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold mb-1">GST Amount (Extracted)</label>
-            <input type="text" id="gst_amount_preview"
-                   class="form-control bg-light" readonly>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold mb-1">Auto Selling Price (GST Included)</label>
-            <input type="text" id="auto_selling_preview"
-                   class="form-control bg-light" readonly>
-          </div>
-
+            </form>
         </div>
-
-        <!-- ACTION BUTTONS -->
-        <div class="d-flex justify-content-end gap-3 mt-5">
-          <a href="{% url 'stockmgmt:stock_list' %}"
-             class="btn btn-outline-secondary px-4">
-            Cancel
-          </a>
-
-          <button type="submit"
-                  class="btn bg-gradient-dark px-4">
-            {% if form.instance.pk %}Update Stock{% else %}Save Stock{% endif %}
-          </button>
-        </div>
-
-      </form>
-
     </div>
-  </div>
-
 </div>
+
 </main>
 
 {% include "includes/script.html" %}
-
-<!-- GST + Selling Auto Logic -->
+<script src="{% static 'js/stock_add.js' %}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    // Alert auto close
+    setTimeout(function () {
+        document.querySelectorAll(".alert").forEach(function (alert) {
+            alert.classList.remove("show");
+            alert.classList.add("fade");
+            setTimeout(function () {
+                alert.remove();
+            }, 300);
+        });
+    }, 5000);
 
-    const medicineSearch = document.getElementById("medicineSearch");
-    const medicineSelect = document.getElementById("medicineSelect");
-    const medicineDropdown = document.getElementById("medicineDropdown");
-
-    const unitPriceInput = document.querySelector('[name="unit_price"]');
-    const sellingInput = document.querySelector('[name="selling_price"]');
-
-    const gstPercentPreview = document.getElementById("gst_percentage_preview");
-    const gstAmountPreview = document.getElementById("gst_amount_preview");
-    const autoSellingPreview = document.getElementById("auto_selling_preview");
-
-    let userEditedSelling = false;
-
-    // =====================================
-    // SELLING PRICE MANUAL EDIT
-    // =====================================
-    if (sellingInput) {
-        sellingInput.addEventListener("input", function () {
-            userEditedSelling = true;
+    // Auto-generate batch number
+    const btnGen = document.getElementById("btn-generate-batch");
+    if (btnGen) {
+        btnGen.addEventListener("click", function() {
+            const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+            const randomNum = Math.floor(1000 + Math.random() * 9000);
+            document.getElementById("batch_number").value = "BAT-" + dateStr + "-" + randomNum;
+            
+            // Trigger input/change on batch_number to satisfy any listeners
+            const event = new Event("change");
+            document.getElementById("batch_number").dispatchEvent(event);
         });
     }
 
-    // =====================================
-    // MEDICINE SEARCH
-    // =====================================
-    if (medicineSearch && medicineDropdown) {
-
-        function showDropdown() {
-            medicineDropdown.style.display = "block";
-        }
-
-        function hideDropdown() {
-            setTimeout(() => {
-                medicineDropdown.style.display = "none";
-            }, 200);
-        }
-
-        function filterMedicines() {
-            const keyword = medicineSearch.value.toLowerCase().trim();
-            const items = medicineDropdown.querySelectorAll(".medicine-item");
-
-            let visibleCount = 0;
-
-            items.forEach(item => {
-                const text = item.innerText.toLowerCase();
-
-                if (text.includes(keyword)) {
-                    item.style.display = "block";
-                    visibleCount++;
-                } else {
-                    item.style.display = "none";
+    // Populate description and category/ayurvedic type on medicine change
+    const medHidden = document.getElementById("id_medicine");
+    if (medHidden) {
+        const handleMedChange = function() {
+            const selectedMedId = medHidden.value;
+            if (selectedMedId) {
+                const btn = document.querySelector(`.medicine-item[data-id="${selectedMedId}"]`);
+                if (btn) {
+                    const ayurvedic = btn.dataset.ayurvedic || "";
+                    const description = btn.dataset.description || "";
+                    
+                    const ayurvedicInput = document.getElementById("medicine_ayurvedic");
+                    if (ayurvedicInput) ayurvedicInput.value = ayurvedic;
+                    
+                    const descInput = document.getElementById("medicine_description");
+                    if (descInput) descInput.value = description;
                 }
-            });
+            } else {
+                const ayurvedicInput = document.getElementById("medicine_ayurvedic");
+                if (ayurvedicInput) ayurvedicInput.value = "";
+                
+                const descInput = document.getElementById("medicine_description");
+                if (descInput) descInput.value = "";
+            }
+        };
 
-            medicineDropdown.style.display =
-                visibleCount > 0 ? "block" : "none";
-        }
-
-        medicineSearch.addEventListener("focus", function () {
-            showDropdown();
-            filterMedicines();
-        });
-
-        medicineSearch.addEventListener("input", function () {
-            medicineSelect.value = "";
-            filterMedicines();
-        });
-
-        medicineSearch.addEventListener("blur", hideDropdown);
-
-        // Select medicine
-        medicineDropdown
-            .querySelectorAll(".medicine-item")
-            .forEach(item => {
-                item.addEventListener("click", function () {
-
-                    const medId = this.dataset.id;
-                    const medName = this.dataset.name;
-                    const gst = this.dataset.gst;
-
-                    medicineSearch.value = medName;
-                    medicineSelect.value = medId;
-
-                    // Save GST on hidden input
-                    medicineSelect.dataset.gst = gst;
-
-                    medicineDropdown.style.display = "none";
-
-                    calculateGST();
-                });
-            });
+        medHidden.addEventListener("change", handleMedChange);
+        // Trigger initial load check
+        handleMedChange();
     }
-
-    // =====================================
-    // GST CALCULATION
-    // =====================================
-    function calculateGST() {
-
-        if (!medicineSelect || !unitPriceInput) return;
-
-        const gstPercent =
-            parseFloat(medicineSelect.dataset.gst) || 0;
-
-        const unitPrice =
-            parseFloat(unitPriceInput.value) || 0;
-
-        let gstAmount = 0;
-
-        if (gstPercent > 0) {
-            gstAmount =
-                (unitPrice * gstPercent) /
-                (100 + gstPercent);
-        }
-
-        if (gstPercentPreview) {
-            gstPercentPreview.value =
-                gstPercent.toFixed(2) + " %";
-        }
-
-        if (gstAmountPreview) {
-            gstAmountPreview.value =
-                gstAmount.toFixed(2);
-        }
-
-        // Auto-fill selling price if not manually edited
-        if (!userEditedSelling && sellingInput) {
-            sellingInput.value =
-                unitPrice.toFixed(2);
-        }
-
-        if (autoSellingPreview) {
-            autoSellingPreview.value =
-                sellingInput
-                    ? sellingInput.value
-                    : unitPrice.toFixed(2);
-        }
-    }
-
-    // =====================================
-    // UNIT PRICE CHANGE
-    // =====================================
-    if (unitPriceInput) {
-        unitPriceInput.addEventListener(
-            "input",
-            calculateGST
-        );
-    }
-
-    // =====================================
-    // EDIT MODE SUPPORT
-    // =====================================
-    if (medicineSelect && medicineSelect.value) {
-        const selectedButton =
-            medicineDropdown.querySelector(
-                `.medicine-item[data-id="${medicineSelect.value}"]`
-            );
-
-        if (selectedButton) {
-            medicineSelect.dataset.gst =
-                selectedButton.dataset.gst;
-        }
-    }
-
-    calculateGST();
 });
 </script>
-
 </body>
 </html>

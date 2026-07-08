@@ -1,503 +1,638 @@
 {% load static %}
+
 <!DOCTYPE html>
 <html lang="en">
+
 {% include "includes/head.html" %}
+
+<style>
+    body {
+        background-color: #f8f9fa !important;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .bg-custom-green {
+        background-color: #065f46 !important;
+    }
+
+    .text-custom-green {
+        color: #065f46 !important;
+    }
+
+    .btn-custom-green {
+        background-color: #065f46 !important;
+        color: #fff !important;
+        border: none;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 4px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-custom-green:hover {
+        background-color: #054835 !important;
+        color: #fff !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-outline-custom-green {
+        border: 1px solid #065f46 !important;
+        color: #065f46 !important;
+        background: transparent;
+        font-weight: 600;
+        border-radius: 4px;
+        padding: 6px 12px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-outline-custom-green:hover {
+        background-color: #e6f4ea !important;
+        color: #065f46 !important;
+    }
+
+    .hospital-table th {
+        background-color: #065f46 !important;
+        color: #ffffff !important;
+        font-weight: 600;
+        text-align: center;
+        vertical-align: middle;
+        font-size: 0.85rem;
+        padding: 12px 10px;
+        border: 1px solid #dee2e6;
+    }
+
+    .hospital-table td {
+        vertical-align: middle;
+        padding: 12px 10px;
+        font-size: 0.85rem;
+        border: 1px solid #dee2e6;
+    }
+
+    .hospital-table tbody tr:nth-of-type(even) {
+        background-color: #f8f9fa;
+    }
+
+    .no-caret::after {
+        display: none !important;
+    }
+
+    .page-link.text-success {
+        color: #065f46 !important;
+    }
+
+    .page-link.text-success:hover {
+        background-color: #e6f4ea !important;
+        border-color: #dee2e6 !important;
+    }
+
+    .pagination .active .page-link {
+        background-color: #065f46 !important;
+        border-color: #065f46 !important;
+        color: white !important;
+    }
+</style>
 
 <body class="g-sidenav-show bg-gray-100">
 
-{% include "includes/sidebar.html" %}
+    {% include "includes/sidebar.html" %}
 
-<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
-{% include "includes/header.html" %}
+    <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
 
-<div class="container-fluid py-4 list-page">
+        {% include "includes/header.html" %}
 
-  <!-- PAGE HEADER -->
-   {% if messages %}
-  <div class="container mt-3">
-    {% for message in messages %}
-      <div class="alert 
-        {% if message.tags == 'error' %}alert-danger
-        {% elif message.tags == 'success' %}alert-success
-        {% elif message.tags == 'warning' %}alert-warning
-        {% else %}alert-info{% endif %} 
-        alert-dismissible fade show">
+        <div class="container-fluid py-4">
 
-        {{ message }}
+            <!-- ========================================= -->
+            <!-- PAGE HEADER -->
+            <!-- ========================================= -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold mb-1 text-dark">Pharmacy Stock Management</h2>
+                    <p class="text-muted mb-0">Manage medicine inventory, batches, suppliers and expiry</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-custom-green px-3 rounded" data-bs-toggle="modal"
+                        data-bs-target="#medicineModal">
+                        <i class="fas fa-plus me-2"></i> Add Medicine
+                    </button>
+                    <a href="{% url 'stockmgmt:stock_add' %}" class="btn btn-custom-green px-3 rounded">
+                        <i class="fas fa-plus me-2"></i> Add Stock
+                    </a>
+                    <button class="btn btn-outline-custom-green px-3 rounded" data-bs-toggle="modal"
+                        data-bs-target="#importModal">
+                        <i class="fas fa-file-import me-2"></i> Bulk Import
+                    </button>
+                </div>
+            </div>
 
-        <button type="button"
-                class="btn-close"
-                data-bs-dismiss="alert">
-        </button>
+            <!-- ========================================= -->
+            <!-- SEARCH & FILTERS -->
+            <!-- ========================================= -->
+            <form method="get" id="filterForm" class="mb-4">
+                <input type="hidden" name="quick_filter" value="{{ quick_filter }}">
+                <input type="hidden" name="sort_by" value="{{ sort_by }}">
 
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h4 class="fw-bold mb-1">Stock & Inventory</h4>
-      <p class="text-muted text-sm mb-0">
-        Manage medicine stock, expiry, and availability
-      </p>
-    </div>
+                <div class="card shadow-sm border-0">
+                    <div class="card-body p-3">
+                        <div class="row g-2 align-items-end">
+                            <!-- Search input -->
+                            <div class="col-lg-9 col-md-8">
+                                <label class="form-label small text-muted fw-bold mb-1">Search Medicine / HSN
+                                    Code</label>
+                                <input type="text" class="form-control" name="q" value="{{ q }}"
+                                    placeholder="Search Medicine Name / HSN...">
+                            </div>
 
-    <div class="d-flex gap-2">
-      <a href="{% url 'stockmgmt:stock_add' %}"
-         class="btn btn-success rounded-pill px-4"
-         style="background:#c1e7d2;color:#065f46;">
-        + Add Stock
-      </a>
+                            <!-- Actions -->
+                            <div class="col-lg-3 col-md-4 d-flex gap-2">
+                                <button type="submit" class="btn btn-custom-green flex-grow-1 mb-0 py-2">
+                                    Search
+                                </button>
+                                <a href="{% url 'stockmgmt:stock_list' %}"
+                                    class="btn btn-light border text-muted flex-grow-1 mb-0 py-2 text-center">
+                                    Reset
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
 
-      <button class="btn btn-outline-success rounded-pill px-4"
-              data-bs-toggle="modal"
-              data-bs-target="#addMedicineModal">
-        + Add Medicine
-      </button>
+            <!-- ========================================= -->
+            <!-- QUICK FILTERS & SORTING -->
+            <!-- ========================================= -->
+            <div
+                class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 p-3 bg-white shadow-sm rounded-3">
+                <!-- Quick Filters -->
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="fw-bold text-dark me-2 small text-uppercase">Quick Filters :</span>
 
-       <button type="button"
-              class="btn btn-success rounded-pill px-4"
-              style="background:#c1e7d2;color:#065f46;"
-              data-bs-toggle="modal"
-              data-bs-target="#bulkImportModal">
-        + Bulk Import
-      </button>
-    </div>
-  </div>
+                    <!-- All Items -->
+                    <a href="?quick_filter=all&q={{ q }}&category={{ category }}&supplier={{ supplier }}&manufacturer={{ manufacturer }}&sort_by={{ sort_by }}"
+                        class="btn btn-sm rounded-pill px-3 py-1 fw-semibold {% if quick_filter == 'all' or not quick_filter %}bg-custom-green text-white border-0{% else %}btn-light border text-muted{% endif %}">
+                        All Items
+                    </a>
 
-  <!-- FILTER CARD -->
-  <div class="card shadow-sm border-0 mb-4">
-    <div class="card-body">
-      <form method="get" class="row g-3 align-items-center">
+                    <!-- Low Stock -->
+                    <a href="?quick_filter=low_stock&q={{ q }}&category={{ category }}&supplier={{ supplier }}&manufacturer={{ manufacturer }}&sort_by={{ sort_by }}"
+                        class="btn btn-sm rounded-pill px-3 py-1 fw-semibold {% if quick_filter == 'low_stock' %}bg-custom-green text-white border-0{% else %}btn-light border text-muted{% endif %}">
+                        Low Stock ({{ low_stock_count }})
+                    </a>
 
-        <div class="col-md-3">
-          <input type="text"
-                 name="q"
-                 class="form-control"
-                 placeholder="Search medicine or batch…"
-                 value="{{ q }}">
+                    <!-- Near Expiry -->
+                    <a href="?quick_filter=near_expiry&q={{ q }}&category={{ category }}&supplier={{ supplier }}&manufacturer={{ manufacturer }}&sort_by={{ sort_by }}"
+                        class="btn btn-sm rounded-pill px-3 py-1 fw-semibold {% if quick_filter == 'near_expiry' %}bg-custom-green text-white border-0{% else %}btn-light border text-muted{% endif %}">
+                        Near Expiry ({{ near_expiry_count }})
+                    </a>
+
+                    <!-- Expired -->
+                    <a href="?quick_filter=expired&q={{ q }}&category={{ category }}&supplier={{ supplier }}&manufacturer={{ manufacturer }}&sort_by={{ sort_by }}"
+                        class="btn btn-sm rounded-pill px-3 py-1 fw-semibold {% if quick_filter == 'expired' %}bg-custom-green text-white border-0{% else %}btn-light border text-muted{% endif %}">
+                        Expired ({{ expired_count }})
+                    </a>
+
+                    <!-- Zero Stock -->
+                    <a href="?quick_filter=zero_stock&q={{ q }}&category={{ category }}&supplier={{ supplier }}&manufacturer={{ manufacturer }}&sort_by={{ sort_by }}"
+                        class="btn btn-sm rounded-pill px-3 py-1 fw-semibold {% if quick_filter == 'zero_stock' %}border-0{% else %}btn-light border text-muted{% endif %}"
+                        style="{% if quick_filter == 'zero_stock' %}background-color: #f1f5f9; color: #475569;{% endif %}">
+                        Zero Stock ({{ zero_stock_count }})
+                    </a>
+                </div>
+
+                <!-- Sorting -->
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-semibold text-muted text-nowrap small text-uppercase">Sort By :</span>
+                    <select class="form-select form-select-sm fw-semibold text-muted border border-light shadow-sm"
+                        style="width: auto;"
+                        onchange="location.href='?sort_by=' + this.value + '&quick_filter={{ quick_filter }}&q={{ q }}&category={{ category }}&supplier={{ supplier }}&manufacturer={{ manufacturer }}'">
+                        <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>Medicine Name (A-Z)</option>
+                        <option value="name_desc" {% if sort_by == 'name_desc' %}selected{% endif %}>Medicine Name (Z-A)</option>
+                        <option value="stock_asc" {% if sort_by == 'stock_asc' %}selected{% endif %}>Stock (Low to High)</option>
+                        <option value="stock_desc" {% if sort_by == 'stock_desc' %}selected{% endif %}>Stock (High to Low)</option>
+                        <option value="expiry_asc" {% if sort_by == 'expiry_asc' %}selected{% endif %}>Expiry Date (Nearest First)</option>
+                    </select>
+
+                    <!-- Grid/List layout toggle -->
+                    <div class="btn-group shadow-sm">
+                        <button class="btn btn-sm btn-custom-green px-2" style="margin: 0;"><i
+                                class="fas fa-list"></i></button>
+                        <button class="btn btn-sm btn-light border px-2 text-muted" style="margin: 0;"><i
+                                class="fas fa-th"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================= -->
+            <!-- TABLE CARD -->
+            <!-- ========================================= -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom">
+                    <h5 class="mb-0 fw-bold text-dark">Medicine Stock List</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-custom-green dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-download me-1"></i> Export
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                <li><a class="dropdown-item"
+                                        href="{% url 'stockmgmt:export_excel' %}{% if query_params %}?{{ query_params }}{% endif %}"><i
+                                            class="fas fa-file-excel me-2 text-success"></i>Export to Excel</a></li>
+                                <li><a class="dropdown-item"
+                                        href="{% url 'stockmgmt:export_print' %}{% if query_params %}?{{ query_params }}{% endif %}"
+                                        target="_blank"><i class="fas fa-file-pdf me-2 text-danger"></i>Export to
+                                        PDF</a></li>
+                            </ul>
+                        </div>
+                        <span class="badge bg-custom-green px-3 py-2 fs-7 rounded">
+                            {{ page_obj.paginator.count }} Medicines
+                        </span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered hospital-table mb-0">
+                        <thead>
+                            <tr>
+                                <th width="60">#</th>
+                                <th class="text-start">Medicine Details</th>
+                                <th>Stock</th>
+                                <th>Purchase Price</th>
+                                <th>Selling Price</th>
+                                <th>Expiry Date</th>
+                                <th>Status</th>
+                                <th width="120">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stock in stocks %}
+                            <tr class="align-middle">
+                                <td class="text-center">{{ forloop.counter0|add:page_obj.start_index }}</td>
+                                <td>
+                                    <div class="text-start ps-2">
+                                        <h6 class="mb-0 fw-bold text-dark">{{ stock.medicine__name }}</h6>
+                                        <small class="text-muted d-block" style="font-size: 0.75rem;">HSN: {{ stock.medicine__hsn_code|default:"-" }} | GST: {{ stock.medicine__gst_percentage }}%</small>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <span
+                                        class="fw-bold {% if stock.total_qty <= stock.medicine__reorder_level %}text-danger{% else %}text-success{% endif %}">
+                                        {{ stock.total_qty|floatformat:2 }}
+                                    </span>
+                                </td>
+                                <td class="text-center fw-semibold text-dark">₹ {{ stock.purchase_price|floatformat:2 }}
+                                </td>
+                                <td class="text-center fw-semibold text-dark">₹ {{ stock.selling_price|floatformat:2 }}
+                                </td>
+                                <td class="text-center fw-semibold text-muted">
+                                    {% if stock.nearest_expiry %}
+                                    {{ stock.nearest_expiry|date:"d-m-Y" }}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if stock.nearest_expiry and stock.nearest_expiry < today %} <span
+                                        class="badge fw-semibold"
+                                        style="background-color: #f8d7da; color: #dc3545; font-size: 0.75rem;">
+                                        Expired</span>
+                                        {% elif stock.total_qty == 0 %}
+                                        <span class="badge fw-semibold"
+                                            style="background-color: #f1f5f9; color: #64748b; font-size: 0.75rem;">Zero
+                                            Stock</span>
+                                        {% elif stock.total_qty <= stock.medicine__reorder_level %} <span
+                                            class="badge fw-semibold"
+                                            style="background-color: #fff3cd; color: #d9480f; font-size: 0.75rem;">Low
+                                            Stock</span>
+                                            {% else %}
+                                            <span class="badge fw-semibold"
+                                                style="background-color: #d1e7dd; color: #0f5132; font-size: 0.75rem;">Available</span>
+                                            {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div style="white-space: nowrap;">
+                                        <a href="{% url 'stockmgmt:stock_details' stock.medicine_id %}"
+                                            class="btn btn-sm btn-light border px-2 py-1 d-inline-block"
+                                            title="View Details" style="margin-right: 4px; margin-bottom: 0;">
+                                            <i class="fas fa-eye text-muted"></i>
+                                        </a>
+                                        <div class="dropdown d-inline-block">
+                                            <button
+                                                class="btn btn-sm btn-light border dropdown-toggle no-caret px-2 py-1"
+                                                style="margin-bottom: 0;" type="button" data-bs-toggle="dropdown"
+                                                aria-expanded="false">
+                                                <i class="fas fa-ellipsis-v text-muted"></i>
+                                            </button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                                <li><a class="dropdown-item fw-semibold text-muted"
+                                                        href="{% url 'stockmgmt:stock_add' %}"><i
+                                                            class="fas fa-plus me-2"></i>Add Stock Batch</a></li>
+                                                <li><a class="dropdown-item fw-semibold text-muted"
+                                                        href="{% url 'stockmgmt:stock_details' stock.medicine_id %}"><i
+                                                            class="fas fa-list me-2"></i>View Batches</a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-5">
+                                    <img src="{% static 'img/no-data.svg' %}" width="120">
+                                    <h5 class="mt-3 fw-bold">No Medicine Found</h5>
+                                    <p class="text-muted">Try another search or add new stock.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Table Footer / Pagination -->
+                <div
+                    class="card-footer bg-white d-flex flex-column flex-md-row justify-content-between align-items-center py-3 border-top gap-3">
+                    <span class="text-muted small fw-semibold">
+                        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }}
+                        entries
+                    </span>
+                    {% if is_paginated %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination pagination-sm mb-0">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link text-success"
+                                    href="?page=1{% if query_params %}&{{ query_params }}{% endif %}"
+                                    aria-label="First">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link text-success"
+                                    href="?page={{ page_obj.previous_page_number }}{% if query_params %}&{{ query_params }}{% endif %}"
+                                    aria-label="Previous">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled"><span class="page-link"><i
+                                        class="fas fa-angle-double-left"></i></span></li>
+                            <li class="page-item disabled"><span class="page-link"><i
+                                        class="fas fa-angle-left"></i></span></li>
+                            {% endif %}
+                            {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                            <li class="page-item active"><span
+                                    class="page-link bg-custom-green border-custom-green text-white">{{ num }}</span>
+                            </li>
+                            {% elif num > page_obj.number|add:'-4' and num < page_obj.number|add:'4' %} <li
+                                class="page-item"><a class="page-link text-success"
+                                    href="?page={{ num }}{% if query_params %}&{{ query_params }}{% endif %}">{{ num
+                                    }}</a></li>
+                                {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link text-success"
+                                        href="?page={{ page_obj.next_page_number }}{% if query_params %}&{{ query_params }}{% endif %}"
+                                        aria-label="Next">
+                                        <i class="fas fa-angle-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link text-success"
+                                        href="?page={{ page_obj.paginator.num_pages }}{% if query_params %}&{{ query_params }}{% endif %}"
+                                        aria-label="Last">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li class="page-item disabled"><span class="page-link"><i
+                                            class="fas fa-angle-right"></i></span></li>
+                                <li class="page-item disabled"><span class="page-link"><i
+                                            class="fas fa-angle-double-right"></i></span></li>
+                                {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div> <!-- Closing tag for container-fluid py-4 -->
+        <div class="modal fade" id="medicineModal">
+
+            <div class="modal-dialog modal-lg">
+
+                <div class="modal-content">
+
+                    <div class="modal-header">
+
+                        <h5>
+
+                            Add Medicine
+
+                        </h5>
+
+                        <button class="btn-close" data-bs-dismiss="modal">
+                        </button>
+
+                    </div>
+
+                    <div class="modal-body">
+
+                        <form method="post" action="{% url 'stockmgmt:add_medicine_ajax' %}" id="medicineForm">
+
+                            {% csrf_token %}
+
+                            <div class="row">
+
+                                <div class="col-md-6">
+
+                                    <label>
+
+                                        Medicine Name
+
+                                    </label>
+
+                                    <input type="text" name="name" class="form-control" required>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <label>
+
+                                        HSN Code
+
+                                    </label>
+
+                                    <input type="text" name="hsn_code" class="form-control">
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <label>
+
+                                        Form Type
+
+                                    </label>
+
+                                    <select name="form_type" class="form-select">
+
+                                        <option value="LIQUID">
+
+                                            Liquid
+
+                                        </option>
+
+                                        <option value="POWDER">
+
+                                            Powder
+
+                                        </option>
+
+                                        <option value="PIECE">
+
+                                            Tablet
+
+                                        </option>
+
+                                    </select>
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <label>
+
+                                        GST %
+
+                                    </label>
+
+                                    <input type="number" name="gst_percentage" value="0" class="form-control">
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <label>
+
+                                        Reorder Level
+
+                                    </label>
+
+                                    <input type="number" name="reorder_level" class="form-control">
+
+                                </div>
+
+                                <div class="col-md-6">
+
+                                    <label>
+
+                                        Expiry Alert Days
+
+                                    </label>
+
+                                    <input type="number" name="expiry_days_alert" value="30" class="form-control">
+
+                                </div>
+
+                                <div class="col-md-12">
+
+                                    <label>
+
+                                        Description
+
+                                    </label>
+
+                                    <textarea name="description" class="form-control"></textarea>
+
+                                </div>
+
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                    <div class="modal-footer">
+
+                        <button class="btn btn-secondary" data-bs-dismiss="modal">
+
+                            Cancel
+
+                        </button>
+
+                        <button class="btn btn-custom-green" onclick="$('#medicineForm').submit();">
+
+                            Save Medicine
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
 
-        <div class="col-md-2">
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   name="low_stock"
-                   id="lowStock"
-                   {% if low_stock %}checked{% endif %}>
-            <label class="form-check-label" for="lowStock">
-              Low stock
-            </label>
-          </div>
+        <!-- Bulk Import Modal -->
+        <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold">Bulk Import Stock</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="{% url 'stockmgmt:bulk_import_stock' %}" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Select Excel file (.xlsx)</label>
+                                <input type="file" name="file" class="form-control" accept=".xlsx" required>
+                                <div class="form-text text-muted mt-2">
+                                    Select the opened opening stock Excel spreadsheet. The system will match medicine
+                                    names and insert or update stock entries.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-custom-green">Import Stock</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
+    </main>
 
-        <div class="col-md-3">
-          <div class="form-check">
-            <input class="form-check-input"
-                   type="checkbox"
-                   name="near_expiry"
-                   id="nearExpiry"
-                   {% if near_expiry %}checked{% endif %}>
-            <label class="form-check-label" for="nearExpiry">
-              Near expiry (30 days)
-            </label>
-          </div>
-        </div>
+    {% include "includes/script.html" %}
+    <script>
 
-        <div class="col-md-4 d-flex gap-2">
-          <button type="submit" class="btn bg-gradient-dark w-50">
-            Filter
-          </button>
-          <a href="{% url 'stockmgmt:stock_list' %}"
-             class="btn btn-outline-secondary w-50">
-            Reset
-          </a>
-        </div>
+        document.addEventListener("DOMContentLoaded", function () {
 
-      </form>
-    </div>
-  </div>
+            let search = document.querySelector("input[name='q']");
 
-  <!-- STOCK TABLE -->
-  <div class="card shadow-sm border-0">
-    <div class="card-body p-0 overflow-scroll">
+            if (search) {
 
-      <div class="table-responsive">
-       <table class="table table-hover align-items-center mb-0">
-        <thead>
-<tr>
-    <th>S.No</th>
-    <th>Medicine</th>
-    <th>Base Unit</th>
-    <th>Pack Size</th>
-    <th>Total Qty</th>
-    <th>Action</th>
-</tr>
-</thead>
+                search.addEventListener("keyup", function () {
 
-<tbody>
+                    clearTimeout(window.searchTimer);
 
-{% for stock in stocks %}
+                    window.searchTimer = setTimeout(function () {
 
-<tr>
+                        search.form.submit();
 
-<td>{{ forloop.counter }}</td>
+                    }, 500);
 
-<td>{{ stock.medicine__name }}</td>
+                });
 
-<td>{{ stock.base_unit }}</td>
+            }
 
-<td>{{ stock.pack_size }}</td>
+        });
 
-<td>{{ stock.total_qty }}</td>
-
-<td>
-
-<a href="{% url 'stockmgmt:stock_details' stock.medicine_id %}"
-class="btn btn-info btn-sm">
-
-View Stock
-
-</a>
-
-</td>
-
-</tr>
-
-{% endfor %}
-
-</tbody>
-      </table>
-
-      </div>
-
-      <!-- PAGINATION -->
-      <div class="d-flex justify-content-between align-items-center p-3 border-top">
-
-        <div class="text-muted text-sm">
-          Showing
-          <strong>{{ page_obj.start_index }}</strong>
-          to
-          <strong>{{ page_obj.end_index }}</strong>
-          of
-          <strong>{{ page_obj.paginator.count }}</strong>
-          records
-        </div>
-
-        <nav>
-          <ul class="pagination mb-0">
-
-            {% if page_obj.has_previous %}
-              <li class="page-item">
-                <a class="page-link"
-                   href="?page={{ page_obj.previous_page_number }}&q={{ q }}{% if low_stock %}&low_stock=on{% endif %}{% if near_expiry %}&near_expiry=on{% endif %}">
-                  Previous
-                </a>
-              </li>
-            {% else %}
-              <li class="page-item disabled">
-                <span class="page-link">Previous</span>
-              </li>
-            {% endif %}
-
-            {% if page_obj.has_next %}
-              <li class="page-item">
-                <a class="page-link"
-                   href="?page={{ page_obj.next_page_number }}&q={{ q }}{% if low_stock %}&low_stock=on{% endif %}{% if near_expiry %}&near_expiry=on{% endif %}">
-                  Next
-                </a>
-              </li>
-            {% else %}
-              <li class="page-item disabled">
-                <span class="page-link">Next</span>
-              </li>
-            {% endif %}
-
-          </ul>
-        </nav>
-
-      </div>
-
-    </div>
-  </div>
-
-</div>
-
-<!-- ADD MEDICINE MODAL (UNCHANGED) -->
-<!-- ADD MEDICINE MODAL -->
-<div class="modal fade" id="addMedicineModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content p-4">
-      <div id="medicineWarning"
-          class="alert alert-warning"
-          style="display:none;">
-      </div>
-      <form method="post" action="{% url 'stockmgmt:add_medicine_ajax' %}">
-        {% csrf_token %}
-
-        <div class="row g-3">
-
-          <!-- Medicine Name -->
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">
-              Medicine Name <span class="text-danger">*</span>
-            </label>
-            <input type="text" id="medicineName" name="name" class="form-control" required>
-          </div>
-
-          <!-- HSN Code -->
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">HSN Code</label>
-            <input type="text" name="hsn_code" class="form-control">
-          </div>
-
-          <!-- Form Type -->
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">
-              Form Type <span class="text-danger">*</span>
-            </label>
-            <select name="form_type" class="form-select" required>
-              <option value="">Select Type</option>
-              <option value="LIQUID">Liquid</option>
-              <option value="POWDER">Powder</option>
-              <option value="PIECE">Piece / Tablet</option>
-            </select>
-          </div>
-
-          <!-- GST Percentage -->
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">
-              GST % <span class="text-danger">*</span>
-            </label>
-            <input type="number" step="0.01" name="gst_percentage"
-                   class="form-control" placeholder="Example: 5, 12, 18" required>
-          </div>
-
-          <!-- Ayurvedic Type -->
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Ayurvedic Type</label>
-            <select name="ayurvedic_type" class="form-select">
-              <option value="">Select Ayurvedic Type</option>
-              {% for type in ayurvedic_forms %}
-                <option value="{{ type.id }}">{{ type.name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <!-- Reorder Level -->
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Reorder Level</label>
-            <input type="number" name="reorder_level"
-                   class="form-control" placeholder="Minimum stock alert level">
-          </div>
-
-          <!-- Expiry Alert Days -->
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Expiry Alert (Days)</label>
-            <input type="number" name="expiry_days_alert"
-                   class="form-control" value="30">
-          </div>
-
-          <!-- Description -->
-          <div class="col-12">
-            <label class="form-label fw-semibold">Description</label>
-            <textarea name="description" class="form-control" rows="3"></textarea>
-          </div>
-
-        </div>
-
-        <div class="text-end mt-4">
-          <button type="submit" class="btn btn-success px-4">
-            Save Medicine
-          </button>
-        </div>
-
-      </form>
-
-    </div>
-  </div>
-</div>
-<div class="modal fade" id="editMedicineModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content p-4">
-
-      <form method="post" action="{% url 'stockmgmt:update_medicine' %}">
-        {% csrf_token %}
-
-        <input type="hidden" name="medicine_id" id="edit_medicine_id">
-
-        <div class="row g-3">
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Medicine Name</label>
-            <input type="text" name="name" id="edit_name" class="form-control" required>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">HSN Code</label>
-            <input type="text" name="hsn_code" id="edit_hsn" class="form-control">
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Form Type</label>
-            <select name="form_type" id="edit_form_type" class="form-select" required>
-              <option value="LIQUID">Liquid</option>
-              <option value="POWDER">Powder</option>
-              <option value="PIECE">Piece / Tablet</option>
-            </select>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">GST %</label>
-            <input type="number" step="0.01" name="gst_percentage"
-                   id="edit_gst" class="form-control" required>
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Reorder Level</label>
-            <input type="number" name="reorder_level"
-                   id="edit_reorder" class="form-control">
-          </div>
-
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Expiry Alert (Days)</label>
-            <input type="number" name="expiry_days_alert"
-                   id="edit_expiry_alert" class="form-control">
-          </div>
-
-          <div class="col-12">
-            <label class="form-label fw-semibold">Description</label>
-            <textarea name="description"
-                      id="edit_description"
-                      class="form-control"
-                      rows="3"></textarea>
-          </div>
-
-        </div>
-
-        <div class="text-end mt-4">
-          <button type="submit" class="btn btn-primary px-4">
-            Update Medicine
-          </button>
-        </div>
-
-      </form>
-
-    </div>
-  </div>
-</div>
-
-
-<!-- BULK IMPORT MODAL -->
-<div class="modal fade" id="bulkImportModal" tabindex="-1">
-  <div class="modal-dialog modal-md">
-    <div class="modal-content p-4">
-
-      <h5 class="fw-bold mb-3">Bulk Import Stock</h5>
-      <p class="text-muted small mb-3">
-        Upload Excel (.xlsx) or CSV file
-      </p>
-
-      <form method="post"
-            action="{% url 'stockmgmt:bulk_import_stock' %}"
-            enctype="multipart/form-data">
-
-        {% csrf_token %}
-
-        <div class="mb-3">
-          <label class="form-label fw-semibold">
-            Select File
-          </label>
-          <input type="file"
-                 name="file"
-                 class="form-control"
-                 accept=".xlsx,.csv"
-                 required>
-        </div>
-
-        <div class="d-flex justify-content-end gap-2 mt-4">
-          <button type="button"
-                  class="btn btn-outline-secondary"
-                  data-bs-dismiss="modal">
-            Cancel
-          </button>
-
-          <button type="submit"
-                  class="btn btn-success">
-            Import
-          </button>
-        </div>
-
-      </form>
-
-    </div>
-  </div>
-</div>
-
-</main>
-
-{% include "includes/script.html" %}
-<script>
-function loadMedicineData(
-    id,
-    name,
-    hsn,
-    formType,
-    gst,
-    ayurvedicType,
-    reorder,
-    expiryAlert,
-    description
-){
-    document.getElementById("edit_medicine_id").value = id;
-    document.getElementById("edit_name").value = name;
-    document.getElementById("edit_hsn").value = hsn;
-    document.getElementById("edit_form_type").value = formType;
-    document.getElementById("edit_gst").value = gst;
-    document.getElementById("edit_reorder").value = reorder;
-    document.getElementById("edit_expiry_alert").value = expiryAlert;
-    document.getElementById("edit_description").value = description;
-}
-
-
-const medInput = document.getElementById("medicineName");
-const warningBox = document.getElementById("medicineWarning");
-
-medInput.addEventListener("keyup", function(){
-
-    let query = this.value.trim();
-
-    if(query.length < 2){
-        warningBox.style.display = "none";
-        return;
-    }
-
-    fetch(`/stock/medicine-check/?q=${query}`)
-    .then(res => res.json())
-    .then(data => {
-
-        if(data.length > 0){
-
-            let html = "<strong>⚠ These medicines already exist:</strong><ul>";
-
-            data.forEach(med => {
-                html += `<li>${med.name}</li>`;
-            });
-
-            html += "</ul>";
-
-            warningBox.innerHTML = html;
-            warningBox.style.display = "block";
-
-        } else {
-
-            warningBox.style.display = "none";
-
-        }
-
-    });
-
-});
-</script>
+    </script>
 </body>
+
 </html>
