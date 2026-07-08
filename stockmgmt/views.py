@@ -570,7 +570,7 @@ def calculate_stock_values(
     if pack_size > 0:
 
         price_per_base_unit = (
-            unit_price / pack_size
+            selling_price / pack_size
         )
 
     else:
