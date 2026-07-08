@@ -384,10 +384,9 @@
                             <li class="page-item active"><span
                                     class="page-link bg-custom-green border-custom-green text-white">{{ num }}</span>
                             </li>
-                            {% elif num > page_obj.number|add:'-4' and num < page_obj.number|add:'4' %} <li
+                           {% elif num > page_obj.number|add:'-4' and num < page_obj.number|add:'4' %} <li
                                 class="page-item"><a class="page-link text-success"
-                                    href="?page={{ num }}{% if query_params %}&{{ query_params }}{% endif %}">{{ num
-                                    }}</a></li>
+                                    href="?page={{ num }}{% if query_params %}&{{ query_params }}{% endif %}">{{ num }}</a></li>
                                 {% endif %}
                                 {% endfor %}
 
