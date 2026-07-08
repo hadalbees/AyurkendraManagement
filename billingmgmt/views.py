@@ -193,16 +193,18 @@ def medical_billing_view(request):
 
             subtotal_after_discount = subtotal - discount
 
-            # GST %
-            gst_percent = Decimal(
-                settings.consultation_gst or 0
+            # Read tax and total from POST to capture calculations & round-off from frontend
+            tax = Decimal(
+                request.POST.get("tax", "0") or "0"
             )
 
-            tax = (
-                subtotal_after_discount * gst_percent / Decimal("100")
-            ).quantize(Decimal("0.01"))
+            total = Decimal(
+                request.POST.get("total", "0") or "0"
+            )
 
-            total = subtotal_after_discount + tax
+            # Calculate round_off amount
+            round_off = total - (subtotal_after_discount + tax)
+
 
 
             payment_mode = request.POST.get("payment_mode") or "Cash"
@@ -271,6 +273,8 @@ def medical_billing_view(request):
                     tax=tax,
 
                     total=total,
+
+                    round_off=round_off,
 
                     payment_mode=payment_mode,
 
@@ -512,6 +516,9 @@ def edit_medical_bill_view(request, bill_no):
                 bill.subtotal = subtotal
                 bill.tax = tax
                 bill.total = total
+                # Recalculate discount for round_off calculation
+                discount = (subtotal * bill.discount_percent / Decimal("100")).quantize(Decimal("0.01"))
+                bill.round_off = total - (subtotal - discount + tax)
                 bill.payment_mode = payment_mode
                 bill.payment_status = payment_status
 

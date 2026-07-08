@@ -26,6 +26,7 @@ class MedicalBill(models.Model):
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     tax = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    round_off = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     payment_mode = models.CharField(
         max_length=20,
         choices=(
