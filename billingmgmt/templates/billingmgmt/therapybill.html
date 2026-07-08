@@ -1,481 +1,489 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 {% include "includes/head.html" %}
 
+<style>
+    body {
+        background-color: #f8f9fa !important;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .bg-custom-green {
+        background-color: #065f46 !important;
+    }
+
+    .text-custom-green {
+        color: #065f46 !important;
+    }
+
+    .border-left-custom {
+        border-left: 4px solid #065f46 !important;
+    }
+
+    .btn-custom-green {
+        background-color: #065f46 !important;
+        color: #fff !important;
+        border: none;
+        font-weight: 600;
+        padding: 8px 18px;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-custom-green:hover {
+        background-color: #054835 !important;
+        color: #fff !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-outline-custom-green {
+        border: 1px solid #065f46 !important;
+        color: #065f46 !important;
+        background: transparent;
+        font-weight: 600;
+        border-radius: 6px;
+        padding: 8px 18px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-outline-custom-green:hover {
+        background-color: #e6f4ea !important;
+        color: #065f46 !important;
+    }
+
+    .form-control, .form-select {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 0.875rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #065f46 !important;
+        box-shadow: 0 0 0 0.2rem rgba(6, 95, 70, 0.15) !important;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #475569;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+
+    .hospital-table th {
+        background-color: #f1f5f9 !important;
+        color: #475569 !important;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .hospital-table td {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        vertical-align: middle;
+    }
+
+    .hospital-table tbody tr:nth-of-type(even) {
+        background-color: #f8fafc;
+    }
+
+    .summary-card {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px dashed #e2e8f0;
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    .summary-row:last-of-type {
+        border-bottom: none;
+    }
+</style>
+
 <body class="g-sidenav-show bg-gray-100">
-{% include "includes/sidebar.html" %}
 
-<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
-{% include "includes/header.html" %}
+    {% include "includes/sidebar.html" %}
 
-<div class="container-fluid py-4">
+    <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
 
-  <div class="mb-4">
-    <h4 class="mb-1">Therapy Billing</h4>
-    <p class="text-sm text-muted mb-0">Create and print therapy bills</p>
-  </div>
+        {% include "includes/header.html" %}
 
-  <div class="card shadow-sm">
-    <div class="card-body">
+        <div class="container-fluid py-4">
 
-      <form method="post" id="therapyBillingForm">
-        {% csrf_token %}
-        <input type="hidden" name="bill_no" value="{{ bill_no }}">
-
-        <!-- GST % -->
-        <input type="hidden" id="gstPercent"
-               value="{{ settings.therapy_gst|default:0 }}">
-
-        <!-- ================= PATIENT ================= -->
-        <div class="card shadow-sm mb-4">
-          <div class="card-body">
-            <h6 class="mb-3">Patient Details</h6>
-
-            <div class="row g-3">
-              <div class="col-md-6">
-          <label class="form-label">
-            Customer Type
-          </label>
-
-          <select
-            name="customer_type"
-            id="customerType"
-            class="form-select">
-
-            <option value="patient">
-              Registered Patient
-            </option>
-
-            <option value="walkin">
-              Walk-in Customer
-            </option>
-
-          </select>
-        </div>
-
-        <!-- PATIENT FIELD -->
-        <div class="col-md-6" id="patientBox">
-
-          <label class="form-label">
-            Select Patient
-          </label>
-
-          <select
-            class="form-select"
-            name="patient_id"
-            id="patientSelect">
-
-            <option value="">
-              -- Select Patient --
-            </option>
-
-            {% for patient in patients %}
-              <option value="{{ patient.id }}">
-                {{ patient.patient_name }}
-              </option>
-            {% endfor %}
-
-          </select>
-
-        </div>
-
-        <!-- WALKIN FIELD -->
-        <div class="col-md-6 d-none" id="walkinBox">
-
-          <label class="form-label">
-            Walk-in Customer Name
-          </label>
-
-          <input
-            type="text"
-            name="walkin_name"
-            id="walkinName"
-            class="form-control"
-            placeholder="Enter customer name">
-
-        </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ================= THERAPY TABLE ================= -->
-        <div class="card shadow-sm mb-4">
-          <div class="card-body p-0">
-
-            <div class="d-flex justify-content-between align-items-center px-3 pt-3">
-              <h6 class="mb-0">Therapy Details</h6>
-              <button type="button" class="btn btn-success btn-sm" id="addTherapyRow">
-                + Add Therapy
-              </button>
+            <!-- ================= PAGE HEADER ================= -->
+            <div class="mb-4">
+                <h3 class="fw-bold mb-1 text-dark fs-4">Therapy Billing</h3>
+                <p class="text-muted mb-0 small fw-semibold text-uppercase">
+                    Create, Manage, and Print Patient Therapy Invoices
+                </p>
             </div>
 
-            <div class="table-responsive mt-3">
-              <table class="table mb-0" id="therapyTable">
-                <thead class="bg-light">
-                  <tr>
-                    <th>Therapy</th>
-                    <th>Serial No</th>
-                    <th>Unit Price</th>
-                    <th>Qty</th>
-                    <th>Subtotal</th>
-                    <th></th>
-                  </tr>
-                </thead>
+            <form method="post" id="therapyBillingForm">
+                {% csrf_token %}
+                <input type="hidden" name="bill_no" value="{{ bill_no }}">
+                <input type="hidden" id="gstPercent" value="{{ settings.therapy_gst|default:0 }}">
 
-                <tbody>
-                  <tr class="therapyRow">
-                    <td>
-                      <select class="form-select therapySelect"
-                              name="therapy_id[]" required>
-                        <option value="">-- Select Therapy --</option>
-                        {% for therapy in therapies %}
-                          <option value="{{ therapy.id }}"
-                                  data-price="{{ therapy.charges }}"
-                                  data-serial="{{ therapy.serial_no }}">
-                            {{ therapy.name }}
-                          </option>
-                        {% endfor %}
-                      </select>
-                    </td>
+                <div class="row g-4">
+                    <!-- Left Columns: Patient & Therapy Details -->
+                    <div class="col-lg-8">
+                        <!-- Patient Details -->
+                        <div class="card shadow-sm border-0 border-left-custom mb-4">
+                            <div class="card-header bg-white py-3 border-bottom border-light">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-custom-green bg-opacity-10 text-success p-2 rounded">
+                                        <i class="fas fa-user-injured text-success fs-6"></i>
+                                    </span>
+                                    <h5 class="mb-0 fw-bold text-dark fs-6">Patient Selection</h5>
+                                </div>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Customer Type</label>
+                                        <select name="customer_type" id="customerType" class="form-select">
+                                            <option value="patient">Registered Patient</option>
+                                            <option value="walkin">Walk-in Customer</option>
+                                        </select>
+                                    </div>
 
-                    <td>
-                      <input type="text"
-                             class="form-control serial_no"
-                             readonly>
-                    </td>
+                                    <!-- Patient field -->
+                                    <div class="col-md-6" id="patientBox">
+                                        <label class="form-label">Select Patient</label>
+                                        <select class="form-select" name="patient_id" id="patientSelect">
+                                            <option value="">-- Select Patient --</option>
+                                            {% for patient in patients %}
+                                            <option value="{{ patient.id }}">
+                                                {{ patient.patient_name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
 
-                    <td>
-                      <input type="number"
-                             class="form-control unitPrice"
-                             name="unit_price[]"
-                             readonly>
-                    </td>
+                                    <!-- Walk-in field -->
+                                    <div class="col-md-6 d-none" id="walkinBox">
+                                        <label class="form-label">Walk-in Customer Name</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light"><i class="fas fa-user text-muted"></i></span>
+                                            <input type="text" name="walkin_name" id="walkinName" class="form-control" placeholder="Enter customer name">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                    <td>
-                      <input type="number"
-                             class="form-control quantityInput"
-                             name="quantity[]"
-                             value="1" min="1">
-                    </td>
+                        <!-- Therapy Allocation Table -->
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-header bg-white py-3 border-bottom border-light d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-custom-green bg-opacity-10 text-success p-2 rounded">
+                                        <i class="fas fa-spa text-success fs-6"></i>
+                                    </span>
+                                    <h5 class="mb-0 fw-bold text-dark fs-6">Therapy Details</h5>
+                                </div>
+                                <button type="button" class="btn btn-custom-green btn-sm" id="addTherapyRow">
+                                    <i class="fas fa-plus me-1"></i> Add Therapy
+                                </button>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table hospital-table mb-0" id="therapyTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Select Therapy Item</th>
+                                                <th width="140">Serial No</th>
+                                                <th width="140">Unit Price</th>
+                                                <th width="120">Qty</th>
+                                                <th width="180">Subtotal</th>
+                                                <th width="80" class="text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr class="therapyRow align-middle">
+                                                <td>
+                                                    <select class="form-select therapySelect" name="therapy_id[]" required>
+                                                        <option value="">-- Select Therapy --</option>
+                                                        {% for therapy in therapies %}
+                                                        <option value="{{ therapy.id }}" data-price="{{ therapy.charges }}" data-serial="{{ therapy.serial_no }}">
+                                                            {{ therapy.name }}
+                                                        </option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="text" class="form-control serial_no bg-light text-center" readonly placeholder="-">
+                                                </td>
+                                                <td>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-light py-1 px-2 text-xs">₹</span>
+                                                        <input type="number" class="form-control unitPrice bg-light fw-semibold" name="unit_price[]" readonly placeholder="0.00">
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="form-control quantityInput text-center" name="quantity[]" value="1" min="1">
+                                                </td>
+                                                <td>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-light py-1 px-2 text-xs">₹</span>
+                                                        <input type="number" class="form-control subtotalInput bg-light fw-bold text-dark" name="subtotal[]" readonly placeholder="0.00">
+                                                    </div>
+                                                </td>
+                                                <td class="text-center">
+                                                    <button type="button" class="btn btn-sm btn-light border text-danger px-2.5 py-1 mb-0 removeTherapyRow">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                    <td>
-                      <input type="number"
-                             class="form-control subtotalInput"
-                             name="subtotal[]"
-                             readonly>
-                    </td>
+                    <!-- Right Column: Summary & Actions -->
+                    <div class="col-lg-4">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-white py-3 border-bottom border-light">
+                                <h5 class="mb-0 fw-bold text-dark fs-6">Billing Calculations</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12">
+                                        <label class="form-label">Payment Status</label>
+                                        <select class="form-select" name="payment_status">
+                                            <option value="Pending">Pending</option>
+                                            <option value="Paid">Paid</option>
+                                            <option value="Partialy Paid">Partialy Paid</option>
+                                        </select>
+                                    </div>
 
-                    <td>
-                      <button type="button"
-                              class="btn btn-danger btn-sm removeTherapyRow">
-                        ✕
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Payment Mode</label>
+                                        <select class="form-select" name="payment_mode">
+                                            <option>Cash</option>
+                                            <option>Card</option>
+                                            <option>UPI</option>
+                                            <option>NetBanking</option>
+                                            <option>Insurance</option>
+                                        </select>
+                                    </div>
+                                </div>
 
-          </div>
+                                <div class="summary-card p-3 mb-4">
+                                    <div class="summary-row">
+                                        <span>Subtotal:</span>
+                                        <span class="fw-semibold text-dark">₹ <input type="number" id="subtotalTotal" class="border-0 bg-transparent text-end fw-semibold p-0" name="subtotal" readonly style="width: 100px;" value="0.00"></span>
+                                    </div>
+                                    <div class="summary-row align-items-center">
+                                        <span>Discount Percent:</span>
+                                        <div class="input-group" style="width: 100px;">
+                                            <input id="discountInput" type="number" value="0" name="discount_percent" class="form-control text-center py-1" style="max-width: 90px;">
+                                            <span class="input-group-text py-1">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span>GST ({{ settings.therapy_gst }}%):</span>
+                                        <span class="fw-semibold text-dark">₹ <input type="number" id="taxInput" class="border-0 bg-transparent text-end fw-semibold p-0" name="tax" readonly style="width: 100px;" value="0.00"></span>
+                                    </div>
+                                    <div class="summary-row pt-2 border-top border-dark">
+                                        <h5 class="fw-bold text-dark mb-0">Total:</h5>
+                                        <h5 class="fw-bold text-custom-green mb-0">₹ <input type="number" id="totalAmount" class="border-0 bg-transparent text-end fw-bold text-custom-green p-0" name="total" readonly style="width: 120px;" value="0.00"></h5>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-6">
+                                        <label class="form-label">Advance Payment</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">₹</span>
+                                            <input type="number" id="advanceInput" name="advance_payment" value="0" class="form-control">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-6">
+                                        <label class="form-label">Balance Due</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">₹</span>
+                                            <input type="number" id="balanceInput" name="balance_amount" class="form-control bg-light fw-bold text-danger" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label">Remarks / Notes</label>
+                                    <textarea class="form-control" name="remarks" rows="2" placeholder="Add remarks..."></textarea>
+                                </div>
+
+                                <button class="btn btn-custom-green w-100 py-3 d-flex align-items-center justify-content-center gap-2">
+                                    <i class="fas fa-print"></i> Save & Print Invoice
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+
         </div>
 
-        <!-- ================= SUMMARY ================= -->
-        <div class="card shadow-sm mb-4">
-          <div class="card-body">
-
-            <h6 class="mb-3">Billing Summary</h6>
-
-            <div class="row g-3">
-
-              <div class="col-md-3">
-                <label>Subtotal</label>
-                <input type="number" id="subtotalTotal"
-                      class="form-control" name="subtotal" readonly>
-              </div>
-
-              <div class="col-md-3">
-                <label>Discount (%)</label>
-                <input type="number" id="discountInput"
-                      class="form-control"
-                      name="discount_percent"
-                      value="0">
-              </div>
-
-              <div class="col-md-3">
-                <label>GST ({{ settings.therapy_gst }}%)</label>
-                <input type="number" id="taxInput"
-                      class="form-control" name="tax" readonly>
-              </div>
-
-              <div class="col-md-3">
-                <label>Total</label>
-                <input type="number" id="totalAmount"
-                      class="form-control" name="total" readonly>
-              </div>
-
-            </div>
-
-            <div class="row g-3 mt-3">
-
-              <div class="col-md-4">
-                <label>Advance Payment</label>
-                <input type="number" id="advanceInput"
-                      class="form-control"
-                      name="advance_payment"
-                      value="0">
-              </div>
-
-              <div class="col-md-4">
-                <label>Balance Amount</label>
-                <input type="number" id="balanceInput"
-                      class="form-control"
-                      name="balance_amount"
-                      readonly>
-              </div>
-
-            </div>
-
-            <div class="row mt-3">
-              <div class="col-md-4">
-                <label>Payment Status</label>
-                <select class="form-select" name="payment_status">
-                  <option value="Pending">Pending</option>
-                  <option value="Paid">Paid</option>
-                  <option value="Partialy Paid">Partialy Paid</option>
-                </select>
-              </div>
-
-              <div class="col-md-4">
-                <label>Payment Mode</label>
-                <select class="form-select" name="payment_mode">
-                  <option>Cash</option>
-                  <option>Card</option>
-                  <option>UPI</option>
-                  <option>NetBanking</option>
-                  <option>Insurance</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="mt-3">
-              <label>Remarks</label>
-              <textarea class="form-control" name="remarks"></textarea>
-            </div>
-
-          </div>
-        </div>
-
-        <div class="text-end">
-          <button class="btn btn-success px-4">Save & Print</button>
-        </div>
-
-      </form>
-    </div>
-  </div>
-</div>
-
-
-</main>
-{% include "includes/script.html" %}
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-
-  const gstPercent = parseFloat(document.getElementById("gstPercent").value) || 0;
-
-  function recalcRow(row) {
-    const qty = parseFloat(row.querySelector(".quantityInput").value) || 0;
-    const price = parseFloat(row.querySelector(".unitPrice").value) || 0;
-    row.querySelector(".subtotalInput").value = (qty * price).toFixed(2);
-  }
-
-  function recalcTotal(){
-
-    let subtotal = 0;
-
-    document.querySelectorAll(".subtotalInput").forEach(el=>{
-      subtotal += parseFloat(el.value) || 0;
-    });
-
-    document.getElementById("subtotalTotal").value = subtotal.toFixed(2);
-
-    // GST calculated ONLY from subtotal
-    const tax = subtotal * gstPercent / 100;
-
-    document.getElementById("taxInput").value = tax.toFixed(2);
-
-    const subtotalWithGST = subtotal + tax;
-
-    const discountPercent =
-      parseFloat(document.getElementById("discountInput").value) || 0;
-
-    const discountAmount =
-      subtotalWithGST * discountPercent / 100;
-
-    const total = subtotalWithGST - discountAmount;
-
-    document.getElementById("totalAmount").value = total.toFixed(2);
-
-    calcBalance();
-  }
-
-  function calcBalance(){
-
-    const total =
-      parseFloat(document.getElementById("totalAmount").value) || 0;
-
-    let advance =
-      parseFloat(document.getElementById("advanceInput").value) || 0;
-
-    if(advance > total){
-      advance = total;
-      document.getElementById("advanceInput").value = total;
-    }
-
-    const balance = total - advance;
-
-    document.getElementById("balanceInput").value = balance.toFixed(2);
-  }
-
-  function attach(row) {
-
-    row.querySelector(".therapySelect").addEventListener("change", function () {
-
-      const opt = this.options[this.selectedIndex];
-      if (!opt.value) return;
-
-      row.querySelector(".unitPrice").value = opt.dataset.price;
-      row.querySelector(".serial_no").value = opt.dataset.serial;
-
-      recalcRow(row);
-      recalcTotal();
-    });
-
-    row.querySelector(".quantityInput").addEventListener("input", () => {
-      recalcRow(row);
-      recalcTotal();
-    });
-
-    row.querySelector(".removeTherapyRow").addEventListener("click", () => {
-      row.remove();
-      recalcTotal();
-    });
-  }
-
-  attach(document.querySelector(".therapyRow"));
-
-  document.getElementById("addTherapyRow").addEventListener("click", () => {
-
-    const row = document.querySelector(".therapyRow").cloneNode(true);
-
-    row.querySelectorAll("input").forEach(i => i.value = "");
-    row.querySelector(".quantityInput").value = 1;
-    row.querySelector("select").selectedIndex = 0;
-
-    document.querySelector("#therapyTable tbody").appendChild(row);
-
-    attach(row);
-  });
-
-  document.getElementById("discountInput")
-    .addEventListener("input", recalcTotal);
-
-  document.getElementById("advanceInput")
-    .addEventListener("input", calcBalance);
-});
-
-(function(){
-
-  function initCustomerType(){
-
-    const customerType =
-      document.getElementById("customerType");
-
-    const patientBox =
-      document.getElementById("patientBox");
-
-    const walkinBox =
-      document.getElementById("walkinBox");
-
-    const patientSelect =
-      document.getElementById("patientSelect");
-
-    const walkinName =
-      document.getElementById("walkinName");
-
-    if(
-      !customerType ||
-      !patientBox ||
-      !walkinBox
-    ){
-      return;
-    }
-
-    function toggleCustomerFields(){
-
-      const isPatient =
-        customerType.value === "patient";
-
-      // SHOW / HIDE
-      patientBox.classList.toggle(
-        "d-none",
-        !isPatient
-      );
-
-      walkinBox.classList.toggle(
-        "d-none",
-        isPatient
-      );
-
-      // REQUIRED
-      if(isPatient){
-
-        if(patientSelect){
-          patientSelect.required = true;
-        }
-
-        if(walkinName){
-          walkinName.required = false;
-          walkinName.value = "";
-        }
-
-      }else{
-
-        if(patientSelect){
-          patientSelect.required = false;
-          patientSelect.value = "";
-        }
-
-        if(walkinName){
-          walkinName.required = true;
-        }
-
-      }
-
-    }
-
-    // REMOVE OLD EVENT
-    customerType.onchange = null;
-
-    // ADD NEW EVENT
-    customerType.addEventListener(
-      "change",
-      toggleCustomerFields
-    );
-
-    // INITIAL LOAD
-    toggleCustomerFields();
-
-  }
-
-  // RUN
-  document.addEventListener(
-    "DOMContentLoaded",
-    initCustomerType
-  );
-
-})();
-</script>
+    </main>
+
+    {% include "includes/script.html" %}
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const gstPercent = parseFloat(document.getElementById("gstPercent").value) || 0;
+
+            function recalcRow(row) {
+                const qty = parseFloat(row.querySelector(".quantityInput").value) || 0;
+                const price = parseFloat(row.querySelector(".unitPrice").value) || 0;
+                row.querySelector(".subtotalInput").value = (qty * price).toFixed(2);
+            }
+
+            function recalcTotal() {
+                let subtotal = 0;
+                document.querySelectorAll(".subtotalInput").forEach(el => {
+                    subtotal += parseFloat(el.value) || 0;
+                });
+
+                document.getElementById("subtotalTotal").value = subtotal.toFixed(2);
+
+                // GST calculated ONLY from subtotal
+                const tax = subtotal * gstPercent / 100;
+                document.getElementById("taxInput").value = tax.toFixed(2);
+
+                const subtotalWithGST = subtotal + tax;
+                const discountPercent = parseFloat(document.getElementById("discountInput").value) || 0;
+                const discountAmount = subtotalWithGST * discountPercent / 100;
+                const total = subtotalWithGST - discountAmount;
+
+                document.getElementById("totalAmount").value = total.toFixed(2);
+                calcBalance();
+            }
+
+            function calcBalance() {
+                const total = parseFloat(document.getElementById("totalAmount").value) || 0;
+                let advance = parseFloat(document.getElementById("advanceInput").value) || 0;
+
+                if (advance > total) {
+                    advance = total;
+                    document.getElementById("advanceInput").value = total;
+                }
+
+                const balance = total - advance;
+                document.getElementById("balanceInput").value = balance.toFixed(2);
+            }
+
+            function attach(row) {
+                row.querySelector(".therapySelect").addEventListener("change", function () {
+                    const opt = this.options[this.selectedIndex];
+                    if (!opt.value) return;
+
+                    row.querySelector(".unitPrice").value = opt.dataset.price;
+                    row.querySelector(".serial_no").value = opt.dataset.serial;
+
+                    recalcRow(row);
+                    recalcTotal();
+                });
+
+                row.querySelector(".quantityInput").addEventListener("input", () => {
+                    recalcRow(row);
+                    recalcTotal();
+                });
+
+                row.querySelector(".removeTherapyRow").addEventListener("click", () => {
+                    row.remove();
+                    recalcTotal();
+                });
+            }
+
+            attach(document.querySelector(".therapyRow"));
+
+            document.getElementById("addTherapyRow").addEventListener("click", () => {
+                const row = document.querySelector(".therapyRow").cloneNode(true);
+
+                row.querySelectorAll("input").forEach(i => i.value = "");
+                row.querySelector(".quantityInput").value = 1;
+                row.querySelector("select").selectedIndex = 0;
+
+                document.querySelector("#therapyTable tbody").appendChild(row);
+                attach(row);
+            });
+
+            document.getElementById("discountInput").addEventListener("input", recalcTotal);
+            document.getElementById("advanceInput").addEventListener("input", calcBalance);
+        });
+
+        (function () {
+            function initCustomerType() {
+                const customerType = document.getElementById("customerType");
+                const patientBox = document.getElementById("patientBox");
+                const walkinBox = document.getElementById("walkinBox");
+                const patientSelect = document.getElementById("patientSelect");
+                const walkinName = document.getElementById("walkinName");
+
+                if (!customerType || !patientBox || !walkinBox) {
+                    return;
+                }
+
+                function toggleCustomerFields() {
+                    const isPatient = customerType.value === "patient";
+
+                    // SHOW / HIDE
+                    patientBox.classList.toggle("d-none", !isPatient);
+                    walkinBox.classList.toggle("d-none", isPatient);
+
+                    // REQUIRED
+                    if (isPatient) {
+                        if (patientSelect) {
+                            patientSelect.required = true;
+                        }
+                        if (walkinName) {
+                            walkinName.required = false;
+                            walkinName.value = "";
+                        }
+                    } else {
+                        if (patientSelect) {
+                            patientSelect.required = false;
+                            patientSelect.value = "";
+                        }
+                        if (walkinName) {
+                            walkinName.required = true;
+                        }
+                    }
+                }
+
+                // REMOVE OLD EVENT
+                customerType.onchange = null;
+
+                // ADD NEW EVENT
+                customerType.addEventListener("change", toggleCustomerFields);
+
+                // INITIAL LOAD
+                toggleCustomerFields();
+            }
+
+            // RUN
+            document.addEventListener("DOMContentLoaded", initCustomerType);
+        })();
+    </script>
 </body>
 </html>

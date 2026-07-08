@@ -1,204 +1,751 @@
 {% load static %}
 <!DOCTYPE html>
 <html>
+
 <head>
-<meta charset="utf-8">
-<title>Medical Bill - {{ bill.bill_no }}</title>
+    <meta charset="utf-8">
+    <title>Medical Bill - {{ bill.bill_no }}</title>
 
-<style>
-@page { size: A4; margin: 15mm; }
-body { font-family: "Times New Roman", serif; font-size: 14px; color: #000; }
+    <style>
+        @page {
+            size: A4;
+            margin: 8mm;
+        }
 
-.header { text-align: center; border-bottom: 1px solid #000; padding-bottom: 6px; }
-.logo { width: 180px; margin-bottom: 6px; }
-.address { font-size: 12px; line-height: 1.4; }
-.gst { font-size: 12px; font-weight: bold; margin-top: 3px; }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #222;
+            margin: 0;
+            padding: 0;
+            line-height: 1.25;
+        }
 
-.info-table { width: 100%; margin-top: 10px; font-size: 13px; }
-.info-table td { padding: 4px; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #1b5e20;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+        }
 
-table.bill-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-  font-size: 13px;
-}
-table.bill-table th,
-table.bill-table td {
-  border: 1px solid #000;
-  padding: 6px;
-  text-align: center;
-}
-table.bill-table th { background: #f2f2f2; }
+        .logo {
+            width: 180px;
+        }
 
-.totals {
-  width: 45%;
-  float: right;
-  margin-top: 10px;
-  font-size: 14px;
-}
-.totals td { padding: 5px; }
+        .center-area {
+            flex: 1;
+            text-align: center;
+        }
 
-.footer {
-  clear: both;
-  margin-top: 60px;
-  font-size: 12px;
-  text-align: center;
-  border-top: 1px solid #000;
-  padding-top: 5px;
-}
+        .center-area h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #1b5e20;
+        }
 
-@media print { .no-print { display: none; } }
-</style>
+        .center-area p {
+            margin: 2px 0;
+            font-size: 11px;
+            line-height: 1.35;
+        }
+
+        .right-area {
+            text-align: right;
+        }
+
+        .right-area p {
+            margin: 3px 0;
+            font-size: 11px;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #1b5e20;
+            margin: 10px 0;
+        }
+
+        .patient-card {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            border: 1px solid #1b5e20;
+        }
+
+        .patient-card td {
+            border: 1px solid #ccc;
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+
+        .label {
+            font-size: 11px;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .value {
+            margin-top: 3px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .section-title {
+            text-align: center;
+            color: #1b5e20;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 12px 0 8px;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .table th {
+            background: #edf5ef;
+            border: 1px solid #1b5e20;
+            padding: 6px;
+            font-size: 12px;
+        }
+
+        .table td {
+            border: 1px solid #888;
+            padding: 6px;
+            font-size: 12px;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .summary {
+            width: 33%;
+            float: right;
+            border: 1px solid #1b5e20;
+        }
+
+        .summary-header {
+            background: #1b5e20;
+            color: #fff;
+            text-align: center;
+            padding: 6px;
+            font-size: 15px;
+            font-weight: bold;
+        }
+
+        .summary table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .summary td {
+            padding: 6px 8px;
+            border-bottom: 1px dashed #ccc;
+            font-size: 12px;
+        }
+
+        .grand {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .footer {
+            clear: both;
+            margin-top: 25px;
+            padding-top: 8px;
+            border-top: 1px solid #999;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        .no-print {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        @media print {
+
+            body {
+                zoom: 96%;
+            }
+
+            .no-print {
+                display: none;
+            }
+
+        }
+    </style>
+
 </head>
 
 <body>
 
-<!-- ================= HEADER ================= -->
-<div class="header">
-  {% if settings.hospital_logo %}
-    <img src="{{ settings.hospital_logo.url }}" class="logo">
-  {% endif %}
+    <!-- ================= HEADER ================= -->
 
-  {% comment %} <strong>{{ settings.hospital_name }}</strong> {% endcomment %}
+    <div class="header">
 
-  <div class="address">
-    {{ settings.address }}<br>
-    Ph: {{ settings.phone }} | Email: {{ settings.email }}
-  </div>
+        <div class="logo-area">
 
-  {% if settings.gst_number %}
-  <div class="gst">
-    GST Reg No : {{ settings.gst_number }}
-  </div>
-  {% endif %}
+            {% if settings.hospital_logo %}
+            <img src="{{ settings.hospital_logo.url }}" class="logo">
+            {% else %}
+            <img src="{% static 'img/logos/logohms.png' %}" class="logo">
+            {% endif %}
 
-  {% if settings.registration_number %}
-    <div style="font-size:12px;">
-      Registration No : {{ settings.registration_number }}
+        </div>
+
+        <div class="center-area">
+
+            <h2>{{ settings.hospital_name }}</h2>
+
+            <p>
+                {{ settings.address }}<br>
+
+                📞 {{ settings.phone }}
+
+                {% if settings.email %}
+                |
+                ✉ {{ settings.email }}
+                {% endif %}
+            </p>
+
+        </div>
+
+        <div class="right-area">
+
+            {% if settings.gst_number %}
+            <p>
+                GST No : {{ settings.gst_number }}
+            </p>
+            {% endif %}
+
+            {% if settings.registration_number %}
+            <p>
+                Reg No : {{ settings.registration_number }}
+            </p>
+            {% endif %}
+
+        </div>
+
     </div>
-  {% endif %}
-</div>
 
-<!-- ================= PATIENT INFO ================= -->
-<table class="info-table">
-  <tr>
-    <td>
-      <strong>Patient Name:</strong>
-      {% if bill.patient %}
-    {{ bill.patient.patient_name }}
-{% else %}
-    {{ bill.customer_name }}
-{% endif %}
-    </td>
-    <td>
-      <strong>Age / Sex:</strong>
-      {% if bill.patient %}
-    {{ bill.patient.age }} /
-    {% if bill.patient.gender == "M" %}
-        Male
-    {% elif bill.patient.gender == "F" %}
-        Female
-    {% else %}
-        {{ bill.patient.gender }}
-    {% endif %}
-{% else %}
-    {{ bill.customer_age }} / {{ bill.customer_gender }}
-{% endif %}
-    </td>
-    <td><strong>Date:</strong> {{ bill.bill_date|date:"d-m-Y" }}</td>
-  </tr>
-  <tr>
-    <td><strong>Bill No:</strong> {{ bill.bill_no }}</td>
-    <td colspan="2"></td>
-  </tr>
-</table>
+    <div class="title">
+        MEDICAL BILL
+    </div>
 
-<!-- ================= MEDICINE TABLE ================= -->
-<table class="bill-table">
-  <thead>
-    <tr>
-      <th>S.No</th>
-      <th>Medicine Name</th>
-      <th>Unit Price (₹)</th>
-      <th>Qty</th>
-      <th>Amount (₹)</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for item in items %}
-    <tr>
-      <td>{{ forloop.counter }}</td>
-      <td style="text-align:left;">{{ item.medicine_name }}</td>
-      <td>{{ item.unit_price }}</td>
-      <td>{{ item.quantity }}</td>
-      <td>{{ item.subtotal }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+    <!-- ================= PATIENT DETAILS ================= -->
 
-<!-- ================= TOTALS (CGST + SGST) ================= -->
-{% with gst=settings.consultation_gst|default:0 %}
-{% with cgst=gst|floatformat:2 %}
-{% with sgst=gst|floatformat:2 %}
-<table class="totals">
-  <tr>
-    <td>Subtotal</td>
-    <td>₹ {{ bill.subtotal }}</td>
-  </tr>
+    <table class="patient-card">
 
-  {% if bill.discount %}
-  <tr>
-    <td>Discount</td>
-    <td>₹ {{ bill.discount }}</td>
-  </tr>
-  {% endif %}
+        <tr>
 
-  {% if gst|floatformat != "0.00" %}
-<tr>
-    <td>CGST ({{ half_gst_percent }}%)</td>
-    <td class="right">₹ {{ cgst }}</td>
-  </tr>
+            <td>
 
-  <tr>
-    <td>SGST ({{ half_gst_percent }}%)</td>
-    <td class="right">₹ {{ sgst }}</td>
-  </tr>
-  <tr>
-    <td>Payment Mode</td>
-    <td class="right">{{ bill.payment_mode }}</td>
-  </tr>
-  <tr>
-    <td>Payment Status</td>
-    <td class="right">{{ bill.payment_status }}</td>
-  </tr>
+                <div class="label">Bill No</div>
 
-  {% endif %}
+                <div class="value">
 
-  <tr>
-    <td><strong>Grand Total</strong></td>
-    <td><strong>₹ {{ bill.total }}</strong></td>
-  </tr>
-</table>
-{% endwith %}
-{% endwith %}
-{% endwith %}
+                    {{ bill.bill_no }}
 
-<!-- ================= FOOTER ================= -->
-<div class="footer">
-  Thank you for visiting {{ settings.hospital_name }}<br>
-  Get Well Soon 🙏
-</div>
+                </div>
 
-<!-- ================= PRINT ================= -->
-<div class="no-print" style="text-align:center; margin-top:20px;">
-  <button onclick="window.print()">🖨 Print</button>
-  <a href="{% url 'billingmgmt:medicalbilling' %}"
-     style="padding:6px 12px;border:1px solid #000;text-decoration:none;color:#000;">
-     ⬅ Back
-  </a>
-</div>
+            </td>
+
+            <td>
+
+                <div class="label">Bill Date</div>
+
+                <div class="value">
+
+                    {{ bill.bill_date|date:"d-m-Y" }}
+
+                </div>
+
+            </td>
+
+            <td>
+
+                <div class="label">Patient ID</div>
+
+                <div class="value">
+
+                    {% if bill.patient %}
+
+                    {{ bill.patient.patient_unique_id }}
+
+                    {% else %}
+
+                    Walk-in
+
+                    {% endif %}
+
+                </div>
+
+            </td>
+
+            <td>
+
+                <div class="label">Payment Status</div>
+
+                <div class="value">
+
+                    {{ bill.payment_status }}
+
+                </div>
+
+            </td>
+
+        </tr>
+
+        <tr>
+
+            <td>
+
+                <div class="label">Patient Name</div>
+
+                <div class="value">
+
+                    {% if bill.patient %}
+
+                    {{ bill.patient.patient_name }}
+
+                    {% else %}
+
+                    {{ bill.customer_name }}
+
+                    {% endif %}
+
+                </div>
+
+            </td>
+
+            <td>
+
+                <div class="label">Age / Gender</div>
+
+                <div class="value">
+
+                    {% if bill.patient %}
+
+                    {{ bill.patient.age }}
+
+                    /
+
+                    {% if bill.patient.gender == "M" %}
+                    Male
+                    {% elif bill.patient.gender == "F" %}
+                    Female
+                    {% else %}
+                    {{ bill.patient.gender }}
+                    {% endif %}
+
+                    {% else %}
+
+                    {{ bill.customer_age }}
+
+                    /
+
+                    {{ bill.customer_gender }}
+
+                    {% endif %}
+
+                </div>
+
+            </td>
+
+            <td>
+
+                <div class="label">Mobile Number</div>
+
+                <div class="value">
+
+                    {% if bill.patient %}
+
+                    {{ bill.patient.phone|default:"-" }}
+
+                    {% else %}
+
+                    -
+
+                    {% endif %}
+
+                </div>
+
+            </td>
+
+            <td>
+
+                <div class="label">Payment Mode</div>
+
+                <div class="value">
+
+                    {{ bill.payment_mode }}
+
+                </div>
+
+            </td>
+
+        </tr>
+
+        <tr>
+
+            <td colspan="4">
+
+                <div class="label">Address</div>
+
+                <div class="value">
+
+                    {% if bill.patient %}
+
+                    {{ bill.patient.address|default:"-" }}
+
+                    {% else %}
+
+                    -
+
+                    {% endif %}
+
+                </div>
+
+            </td>
+
+        </tr>
+
+    </table>
+
+    <!-- ================= MEDICINE TABLE ================= -->
+
+    <div class="section-title">
+
+        Medicine Details
+
+    </div>
+
+    <table class="table">
+
+        <thead>
+
+            <tr>
+
+                <th width="8%">S.No</th>
+
+                <th>Medicine Name</th>
+
+                <th width="15%">Unit Price</th>
+
+                <th width="12%">Qty</th>
+
+                <th width="18%">Amount</th>
+
+            </tr>
+
+        </thead>
+
+        <tbody>
+            {% for item in items %}
+
+            <tr>
+
+                <td class="center">
+                    {{ forloop.counter }}
+                </td>
+
+                <td style="text-align:left;">
+                    {{ item.medicine_name }}
+                </td>
+
+                <td class="right">
+                    ₹ {{ item.unit_price }}
+                </td>
+
+                <td class="center">
+                    {{ item.quantity }}
+                </td>
+
+                <td class="right">
+                    ₹ {{ item.subtotal }}
+                </td>
+
+            </tr>
+
+            {% empty %}
+
+            <tr>
+
+                <td colspan="5" style="padding:20px;text-align:center;color:#777;">
+
+                    No Medicine Items
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+    <div style="margin-top:25px;display:flex;justify-content:space-between;align-items:flex-start;">
+
+        <!-- Remarks -->
+
+        <div style="width:60%;">
+
+            {% if bill.notes %}
+
+            <div style="border:1px solid #ccc;padding:12px;border-radius:6px;">
+
+                <strong>Remarks</strong>
+
+                <hr style="margin:8px 0;">
+
+                {{ bill.notes }}
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+        <!-- ================= BILL SUMMARY ================= -->
+
+        <div class="summary">
+
+            <div class="summary-header">
+
+                Billing Summary
+
+            </div>
+
+            <table>
+
+                <tr>
+
+                    <td>Subtotal</td>
+
+                    <td class="right">
+                        ₹ {{ bill.subtotal|floatformat:2 }}
+                    </td>
+
+                </tr>
+
+                {% if bill.discount %}
+
+                <tr>
+
+                    <td>Discount</td>
+
+                    <td class="right">
+                        - ₹ {{ bill.discount|floatformat:2 }}
+                    </td>
+
+                </tr>
+
+                {% endif %}
+
+                {% if cgst > 0 %}
+
+                <tr>
+
+                    <td>
+                        CGST ({{ cgst_percent }}%)
+                    </td>
+
+                    <td class="right">
+                        ₹ {{ cgst|floatformat:2 }}
+                    </td>
+
+                </tr>
+
+                {% endif %}
+
+                {% if sgst > 0 %}
+
+                <tr>
+
+                    <td>
+                        SGST ({{ sgst_percent }}%)
+                    </td>
+
+                    <td class="right">
+                        ₹ {{ sgst|floatformat:2 }}
+                    </td>
+
+                </tr>
+
+                {% endif %}
+
+                {% if bill.round_off %}
+
+                <tr>
+
+                    <td>Round Off</td>
+
+                    <td class="right">
+                        ₹ {{ bill.round_off|floatformat:2 }}
+                    </td>
+
+                </tr>
+
+                {% endif %}
+
+                <tr style="background:#f5f5f5;">
+
+                    <td>
+
+                        <strong>Grand Total</strong>
+
+                    </td>
+
+                    <td class="right grand">
+
+                        ₹ {{ bill.total|floatformat:2 }}
+
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <td>Payment Mode</td>
+
+                    <td class="right">
+
+                        {{ bill.payment_mode }}
+
+                    </td>
+
+                </tr>
+
+                <tr>
+
+                    <td>Payment Status</td>
+
+                    <td class="right">
+
+                        {% if bill.payment_status == "Paid" %}
+
+                        <span style="color:green;font-weight:bold;">
+                            {{ bill.payment_status }}
+                        </span>
+
+                        {% elif bill.payment_status == "Pending" %}
+
+                        <span style="color:#d97706;font-weight:bold;">
+                            {{ bill.payment_status }}
+                        </span>
+
+                        {% else %}
+
+                        {{ bill.payment_status }}
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+            </table>
+
+        </div>
+
+    </div>
+    <!-- ================= THANK YOU ================= -->
+
+    <div style="
+clear:both;
+margin-top:35px;
+padding:12px;
+text-align:center;
+background:#edf8ef;
+border:1px solid #1b5e20;
+border-radius:6px;
+font-size:14px;
+">
+
+        <strong>
+
+            Thank You For Choosing {{ settings.hospital_name }}
+
+        </strong>
+
+        <br>
+
+        <span style="font-size:12px;">
+
+            We wish you a speedy recovery.
+
+        </span>
+
+    </div>
+
+    <!-- ================= FOOTER ================= -->
+
+    <div class="footer">
+
+        <strong>{{ settings.hospital_name }}</strong><br>
+
+        {{ settings.address }}<br>
+
+        Phone : {{ settings.phone }}
+
+        {% if settings.email %}
+        | Email : {{ settings.email }}
+        {% endif %}
+
+        {% if settings.gst_number %}
+        <br>
+        GST No : {{ settings.gst_number }}
+        {% endif %}
+
+    </div>
+
+    <!-- ================= PRINT BUTTONS ================= -->
+
+    <div class="no-print">
+
+        <button onclick="window.print()" style="
+            background:#1b5e20;
+            color:#fff;
+            border:none;
+            padding:10px 20px;
+            border-radius:5px;
+            cursor:pointer;
+            font-size:14px;
+            margin-right:10px;
+        ">
+
+            🖨 Print Bill
+
+        </button>
+
+        <a href="{% url 'billingmgmt:medicalbilling' %}" style="
+            display:inline-block;
+            padding:10px 20px;
+            border:1px solid #1b5e20;
+            border-radius:5px;
+            text-decoration:none;
+            color:#1b5e20;
+            font-weight:bold;
+       ">
+
+            ⬅ Back
+
+        </a>
+
+    </div>
 
 </body>
+
 </html>

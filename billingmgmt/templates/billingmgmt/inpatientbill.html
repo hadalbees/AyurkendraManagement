@@ -1,658 +1,719 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 {% include "includes/head.html" %}
 
+<style>
+    body {
+        background-color: #f8f9fa !important;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .bg-custom-green {
+        background-color: #065f46 !important;
+    }
+
+    .text-custom-green {
+        color: #065f46 !important;
+    }
+
+    .border-left-custom {
+        border-left: 4px solid #065f46 !important;
+    }
+
+    .btn-custom-green {
+        background-color: #065f46 !important;
+        color: #fff !important;
+        border: none;
+        font-weight: 600;
+        padding: 8px 18px;
+        border-radius: 6px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-custom-green:hover {
+        background-color: #054835 !important;
+        color: #fff !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-outline-custom-green {
+        border: 1px solid #065f46 !important;
+        color: #065f46 !important;
+        background: transparent;
+        font-weight: 600;
+        border-radius: 6px;
+        padding: 8px 18px;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-outline-custom-green:hover {
+        background-color: #e6f4ea !important;
+        color: #065f46 !important;
+    }
+
+    .form-control, .form-select {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 0.875rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #065f46 !important;
+        box-shadow: 0 0 0 0.2rem rgba(6, 95, 70, 0.15) !important;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: #475569;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+
+    .hospital-table th {
+        background-color: #f1f5f9 !important;
+        color: #475569 !important;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .hospital-table td {
+        padding: 12px;
+        font-size: 0.85rem;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        vertical-align: middle;
+    }
+
+    .summary-card {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+    }
+
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px dashed #e2e8f0;
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    .summary-row:last-of-type {
+        border-bottom: none;
+    }
+
+    .badge-type {
+        font-weight: 600;
+        font-size: 0.7rem;
+        padding: 3px 6px;
+        border-radius: 4px;
+        text-transform: uppercase;
+    }
+
+    .badge-room {
+        background-color: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .badge-therapy {
+        background-color: #f5f3ff;
+        color: #6d28d9;
+    }
+
+    .badge-medicine {
+        background-color: #ecfdf5;
+        color: #047857;
+    }
+</style>
+
 <body class="g-sidenav-show bg-gray-100">
-{% include "includes/sidebar.html" %}
 
-<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
-{% include "includes/header.html" %}
+    {% include "includes/sidebar.html" %}
 
-<div class="container-fluid py-4">
+    <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
 
-  <!-- PAGE HEADER -->
-  <div class="mb-4">
-    <h4 class="mb-1">Inpatient Billing</h4>
-    <p class="text-sm text-muted mb-0">
-      Save and print inpatient bills
-    </p>
-  </div>
+        {% include "includes/header.html" %}
 
-  <form id="billingForm" method="post" action="{% url 'billingmgmt:inpatientbilling' %}">
-  {% csrf_token %}
+        <div class="container-fluid py-4">
 
-  <!-- ================= PATIENT DETAILS ================= -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-
-      <h6 class="mb-3">Patient & Admission Details</h6>
-
-      <div class="row g-3">
-
-        <div class="col-md-3">
-          <label class="form-label">Bill No</label>
-          <input class="form-control" name="bill_no" value="{{ bill_no }}" readonly>
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Patient ID</label>
-          <input class="form-control" id="patientId" name="patient_id"
-                 onchange="fetchPatientById()">
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Patient Name</label>
-          <input class="form-control" id="patientName" list="patientList"
-                  oninput="setRegistrationFee(false)"
-                 onchange="fetchPatientByName()">
-          <datalist id="patientList">
-            {% for p in patients %}
-              <option value="{{ p.patient_name }}">
-            {% endfor %}
-          </datalist>
-        </div>
-
-        <div class="col-md-1">
-          <label class="form-label">Age</label>
-          <input class="form-control" id="patientAge" readonly>
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">Gender</label>
-          <input class="form-control" id="patientGender" readonly>
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Admit Date</label>
-          <input type="date" id="admitDate" name="admit_date"
-                 class="form-control" onchange="autoSetRoomDays()">
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Discharge Date</label>
-          <input type="date" id="dischargeDate" name="discharge_date"
-                 class="form-control" onchange="autoSetRoomDays()">
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Doctor Name</label>
-          <input name="doctor_name" class="form-control">
-        </div>
-
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ================= ROOM CHARGES ================= -->
-  <div class="card shadow-sm mb-4">
-    <div class="card-body">
-
-      <h6 class="mb-3">Room Charges</h6>
-
-      <div class="row g-3 align-items-end">
-
-        <div class="col-md-3">
-          <label class="form-label">Room Type</label>
-          <select id="roomType"
-                  class="form-control"
-                  onchange="updateRoomRate()">
-
-              <option value="">Select</option>
-
-              {% for room in room_types %}
-              <option value="{{ room.id }}"
-                      data-name="{{ room.name }}"
-                      data-rate="{{ room.daily_rate }}">
-                  {{ room.name }} - ₹{{ room.daily_rate }}/day
-              </option>
-              {% endfor %}
-
-          </select>
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">Rate / Day</label>
-          <input type="number"
-            id="roomRate"
-            class="form-control"
-            readonly>
-        </div>
-
-        <div class="col-md-2">
-          <label class="form-label">Days</label>
-          <input id="roomDays" type="number" value="1" min="1"
-                 class="form-control" oninput="calcRoomTotal()">
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label">Total</label>
-          <input id="roomTotal" class="form-control" readonly>
-        </div>
-
-        <div class="col-md-2">
-          <button type="button"
-                  class="btn btn-success w-100"
-                  onclick="addRoomItem()">
-            + Add Room
-          </button>
-        </div>
-
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ================= OTHER CHARGES ================= -->
-<!-- ================= OTHER CHARGES ================= -->
-<div class="card shadow-sm mb-4">
-  <div class="card-body">
-
-    <h6 class="mb-3">Other Charges (Therapy / Lab / Medicine)</h6>
-
-    <div class="row g-3 align-items-end">
-
-      <!-- Item -->
-      <div class="col-md-4">
-        <label class="form-label">Item / Therapy</label>
-
-        <select id="chargeSelect" class="form-control">
-
-          <option value="">Select Item</option>
-
-          {% for c in charges %}
-          <option
-            value="{{ c.id }}"
-            data-name="{{ c.name }}"
-            data-type="{{ c.type }}"
-            data-price="{{ c.unit_price }}"
-          >
-            {{ c.name }} ({{ c.type }}) - ₹{{ c.unit_price }}
-          </option>
-          {% endfor %}
-
-        </select>
-      </div>
-
-      <!-- Rate -->
-      <div class="col-md-2">
-        <label class="form-label">Unit Price</label>
-        <input id="itemRate" type="number"
-               class="form-control" readonly>
-      </div>
-
-      <!-- Qty -->
-      <div class="col-md-2">
-        <label class="form-label">Qty</label>
-        <input id="itemQty" type="number"
-               value="1" min="1"
-               class="form-control">
-      </div>
-
-      <!-- Type -->
-      <div class="col-md-2">
-        <label class="form-label">Type</label>
-        <input id="itemType"
-               class="form-control"
-               readonly>
-      </div>
-
-      <!-- Button -->
-      <div class="col-md-2">
-        <button type="button"
-                class="btn btn-success w-100"
-                onclick="addItem()">
-          + Add Item
-        </button>
-      </div>
-
-    </div>
-
-  </div>
-</div>
-
-  
-
-  <!-- ================= BILL SUMMARY ================= -->
-  <div class="row mb-4">
-  <div class="col-md-8">
-    <!-- ================= ITEMS TABLE ================= -->
-  <div class="card shadow-sm mb-4" style="background: #fff;padding: 15px;">
-    <div class="card-body p-0">
-
-      <div class="table-responsive">
-        <table class="table align-items-center mb-0" id="itemsTable">
-          <thead class="bg-light">
-            <tr>
-              <th>Type</th>
-              <th>Item</th>
-              <th>Rate</th>
-              <th>Qty</th>
-              <th>Subtotal</th>
-              <th class="text-center">Action</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-
-    </div>
-  </div>
-  </div>
-
-  <div class="col-md-4">
-    <div class="card shadow-sm">
-      <div class="card-body">
-
-        <h6 class="mb-3">Billing Summary</h6>
-          <div class="row mt-3">
-              <div class="col-md-12 mb-2">
-                <label class="form-label">Payment Status <span class="required" style="color:red">*</span></label>
-                <select class="form-select" name="payment_status" required>
-                  <option value="Pending">Pending</option>
-                  <option value="Paid">Paid</option>
-                </select>
-              </div>
-
-              <div class="col-md-12 mb-3">
-                <label class="form-label">Payment Mode <span class="required" style="color:red">*</span></label>
-                <select class="form-select" name="payment_mode" required>
-                  <option>Cash</option>
-                  <option>Card</option>
-                  <option>UPI</option>
-                  <option>NetBanking</option>
-                  <option>Insurance</option>
-                </select>
-              </div>
+            <!-- ================= PAGE HEADER ================= -->
+            <div class="mb-4">
+                <h3 class="fw-bold mb-1 text-dark fs-4">Inpatient Billing</h3>
+                <p class="text-muted mb-0 small fw-semibold text-uppercase">
+                    Create, Calculate, and Print Inpatient Billing Invoices
+                </p>
             </div>
-        <p class="mb-1">
-          Items Subtotal:
-          ₹ <span id="subTotal">0.00</span>
-        </p>
 
-        <p class="mb-1">
-          New Registration Charge:
-          ₹ <span id="registrationFee">0.00</span>
-        </p>
+            <form id="billingForm" method="post" action="{% url 'billingmgmt:inpatientbilling' %}">
+                {% csrf_token %}
 
-        <p class="mb-1">
-          Discount %
-          <input id="discountPercent"
-                 type="number"
-                 value="0"
-                 name="discount"
-                 style="width:70px"
-                 oninput="recalcTotals()">
-        </p>
+                <!-- ================= PATIENT DETAILS ================= -->
+                <div class="card shadow-sm border-0 border-left-custom mb-4">
+                    <div class="card-header bg-white py-3 border-bottom border-light">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-custom-green bg-opacity-10 text-success p-2 rounded">
+                                <i class="fas fa-user-injured text-success fs-6"></i>
+                            </span>
+                            <h5 class="mb-0 fw-bold text-dark fs-6">Patient & Admission Details</h5>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Bill No</label>
+                                <input class="form-control bg-light fw-semibold" name="bill_no" value="{{ bill_no }}" readonly>
+                            </div>
 
-        <p class="mb-1">
-          Tax (<span id="gstPercentText">{{ settings.consultation_gst|default:0 }}</span>%):
-          ₹ <span id="taxAmount">0.00</span>
-        </p>
+                            <div class="col-md-3">
+                                <label class="form-label">Patient ID</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="fas fa-id-card text-muted"></i></span>
+                                    <input class="form-control" id="patientId" name="patient_id" onchange="fetchPatientById()" placeholder="Enter ID">
+                                </div>
+                            </div>
 
-        <h5>
-          Total:
-          ₹ <span id="grandTotal">0.00</span>
-        </h5>
-        <hr>
+                            <div class="col-md-4">
+                                <label class="form-label">Patient Name</label>
+                                <input class="form-control" id="patientName" list="patientList" oninput="setRegistrationFee(false)" onchange="fetchPatientByName()" placeholder="Search patient name...">
+                                <datalist id="patientList">
+                                    {% for p in patients %}
+                                    <option value="{{ p.patient_name }}">
+                                    {% endfor %}
+                                </datalist>
+                            </div>
 
-        <div class="mb-2">
-          <label class="form-label">Advance Payment</label>
-          <input type="number"
-                id="advancePayment"
-                name="advance_payment"
-                value="0"
-                class="form-control"
-                oninput="calcBalance()">
+                            <div class="col-md-1 col-6">
+                                <label class="form-label">Age</label>
+                                <input class="form-control bg-light text-center" id="patientAge" readonly>
+                            </div>
+
+                            <div class="col-md-1 col-6">
+                                <label class="form-label">Gender</label>
+                                <input class="form-control bg-light text-center" id="patientGender" readonly>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Admit Date</label>
+                                <input type="date" id="admitDate" name="admit_date" class="form-control" onchange="autoSetRoomDays()">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Discharge Date</label>
+                                <input type="date" id="dischargeDate" name="discharge_date" class="form-control" onchange="autoSetRoomDays()">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Consultant Doctor Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="fas fa-user-md text-muted"></i></span>
+                                    <input name="doctor_name" class="form-control" placeholder="Enter doctor name">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= ROOM & SERVICES GRID ================= -->
+                <div class="row g-4 mb-4">
+                    <!-- Room Charges -->
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white py-3 border-bottom border-light">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-custom-green bg-opacity-10 text-success p-2 rounded">
+                                        <i class="fas fa-bed text-success fs-6"></i>
+                                    </span>
+                                    <h5 class="mb-0 fw-bold text-dark fs-6">Room Allocation & Charges</h5>
+                                </div>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-sm-6">
+                                        <label class="form-label">Room Type</label>
+                                        <select id="roomType" class="form-select" onchange="updateRoomRate()">
+                                            <option value="">Select Room</option>
+                                            {% for room in room_types %}
+                                            <option value="{{ room.id }}" data-name="{{ room.name }}" data-rate="{{ room.daily_rate }}">
+                                                {{ room.name }} - ₹{{ room.daily_rate }}/day
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="col-sm-3 col-6">
+                                        <label class="form-label">Rate / Day</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">₹</span>
+                                            <input type="number" id="roomRate" class="form-control bg-light" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-sm-3 col-6">
+                                        <label class="form-label">Days</label>
+                                        <input id="roomDays" type="number" value="1" min="1" class="form-control" oninput="calcRoomTotal()">
+                                    </div>
+
+                                    <div class="col-sm-8">
+                                        <label class="form-label">Total Room Charge</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">₹</span>
+                                            <input id="roomTotal" class="form-control bg-light fw-bold text-dark" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-sm-4">
+                                        <button type="button" class="btn btn-custom-green w-100 py-2.5" onclick="addRoomItem()">
+                                            <i class="fas fa-plus me-1"></i> Add Room
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other Charges -->
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white py-3 border-bottom border-light">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-custom-green bg-opacity-10 text-success p-2 rounded">
+                                        <i class="fas fa-hand-holding-medical text-success fs-6"></i>
+                                    </span>
+                                    <h5 class="mb-0 fw-bold text-dark fs-6">Services / Medicine Charges</h5>
+                                </div>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-sm-6">
+                                        <label class="form-label">Item / Service / Therapy</label>
+                                        <select id="chargeSelect" class="form-select">
+                                            <option value="">Select Service</option>
+                                            {% for c in charges %}
+                                            <option value="{{ c.id }}" data-name="{{ c.name }}" data-type="{{ c.type }}" data-price="{{ c.unit_price }}">
+                                                {{ c.name }} ({{ c.type }}) - ₹{{ c.unit_price }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="col-sm-3 col-6">
+                                        <label class="form-label">Unit Price</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">₹</span>
+                                            <input id="itemRate" type="number" class="form-control bg-light" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-sm-3 col-6">
+                                        <label class="form-label">Qty</label>
+                                        <input id="itemQty" type="number" value="1" min="1" class="form-control">
+                                    </div>
+
+                                    <div class="col-sm-4">
+                                        <label class="form-label">Item Type</label>
+                                        <input id="itemType" class="form-control bg-light text-center" readonly>
+                                    </div>
+
+                                    <div class="col-sm-8">
+                                        <button type="button" class="btn btn-custom-green w-100 py-2.5" onclick="addItem()">
+                                            <i class="fas fa-plus me-1"></i> Add Service / Medicine
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= BILL SUMMARY ================= -->
+                <div class="row g-4 mb-4">
+                    <!-- Invoice Items Table -->
+                    <div class="col-xl-8">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white py-3 border-bottom border-light">
+                                <h5 class="mb-0 fw-bold text-dark fs-6">Invoice Items List</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table hospital-table mb-0" id="itemsTable">
+                                        <thead>
+                                            <tr>
+                                                <th width="120">Type</th>
+                                                <th>Item / Service</th>
+                                                <th width="120">Rate</th>
+                                                <th width="100">Qty</th>
+                                                <th width="150">Subtotal</th>
+                                                <th width="100" class="text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Dynamic items go here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Billing Calculations -->
+                    <div class="col-xl-4">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-white py-3 border-bottom border-light">
+                                <h5 class="mb-0 fw-bold text-dark fs-6">Billing Calculations</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12">
+                                        <label class="form-label">Payment Status <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="payment_status" required>
+                                            <option value="Pending">Pending</option>
+                                            <option value="Paid">Paid</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Payment Mode <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="payment_mode" required>
+                                            <option>Cash</option>
+                                            <option>Card</option>
+                                            <option>UPI</option>
+                                            <option>NetBanking</option>
+                                            <option>Insurance</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="summary-card p-3 mb-4">
+                                    <div class="summary-row">
+                                        <span>Items Subtotal:</span>
+                                        <span class="fw-semibold text-dark">₹ <span id="subTotal">0.00</span></span>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span>New Registration:</span>
+                                        <span class="fw-semibold text-dark">₹ <span id="registrationFee">0.00</span></span>
+                                    </div>
+                                    <div class="summary-row align-items-center">
+                                        <span>Discount Percent:</span>
+                                        <div class="input-group style="width: 100px;">
+                                            <input id="discountPercent" type="number" value="0" name="discount" class="form-control text-center py-1" style="max-width: 90px;" oninput="recalcTotals()">
+                                            <span class="input-group-text py-1">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span>Tax (<span id="gstPercentText">{{ settings.consultation_gst|default:0 }}</span>%):</span>
+                                        <span class="fw-semibold text-dark">₹ <span id="taxAmount">0.00</span></span>
+                                    </div>
+                                    <div class="summary-row pt-2 border-top border-dark">
+                                        <h5 class="fw-bold text-dark mb-0">Total Due:</h5>
+                                        <h5 class="fw-bold text-custom-green mb-0">₹ <span id="grandTotal">0.00</span></h5>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-6">
+                                        <label class="form-label">Advance Paid</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">₹</span>
+                                            <input type="number" id="advancePayment" name="advance_payment" value="0" class="form-control" oninput="calcBalance()">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-6">
+                                        <label class="form-label">Balance Due</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">₹</span>
+                                            <input type="text" id="balanceAmount" class="form-control bg-light fw-bold text-danger" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Hidden billing calculations fields -->
+                                <input type="hidden" name="balance_amount" id="balanceInput">
+                                <input type="hidden" name="subtotal" id="subtotalInput">
+                                <input type="hidden" name="tax" id="taxInput">
+                                <input type="hidden" name="total" id="totalInput">
+                                <input type="hidden" name="payment_status" value="Paid">
+                                <input type="hidden" id="gstPercent" value="{{ settings.consultation_gst|default:0 }}">
+
+                                <button class="btn btn-custom-green w-100 py-3 d-flex align-items-center justify-content-center gap-2">
+                                    <i class="fas fa-print"></i> Save & Print Invoice
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+
         </div>
 
-        <div class="mb-2">
-          <label class="form-label">Balance Amount</label>
-          <input type="text"
-                id="balanceAmount"
-                class="form-control"
-                readonly>
-        </div>
-
-<input type="hidden" name="balance_amount" id="balanceInput">
-
-        <input type="hidden" name="subtotal" id="subtotalInput">
-        <input type="hidden" name="tax" id="taxInput">
-        <input type="hidden" name="total" id="totalInput">
-        <input type="hidden" name="payment_status" value="Paid">
-         <!-- GST % from settings -->
-      <input type="hidden" id="gstPercent"
-             value="{{ settings.consultation_gst|default:0 }}">
-
-      </div>
-    </div>
-  </div>
-</div>
-
-
-  <!-- ================= ACTION ================= -->
-  <div class="d-flex justify-content-end">
-    <button class="btn btn-success px-4">
-      Save & Print
-    </button>
-  </div>
-
-  </form>
-
-</div>
-
-
-</main>
-
-{% include "includes/script.html" %}
-
-<!-- ================= SCRIPT (UNCHANGED) ================= -->
-<script>
-let items = [];
-let registrationFee = 0;
-
-/* ---------- AUTO ROOM DAYS FROM DATES ---------- */
-function autoSetRoomDays(){
-  const admit = document.getElementById("admitDate").value;
-  const discharge = document.getElementById("dischargeDate").value;
-
-  if(!admit || !discharge) return;
-
-  const a = new Date(admit);
-  const d = new Date(discharge);
-
-  if(d < a){
-    alert("Discharge date cannot be before admit date");
-    roomDays.value = 1;
-    return;
-  }
-
-  const diff = d - a;
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
-  roomDays.value = days;
-  calcRoomTotal();
-}
-
-/* ---------- ROOM ---------- */
-function updateRoomRate() {
-
-    const room =
-        document.getElementById("roomType");
-
-    const rate =
-        parseFloat(
-            room.selectedOptions[0]?.dataset.rate
-        ) || 0;
-
-    document.getElementById("roomRate").value =
-        rate.toFixed(2);
-
-    calcRoomTotal();
-}
-
-function calcRoomTotal() {
-
-    const rate =
-        parseFloat(
-            document.getElementById("roomRate").value
-        ) || 0;
-
-    let days =
-        parseFloat(
-            document.getElementById("roomDays").value
-        ) || 1;
-
-    if (days < 1) {
-        days = 1;
-        document.getElementById("roomDays").value = 1;
-    }
-
-    const total = rate * days;
-
-    document.getElementById("roomTotal").value =
-        total.toFixed(2);
-}
-
-function addRoomItem(){
-
-    const roomSelect =
-        document.getElementById("roomType");
-
-    if(!roomSelect.value){
-        alert("Select room");
-        return;
-    }
-
-    const roomName =
-        roomSelect.options[
-            roomSelect.selectedIndex
-        ].text.split(" - ")[0];
-
-    const rate =
-        parseFloat(
-            document.getElementById("roomRate").value
-        ) || 0;
-
-    const days =
-        parseFloat(
-            document.getElementById("roomDays").value
-        ) || 1;
-
-    const total =
-        parseFloat(
-            document.getElementById("roomTotal").value
-        ) || 0;
-
-    items.push({
-
-        item_type: "room",
-
-        item_name: roomName,
-
-        unit_price: rate,
-
-        quantity: days,
-
-        subtotal: total,
-
-        stock_id: ""
-
-    });
-
-    roomSelect.value = "";
-    roomRate.value = "";
-    roomDays.value = 1;
-    roomTotal.value = "";
-
-    renderItems();
-}
-
-/* ---------- PATIENT ---------- */
-function fetchPatientById(){
-  fetch(`{% url 'billingmgmt:get_patient' %}?patient_id=${patientId.value}`)
-    .then(r => r.json())
-    .then(d => {
-      patientName.value = d.patient_name || "";
-      patientAge.value = d.age || "";
-      patientGender.value = d.gender || "";
-
-      // 🔥 NEW REGISTRATION CHECK
-      setRegistrationFee(d.is_new === true);
-    });
-}
-
-function fetchPatientByName(){
-  fetch(`{% url 'billingmgmt:get_patient' %}?patient_name=${patientName.value}`)
-    .then(r => r.json())
-    .then(d => {
-      patientId.value = d.patient_unique_id || "";
-      patientAge.value = d.age || "";
-      patientGender.value = d.gender || "";
-
-      // 🔥 NEW REGISTRATION CHECK
-      setRegistrationFee(d.is_new === true);
-    });
-}
-
-/* ---------- NEW REGISTRATION ---------- */
-function setRegistrationFee(isNew){
-  registrationFee = isNew ? 50 : 0;
-  document.getElementById("registrationFee").textContent =
-    registrationFee.toFixed(2);
-  recalcTotals();
-}
-
-/* ---------- ITEM ---------- */
-function onItemSelected(){
-  const opt = [...itemList.options].find(o => o.value === itemName.value);
-  if(opt){
-    itemRate.value = opt.dataset.price || itemRate.value;
-    itemType.value = opt.dataset.source === "therapy" ? "treatment" : "medicine";
-    itemName.dataset.stockId = opt.dataset.stockId || "";
-  }
-}
-/* ---------- CHARGE SELECT ---------- */
-
-document.getElementById("chargeSelect")
-.addEventListener("change", function(){
-
-  const opt = this.selectedOptions[0];
-
-  if(!opt.value) return;
-
-  document.getElementById("itemRate").value =
-    opt.dataset.price;
-
-  document.getElementById("itemType").value =
-    opt.dataset.type;
-
-});
-function addItem(){
-
-  const select = document.getElementById("chargeSelect");
-
-  if(!select.value)
-    return alert("Select item");
-
-  const opt = select.selectedOptions[0];
-
-  const name = opt.dataset.name;
-  const type = opt.dataset.type;
-  const price = parseFloat(opt.dataset.price) || 0;
-  const qty = parseFloat(itemQty.value) || 1;
-
-  const subtotal = +(price * qty).toFixed(2);
-
-  items.push({
-    item_type: type,
-    item_name: name,
-    unit_price: price,
-    quantity: qty,
-    subtotal: subtotal,
-    stock_id: ""
-  });
-
-  select.value = "";
-  itemRate.value = "";
-  itemQty.value = 1;
-  itemType.value = "";
-
-  renderItems();
-}
-/* ---------- RENDER ---------- */
-function renderItems(){
-  itemsTable.tBodies[0].innerHTML = "";
-  let s = 0;
-
-  items.forEach((i, x) => {
-    s += i.subtotal;
-    itemsTable.tBodies[0].innerHTML += `
-      <tr>
-        <td>${i.item_type}</td>
-        <td>${i.item_name}</td>
-        <td>${i.unit_price}</td>
-        <td>${i.quantity}</td>
-        <td>${i.subtotal}</td>
-        <td>
-          <button class="btn btn-sm btn-danger"
-            onclick="items.splice(${x},1);renderItems()">
-            X
-          </button>
-        </td>
-      </tr>`;
-  });
-
-  subTotal.textContent = s.toFixed(2);
-  recalcTotals();
-  syncHidden();
-}
-
-/* ---------- TOTALS ---------- */
-function recalcTotals(){
-  const itemSubtotal = parseFloat(subTotal.textContent) || 0;
-  const discountPct = parseFloat(discountPercent.value) || 0;
-
-  // ✅ GST % from settings
-  const gstPercent = parseFloat(document.getElementById("gstPercent").value) || 0;
-
-  const gross = itemSubtotal + registrationFee;
-  const discount = gross * (discountPct / 100);
-  const afterDiscount = gross - discount;
-
-  // ✅ DYNAMIC GST
-  const tax = afterDiscount * (gstPercent / 100);
-  const total = afterDiscount + tax;
-
-  taxAmount.textContent = tax.toFixed(2);
-  grandTotal.textContent = total.toFixed(2);
-
-  subtotalInput.value = gross.toFixed(2);
-  taxInput.value = tax.toFixed(2);
-  totalInput.value = total.toFixed(2);
-
-  calcBalance();
-}
-
-/* ---------- SYNC HIDDEN ---------- */
-function syncHidden(){
-  document.querySelectorAll('[name^="item_"]').forEach(e => e.remove());
-
-  items.forEach(i => {
-    billingForm.insertAdjacentHTML("beforeend", `
-      <input type="hidden" name="item_name[]" value="${i.item_name}">
-      <input type="hidden" name="item_rate[]" value="${i.unit_price}">
-      <input type="hidden" name="item_qty[]" value="${i.quantity}">
-      <input type="hidden" name="item_type[]" value="${i.item_type}">
-      <input type="hidden" name="item_stock_id[]" value="${i.stock_id}">
-    `);
-  });
-}
-
-function calcBalance(){
-
-  const total =
-      parseFloat(document.getElementById("grandTotal").textContent) || 0;
-
-  let advance =
-      parseFloat(document.getElementById("advancePayment").value) || 0;
-
-  if(advance > total){
-      advance = total;
-      document.getElementById("advancePayment").value = total;
-  }
-
-  const balance = total - advance;
-
-  document.getElementById("balanceAmount").value =
-      balance.toFixed(2);
-
-  document.getElementById("balanceInput").value =
-      balance.toFixed(2);
-}
-</script>
-
+    </main>
+
+    {% include "includes/script.html" %}
+
+    <!-- ================= SCRIPT (UNCHANGED) ================= -->
+    <script>
+        let items = [];
+        let registrationFee = 0;
+
+        /* ---------- AUTO ROOM DAYS FROM DATES ---------- */
+        function autoSetRoomDays() {
+            const admit = document.getElementById("admitDate").value;
+            const discharge = document.getElementById("dischargeDate").value;
+
+            if (!admit || !discharge) return;
+
+            const a = new Date(admit);
+            const d = new Date(discharge);
+
+            if (d < a) {
+                alert("Discharge date cannot be before admit date");
+                roomDays.value = 1;
+                return;
+            }
+
+            const diff = d - a;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24)) + 1;
+            roomDays.value = days;
+            calcRoomTotal();
+        }
+
+        /* ---------- ROOM ---------- */
+        function updateRoomRate() {
+            const room = document.getElementById("roomType");
+            const rate = parseFloat(room.selectedOptions[0]?.dataset.rate) || 0;
+            document.getElementById("roomRate").value = rate.toFixed(2);
+            calcRoomTotal();
+        }
+
+        function calcRoomTotal() {
+            const rate = parseFloat(document.getElementById("roomRate").value) || 0;
+            let days = parseFloat(document.getElementById("roomDays").value) || 1;
+
+            if (days < 1) {
+                days = 1;
+                document.getElementById("roomDays").value = 1;
+            }
+
+            const total = rate * days;
+            document.getElementById("roomTotal").value = total.toFixed(2);
+        }
+
+        function addRoomItem() {
+            const roomSelect = document.getElementById("roomType");
+
+            if (!roomSelect.value) {
+                alert("Select room");
+                return;
+            }
+
+            const roomName = roomSelect.options[roomSelect.selectedIndex].text.split(" - ")[0];
+            const rate = parseFloat(document.getElementById("roomRate").value) || 0;
+            const days = parseFloat(document.getElementById("roomDays").value) || 1;
+            const total = parseFloat(document.getElementById("roomTotal").value) || 0;
+
+            items.push({
+                item_type: "room",
+                item_name: roomName,
+                unit_price: rate,
+                quantity: days,
+                subtotal: total,
+                stock_id: ""
+            });
+
+            roomSelect.value = "";
+            roomRate.value = "";
+            roomDays.value = 1;
+            roomTotal.value = "";
+
+            renderItems();
+        }
+
+        /* ---------- PATIENT ---------- */
+        function fetchPatientById() {
+            fetch(`{% url 'billingmgmt:get_patient' %}?patient_id=${patientId.value}`)
+                .then(r => r.json())
+                .then(d => {
+                    patientName.value = d.patient_name || "";
+                    patientAge.value = d.age || "";
+                    patientGender.value = d.gender || "";
+
+                    // 🔥 NEW REGISTRATION CHECK
+                    setRegistrationFee(d.is_new === true);
+                });
+        }
+
+        function fetchPatientByName() {
+            fetch(`{% url 'billingmgmt:get_patient' %}?patient_name=${patientName.value}`)
+                .then(r => r.json())
+                .then(d => {
+                    patientId.value = d.patient_unique_id || "";
+                    patientAge.value = d.age || "";
+                    patientGender.value = d.gender || "";
+
+                    // 🔥 NEW REGISTRATION CHECK
+                    setRegistrationFee(d.is_new === true);
+                });
+        }
+
+        /* ---------- NEW REGISTRATION ---------- */
+        function setRegistrationFee(isNew) {
+            registrationFee = isNew ? 50 : 0;
+            document.getElementById("registrationFee").textContent = registrationFee.toFixed(2);
+            recalcTotals();
+        }
+
+        /* ---------- ITEM ---------- */
+        function onItemSelected() {
+            const opt = [...itemList.options].find(o => o.value === itemName.value);
+            if (opt) {
+                itemRate.value = opt.dataset.price || itemRate.value;
+                itemType.value = opt.dataset.source === "therapy" ? "treatment" : "medicine";
+                itemName.dataset.stockId = opt.dataset.stockId || "";
+            }
+        }
+
+        /* ---------- CHARGE SELECT ---------- */
+        document.getElementById("chargeSelect").addEventListener("change", function () {
+            const opt = this.selectedOptions[0];
+            if (!opt.value) return;
+            document.getElementById("itemRate").value = opt.dataset.price;
+            document.getElementById("itemType").value = opt.dataset.type;
+        });
+
+        function addItem() {
+            const select = document.getElementById("chargeSelect");
+
+            if (!select.value) return alert("Select item");
+
+            const opt = select.selectedOptions[0];
+            const name = opt.dataset.name;
+            const type = opt.dataset.type;
+            const price = parseFloat(opt.dataset.price) || 0;
+            const qty = parseFloat(itemQty.value) || 1;
+
+            const subtotal = +(price * qty).toFixed(2);
+
+            items.push({
+                item_type: type,
+                item_name: name,
+                unit_price: price,
+                quantity: qty,
+                subtotal: subtotal,
+                stock_id: ""
+            });
+
+            select.value = "";
+            itemRate.value = "";
+            itemQty.value = 1;
+            itemType.value = "";
+
+            renderItems();
+        }
+
+        /* ---------- RENDER ---------- */
+        function renderItems() {
+            itemsTable.tBodies[0].innerHTML = "";
+            let s = 0;
+
+            items.forEach((i, x) => {
+                s += i.subtotal;
+                let badgeClass = "badge-room";
+                if (i.item_type === "therapy" || i.item_type === "treatment") {
+                    badgeClass = "badge-therapy";
+                } else if (i.item_type === "medicine") {
+                    badgeClass = "badge-medicine";
+                }
+                
+                itemsTable.tBodies[0].innerHTML += `
+                    <tr class="align-middle">
+                        <td><span class="badge-type ${badgeClass}">${i.item_type}</span></td>
+                        <td class="fw-semibold text-dark">${i.item_name}</td>
+                        <td>₹ ${i.unit_price.toFixed(2)}</td>
+                        <td>${i.quantity}</td>
+                        <td class="fw-bold text-dark">₹ ${i.subtotal.toFixed(2)}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-light border text-danger px-2.5 py-1 mb-0"
+                                onclick="items.splice(${x},1);renderItems()">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+
+            subTotal.textContent = s.toFixed(2);
+            recalcTotals();
+            syncHidden();
+        }
+
+        /* ---------- TOTALS ---------- */
+        function recalcTotals() {
+            const itemSubtotal = parseFloat(subTotal.textContent) || 0;
+            const discountPct = parseFloat(discountPercent.value) || 0;
+
+            // ✅ GST % from settings
+            const gstPercent = parseFloat(document.getElementById("gstPercent").value) || 0;
+
+            const gross = itemSubtotal + registrationFee;
+            const discount = gross * (discountPct / 100);
+            const afterDiscount = gross - discount;
+
+            // ✅ DYNAMIC GST
+            const tax = afterDiscount * (gstPercent / 100);
+            const total = afterDiscount + tax;
+
+            taxAmount.textContent = tax.toFixed(2);
+            grandTotal.textContent = total.toFixed(2);
+
+            subtotalInput.value = gross.toFixed(2);
+            taxInput.value = tax.toFixed(2);
+            totalInput.value = total.toFixed(2);
+
+            calcBalance();
+        }
+
+        /* ---------- SYNC HIDDEN ---------- */
+        function syncHidden() {
+            document.querySelectorAll('[name^="item_"]').forEach(e => e.remove());
+
+            items.forEach(i => {
+                billingForm.insertAdjacentHTML("beforeend", `
+                    <input type="hidden" name="item_name[]" value="${i.item_name}">
+                    <input type="hidden" name="item_rate[]" value="${i.unit_price}">
+                    <input type="hidden" name="item_qty[]" value="${i.quantity}">
+                    <input type="hidden" name="item_type[]" value="${i.item_type}">
+                    <input type="hidden" name="item_stock_id[]" value="${i.stock_id}">
+                `);
+            });
+        }
+
+        function calcBalance() {
+            const total = parseFloat(document.getElementById("grandTotal").textContent) || 0;
+            let advance = parseFloat(document.getElementById("advancePayment").value) || 0;
+
+            if (advance > total) {
+                advance = total;
+                document.getElementById("advancePayment").value = total;
+            }
+
+            const balance = total - advance;
+
+            document.getElementById("balanceAmount").value = balance.toFixed(2);
+            document.getElementById("balanceInput").value = balance.toFixed(2);
+        }
+    </script>
 
 </body>
-</html>
 
+</html>

@@ -121,6 +121,12 @@
             <span>Tax</span>
             <strong>₹{{ bill.tax }}</strong>
           </div>
+          {% if bill.round_off %}
+          <div class="d-flex justify-content-between">
+            <span>Round Off</span>
+            <strong>₹{{ bill.round_off }}</strong>
+          </div>
+          {% endif %}
           <div class="d-flex justify-content-between">
             <span>Payment Mode</span>
             <strong>{{ bill.payment_mode }}</strong>

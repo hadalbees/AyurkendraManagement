@@ -2,356 +2,537 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  {% include "includes/head.html" %}
-  <style>
-    #patientSuggestions, #therapySuggestions {
-      position: absolute;
-      background: white;
-      border: 1px solid #ccc;
-      max-height: 150px;
-      overflow-y: auto;
-      width: 100%;
-      z-index: 1000;
-      display: none;
-    }
-    .suggest-item {
-      padding: 6px 10px;
-      cursor: pointer;
-    }
-    .suggest-item:hover { background:#f1f1f1; }
-  </style>
+    {% include "includes/head.html" %}
+    <style>
+        body {
+            background-color: #f8f9fa !important;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .bg-custom-green {
+            background-color: #065f46 !important;
+        }
+
+        .text-custom-green {
+            color: #065f46 !important;
+        }
+
+        .border-left-custom {
+            border-left: 4px solid #065f46 !important;
+        }
+
+        .btn-custom-green {
+            background-color: #065f46 !important;
+            color: #fff !important;
+            border: none;
+            font-weight: 600;
+            padding: 8px 18px;
+            border-radius: 6px;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .btn-custom-green:hover {
+            background-color: #054835 !important;
+            color: #fff !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-outline-custom-green {
+            border: 1px solid #065f46 !important;
+            color: #065f46 !important;
+            background: transparent;
+            font-weight: 600;
+            border-radius: 6px;
+            padding: 8px 18px;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .btn-outline-custom-green:hover {
+            background-color: #e6f4ea !important;
+            color: #065f46 !important;
+        }
+
+        .form-control, .form-select {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 0.875rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #065f46 !important;
+            box-shadow: 0 0 0 0.2rem rgba(6, 95, 70, 0.15) !important;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #475569;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .hospital-table th {
+            background-color: #f1f5f9 !important;
+            color: #475569 !important;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .hospital-table td {
+            padding: 12px;
+            font-size: 0.85rem;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+            vertical-align: middle;
+        }
+
+        .hospital-table tbody tr:nth-of-type(even) {
+            background-color: #f8fafc;
+        }
+
+        .summary-card {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #e2e8f0;
+            font-size: 0.875rem;
+            color: #64748b;
+        }
+
+        .summary-row:last-of-type {
+            border-bottom: none;
+        }
+
+        .suggestions-box {
+            position: absolute;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            max-height: 180px;
+            overflow-y: auto;
+            width: calc(100% - 24px);
+            z-index: 1050;
+            display: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .suggest-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: #334155;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.15s ease-in-out;
+        }
+
+        .suggest-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggest-item:hover {
+            background-color: #f1f5f9;
+            color: #0f172a;
+        }
+
+        .form-check-input:checked {
+            background-color: #065f46 !important;
+            border-color: #065f46 !important;
+        }
+    </style>
 </head>
 
 <body class="g-sidenav-show bg-gray-100">
-{% include "includes/sidebar.html" %}
-<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
-{% include "includes/header.html" %}
-
-<div class="container-fluid py-4">
-<h4>Outpatient Billing</h4>
-
-<form id="billForm" method="POST">
-{% csrf_token %}
-
-<input type="hidden" name="patient_id" id="patientHidden">
-<input type="hidden" name="subtotal" id="subtotalInput">
-<input type="hidden" name="discount" id="discountInput">
-<input type="hidden" name="tax" id="taxInput">
-<input type="hidden" name="total" id="totalInput">
-<input type="hidden" name="registration_fee" id="regFeeInput">
- <input type="hidden" id="gstPercent"
-             value="{{ settings.consultation_gst|default:0 }}">
-
-<!-- ================= PATIENT ================= -->
-<div class="card mb-4">
-<div class="card-body">
-<div class="row g-3">
-
-<div class="col-md-3">
-<label>Bill No</label>
-<input class="form-control" name="bill_no" value="{{ bill_no }}" readonly>
-</div>
-
-<div class="col-md-3 position-relative">
-<label>Patient</label>
-<input id="patientName" class="form-control" placeholder="Search patient">
-<div id="patientSuggestions"></div>
-</div>
-
-<div class="col-md-3">
-<label>Date</label>
-<input type="date" name="visit_date" class="form-control"
-       value="{{ today|date:'Y-m-d' }}">
-</div>
-
-<div class="col-md-3">
-<label>Doctor</label>
-<input name="doctor_name" class="form-control">
-</div>
-
-</div>
-</div>
-</div>
-
-<!-- ================= CONSULTATION ================= -->
-<div class="card mb-4">
-<div class="card-body">
-<div class="row g-3 align-items-end">
-<div class="col-md-4">
-<input class="form-control" value="Consultation Fees" readonly>
-</div>
-<div class="col-md-3">
-<input id="consultFee" type="number" class="form-control" value="300">
-</div>
-<div class="col-md-2">
-<button type="button" class="btn btn-success w-100"
-        onclick="addConsultation()">+ Add</button>
-</div>
-</div>
-</div>
-</div>
-
-<!-- ================= THERAPY ================= -->
-<div class="card mb-4">
-<div class="card-body">
-<div class="row g-3 align-items-end position-relative">
-
-<div class="col-md-4 position-relative">
-<input id="itemName" class="form-control" placeholder="Particulars">
-<div id="therapySuggestions"></div>
-</div>
-
-<div class="col-md-3">
-<input id="itemRate" type="number" class="form-control" placeholder="Rate">
-</div>
-
-<div class="col-md-3">
-<input id="itemQty" type="number" class="form-control" value="1">
-</div>
-
-<div class="col-md-2">
-<button type="button" class="btn btn-success w-100"
-        onclick="addItem()">+ Add</button>
-</div>
-
-</div>
-</div>
-</div>
-
-
-
-<!-- ================= SUMMARY ================= -->
-<div class="row mb-4">
-<div class="col-md-8">
-  <!-- ================= ITEMS TABLE ================= -->
-<div class="card mb-4" style="background: #fff;padding: 15px;">
-<div class="card-body p-0">
-<table class="table mb-0" id="itemTable">
-<thead class="bg-light">
-<tr>
-<th>Item</th><th>Rate</th><th>Qty</th><th>Total</th><th></th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
-</div>
-</div>
-</div>
-<div class="col-md-4">
-<div class="card">
-<div class="card-body">
-<div class="row mt-3">
-    <div class="col-md-12 mb-2">
-      <label class="form-label">Payment Status <span class="required" style="color:red">*</span></label>
-      <select class="form-select" name="payment_status" required>
-        <option value="Pending">Pending</option>
-        <option value="Paid">Paid</option>
-      </select>
-    </div>
-
-    <div class="col-md-12 mb-3">
-      <label class="form-label">Payment Mode <span class="required" style="color:red">*</span></label>
-      <select class="form-select" name="payment_mode" required>
-        <option>Cash</option>
-        <option>Card</option>
-        <option>UPI</option>
-        <option>NetBanking</option>
-        <option>Insurance</option>
-      </select>
-    </div>
-  </div>
-  <div class="form-check mb-2" style="margin: 0 !important;padding: 0 !important;">
-    <input class="form-check-input"
-           type="checkbox"
-           id="newRegistration"
-           onchange="toggleRegistrationFee()">
-
-    <label class="form-check-label" for="newRegistration">
-        New Registration (+ ₹50)
-    </label>
-</div>
-
-<p id="regFeeRow" style="display:none;">
-    Registration Fee:
-    ₹ <span id="regFee">50.00</span>
-</p>
-<p>Subtotal: ₹ <span id="subTotal">0</span></p>
-
-{% comment %} <p>
-Discount (%)
-<input id="discountPercent" type="number" name="discount" value="0"
-       style="width:60px" oninput="calcTotal()">
-</p> {% endcomment %}
-
-<p>GST (<span id="gstPercentText">{{ settings.consultation_gst|default:0 }}</span>%): ₹ <span id="tax">0</span></p>
-
-<h5>Total: ₹ <span id="grandTotal">0</span></h5>
-
-</div>
-</div>
-</div>
-</div>
-
-<div class="text-end">
-<button type="button" class="btn btn-success"
-        onclick="submitBill()">Save & Print</button>
-</div>
-
-</form>
-</div>
-
-
-</main>
-{% include "includes/script.html" %}
-
-<script>
-/* ================= GLOBAL ================= */
-let items = [];
-let consultAdded = false;
-let registrationFee = 0;
-
-/* ================= PATIENT SEARCH ================= */
-patientName.addEventListener("input", function () {
-  const q = this.value.trim();
-  if (!q) return patientSuggestions.style.display = "none";
-
-  fetch("{% url 'billingmgmt:get_patient_suggestions' %}?q=" + q)
-    .then(r => r.json())
-    .then(data => {
-     patientSuggestions.innerHTML = data.map(p => `
-      <div class="suggest-item"
-          onclick="selectPatient(${p.id},'${p.name}')">
-          ${p.name} - ${p.phone}
-      </div>
-      `).join("");
-      patientSuggestions.style.display = "block";
-    });
-});
-
-function selectPatient(id, name) {
-
-    patientName.value = name;
-
-    patientHidden.value = id;
-
-    patientSuggestions.style.display = "none";
-
-}
-
-/* ================= REGISTRATION FEE ================= */
-function toggleRegistrationFee(){
-
-    if(document.getElementById("newRegistration").checked){
-
-        registrationFee = 50;
-
-        regFeeRow.style.display = "block";
-
-    }
-    else{
-
-        registrationFee = 0;
-
-        regFeeRow.style.display = "none";
-
-    }
-
-    document.getElementById("regFee").innerHTML =
-        registrationFee.toFixed(2);
-
-    document.getElementById("regFeeInput").value =
-        registrationFee;
-
-    calcTotal();
-
-}
-
-/* ================= ITEMS ================= */
-function addConsultation() {
-  if (consultAdded) return alert("Already added");
-  const fee = +consultFee.value;
-  if (fee <= 0) return;
-  items.push({ n:"Consultation Fees", r:fee, q:1, t:fee });
-  consultAdded = true;
-  renderItems();
-}
-
-function addItem() {
-  const n=itemName.value.trim();
-  const r=+itemRate.value||0;
-  const q=+itemQty.value||1;
-  if(!n||r<=0) return alert("Invalid item");
-  items.push({n,r,q,t:r*q});
-  itemName.value=""; itemRate.value=""; itemQty.value=1;
-  renderItems();
-}
-
-function renderItems() {
-  const tb=itemTable.querySelector("tbody");
-  tb.innerHTML="";
-  let s=0;
-  items.forEach((x,i)=>{
-    s+=x.t;
-    tb.innerHTML+=`
-    <tr>
-      <td>${x.n}<input type="hidden" name="item_name[]" value="${x.n}"></td>
-      <td>${x.r}<input type="hidden" name="item_rate[]" value="${x.r}"></td>
-      <td>${x.q}<input type="hidden" name="item_qty[]" value="${x.q}"></td>
-      <td>${x.t}</td>
-      <td><button class="btn btn-danger btn-sm"
-        onclick="items.splice(${i},1);
-        if('${x.n}'==='Consultation Fees') consultAdded=false;
-        renderItems()">X</button></td>
-    </tr>`;
-  });
-  subTotal.textContent=s.toFixed(2);
-  calcTotal();
-}
-
-/* ================= TOTAL ================= */
-function calcTotal(){
-
-    const itemSubtotal =
-        parseFloat(subTotal.textContent) || 0;
-
-    const gross =
-        itemSubtotal + registrationFee;
-
-    const gstPercent =
-        parseFloat(document.getElementById("gstPercent").value) || 0;
-
-    const taxAmt =
-        gross * gstPercent / 100;
-
-    document.getElementById("tax").textContent =
-        taxAmt.toFixed(2);
-
-    document.getElementById("grandTotal").textContent =
-        (gross + taxAmt).toFixed(2);
-
-}
-
-/* ================= SUBMIT ================= */
-function submitBill(){
-
-    subtotalInput.value =
-        subTotal.textContent;
-
-    discountInput.value = 0;
-
-    taxInput.value =
-        tax.textContent;
-
-    totalInput.value =
-        grandTotal.textContent;
-
-    regFeeInput.value =
-        registrationFee;
-
-    billForm.submit();
-
-}
-</script>
+
+    {% include "includes/sidebar.html" %}
+
+    <main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+
+        {% include "includes/header.html" %}
+
+        <div class="container-fluid py-4">
+
+            <!-- ================= PAGE HEADER ================= -->
+            <div class="mb-4">
+                <h3 class="fw-bold mb-1 text-dark fs-4">Outpatient Billing</h3>
+                <p class="text-muted mb-0 small fw-semibold text-uppercase">
+                    Create, Calculate, and Print Outpatient Consultant Invoices
+                </p>
+            </div>
+
+            <form id="billForm" method="POST">
+                {% csrf_token %}
+
+                <!-- Hidden form inputs -->
+                <input type="hidden" name="patient_id" id="patientHidden">
+                <input type="hidden" name="subtotal" id="subtotalInput">
+                <input type="hidden" name="discount" id="discountInput">
+                <input type="hidden" name="tax" id="taxInput">
+                <input type="hidden" name="total" id="totalInput">
+                <input type="hidden" name="registration_fee" id="regFeeInput">
+                <input type="hidden" id="gstPercent" value="{{ settings.consultation_gst|default:0 }}">
+
+                <!-- ================= PATIENT DETAILS ================= -->
+                <div class="card shadow-sm border-0 border-left-custom mb-4">
+                    <div class="card-header bg-white py-3 border-bottom border-light">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-custom-green bg-opacity-10 text-success p-2 rounded">
+                                <i class="fas fa-user text-success fs-6"></i>
+                            </span>
+                            <h5 class="mb-0 fw-bold text-dark fs-6">Patient & Visit Details</h5>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Bill No</label>
+                                <input class="form-control bg-light fw-semibold" name="bill_no" value="{{ bill_no }}" readonly>
+                            </div>
+
+                            <div class="col-md-3 position-relative">
+                                <label class="form-label">Patient Name / Search</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                                    <input id="patientName" class="form-control" placeholder="Type name or phone..." autocomplete="off">
+                                </div>
+                                <div id="patientSuggestions" class="suggestions-box"></div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Visit Date</label>
+                                <input type="date" name="visit_date" class="form-control" value="{{ today|date:'Y-m-d' }}">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Consultant Doctor Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="fas fa-user-md text-muted"></i></span>
+                                    <input name="doctor_name" class="form-control" placeholder="Enter doctor name">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= CHARGES ALLOCATION GRID ================= -->
+                <div class="row g-4 mb-4">
+                    <!-- Consultation Fee -->
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white py-3 border-bottom border-light">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-custom-green bg-opacity-10 text-success p-2 rounded">
+                                        <i class="fas fa-stethoscope text-success fs-6"></i>
+                                    </span>
+                                    <h5 class="mb-0 fw-bold text-dark fs-6">Consultation Fees</h5>
+                                </div>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-sm-7">
+                                        <label class="form-label">Particulars</label>
+                                        <input class="form-control bg-light fw-semibold" value="Consultation Fees" readonly>
+                                    </div>
+
+                                    <div class="col-sm-5">
+                                        <label class="form-label">Consultation Amount</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">₹</span>
+                                            <input id="consultFee" type="number" class="form-control" value="300">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 mt-3">
+                                        <button type="button" class="btn btn-custom-green w-100 py-2.5" onclick="addConsultation()">
+                                            <i class="fas fa-plus me-1"></i> Add Consultation Fee
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other Therapies / Items -->
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white py-3 border-bottom border-light">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-custom-green bg-opacity-10 text-success p-2 rounded">
+                                        <i class="fas fa-hand-holding-medical text-success fs-6"></i>
+                                    </span>
+                                    <h5 class="mb-0 fw-bold text-dark fs-6">Therapies / Pharmacy Particulars</h5>
+                                </div>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3 align-items-end position-relative">
+                                    <div class="col-sm-6 position-relative">
+                                        <label class="form-label">Particular / Item / Service</label>
+                                        <input id="itemName" class="form-control" placeholder="Enter particulars name..." autocomplete="off">
+                                        <div id="therapySuggestions" class="suggestions-box"></div>
+                                    </div>
+
+                                    <div class="col-sm-3 col-6">
+                                        <label class="form-label">Rate / Charge</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light">₹</span>
+                                            <input id="itemRate" type="number" class="form-control" placeholder="0.00">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-sm-3 col-6">
+                                        <label class="form-label">Qty</label>
+                                        <input id="itemQty" type="number" class="form-control text-center" value="1">
+                                    </div>
+
+                                    <div class="col-12 mt-3">
+                                        <button type="button" class="btn btn-custom-green w-100 py-2.5" onclick="addItem()">
+                                            <i class="fas fa-plus me-1"></i> Add Custom Charge
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= BILL SUMMARY ================= -->
+                <div class="row g-4 mb-4">
+                    <!-- Invoice Items Table -->
+                    <div class="col-xl-8">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white py-3 border-bottom border-light">
+                                <h5 class="mb-0 fw-bold text-dark fs-6">Invoice Items List</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table hospital-table mb-0" id="itemTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Particulars Name</th>
+                                                <th width="150">Rate</th>
+                                                <th width="120">Qty</th>
+                                                <th width="180">Total Subtotal</th>
+                                                <th width="100" class="text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Dynamic elements go here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Billing Calculations Summary -->
+                    <div class="col-xl-4">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-header bg-white py-3 border-bottom border-light">
+                                <h5 class="mb-0 fw-bold text-dark fs-6">Billing Calculations</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3 mb-4">
+                                    <div class="col-12">
+                                        <label class="form-label">Payment Status <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="payment_status" required>
+                                            <option value="Pending">Pending</option>
+                                            <option value="Paid">Paid</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">Payment Mode <span class="text-danger">*</span></label>
+                                        <select class="form-select" name="payment_mode" required>
+                                            <option>Cash</option>
+                                            <option>Card</option>
+                                            <option>UPI</option>
+                                            <option>NetBanking</option>
+                                            <option>Insurance</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-check form-switch mb-3 ps-5 py-1">
+                                    <input class="form-check-input fs-5" type="checkbox" id="newRegistration" onchange="toggleRegistrationFee()">
+                                    <label class="form-check-label fw-semibold text-dark mb-0 align-middle ms-2" for="newRegistration">
+                                        New Registration (+ ₹50)
+                                    </label>
+                                </div>
+
+                                <div class="summary-card p-3 mb-4">
+                                    <div id="regFeeRow" class="summary-row" style="display:none;">
+                                        <span>Registration Fee:</span>
+                                        <span class="fw-semibold text-dark">₹ <span id="regFee">50.00</span></span>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span>Subtotal Value:</span>
+                                        <span class="fw-semibold text-dark">₹ <span id="subTotal">0.00</span></span>
+                                    </div>
+                                    <div class="summary-row">
+                                        <span>GST (<span id="gstPercentText">{{ settings.consultation_gst|default:0 }}</span>%):</span>
+                                        <span class="fw-semibold text-dark">₹ <span id="tax">0.00</span></span>
+                                    </div>
+                                    <div class="summary-row pt-2 border-top border-dark">
+                                        <h5 class="fw-bold text-dark mb-0">Total Due:</h5>
+                                        <h5 class="fw-bold text-custom-green mb-0">₹ <span id="grandTotal">0.00</span></h5>
+                                    </div>
+                                </div>
+
+                                <button type="button" onclick="submitBill()" class="btn btn-custom-green w-100 py-3 d-flex align-items-center justify-content-center gap-2">
+                                    <i class="fas fa-print"></i> Save & Print Invoice
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+
+        </div>
+
+    </main>
+
+    {% include "includes/script.html" %}
+
+    <script>
+        /* ================= GLOBAL ================= */
+        let items = [];
+        let consultAdded = false;
+        let registrationFee = 0;
+
+        /* ================= PATIENT SEARCH ================= */
+        patientName.addEventListener("input", function () {
+            const q = this.value.trim();
+            if (!q) return patientSuggestions.style.display = "none";
+
+            fetch("{% url 'billingmgmt:get_patient_suggestions' %}?q=" + q)
+                .then(r => r.json())
+                .then(data => {
+                    patientSuggestions.innerHTML = data.map(p => `
+                        <div class="suggest-item" onclick="selectPatient(${p.id},'${p.name}')">
+                            <span class="fw-semibold text-dark">${p.name}</span> <small class="text-muted">(${p.phone})</small>
+                        </div>
+                    `).join("");
+                    patientSuggestions.style.display = "block";
+                });
+        });
+
+        function selectPatient(id, name) {
+            patientName.value = name;
+            patientHidden.value = id;
+            patientSuggestions.style.display = "none";
+        }
+
+        /* ================= REGISTRATION FEE ================= */
+        function toggleRegistrationFee() {
+            if (document.getElementById("newRegistration").checked) {
+                registrationFee = 50;
+                regFeeRow.style.display = "flex";
+            } else {
+                registrationFee = 0;
+                regFeeRow.style.display = "none";
+            }
+
+            document.getElementById("regFee").innerHTML = registrationFee.toFixed(2);
+            document.getElementById("regFeeInput").value = registrationFee;
+            calcTotal();
+        }
+
+        /* ================= ITEMS ================= */
+        function addConsultation() {
+            if (consultAdded) return alert("Already added");
+            const fee = +consultFee.value;
+            if (fee <= 0) return;
+            items.push({ n: "Consultation Fees", r: fee, q: 1, t: fee });
+            consultAdded = true;
+            renderItems();
+        }
+
+        function addItem() {
+            const n = itemName.value.trim();
+            const r = +itemRate.value || 0;
+            const q = +itemQty.value || 1;
+            if (!n || r <= 0) return alert("Invalid item");
+            items.push({ n, r, q, t: r * q });
+            itemName.value = ""; 
+            itemRate.value = ""; 
+            itemQty.value = 1;
+            renderItems();
+        }
+
+        function renderItems() {
+            const tb = itemTable.querySelector("tbody");
+            tb.innerHTML = "";
+            let s = 0;
+            items.forEach((x, i) => {
+                s += x.t;
+                tb.innerHTML += `
+                    <tr class="align-middle">
+                        <td>
+                            <span class="fw-semibold text-dark">${x.n}</span>
+                            <input type="hidden" name="item_name[]" value="${x.n}">
+                        </td>
+                        <td>
+                            ₹ ${x.r.toFixed(2)}
+                            <input type="hidden" name="item_rate[]" value="${x.r}">
+                        </td>
+                        <td>
+                            ${x.q}
+                            <input type="hidden" name="item_qty[]" value="${x.q}">
+                        </td>
+                        <td class="fw-bold text-dark">₹ ${x.t.toFixed(2)}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-light border text-danger px-2.5 py-1 mb-0"
+                                onclick="items.splice(${i},1); if('${x.n}'==='Consultation Fees') consultAdded=false; renderItems()">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+            subTotal.textContent = s.toFixed(2);
+            calcTotal();
+        }
+
+        /* ================= TOTAL ================= */
+        function calcTotal() {
+            const itemSubtotal = parseFloat(subTotal.textContent) || 0;
+            const gross = itemSubtotal + registrationFee;
+            const gstPercent = parseFloat(document.getElementById("gstPercent").value) || 0;
+            const taxAmt = gross * gstPercent / 100;
+
+            document.getElementById("tax").textContent = taxAmt.toFixed(2);
+            document.getElementById("grandTotal").textContent = (gross + taxAmt).toFixed(2);
+        }
+
+        /* ================= SUBMIT ================= */
+        function submitBill() {
+            subtotalInput.value = subTotal.textContent;
+            discountInput.value = 0;
+            taxInput.value = tax.textContent;
+            totalInput.value = grandTotal.textContent;
+            regFeeInput.value = registrationFee;
+            billForm.submit();
+        }
+
+        // Close suggestions dropdowns when clicking outside
+        document.addEventListener("click", function(e) {
+            if (e.target !== patientName) {
+                patientSuggestions.style.display = "none";
+            }
+        });
+    </script>
 
 </body>
 </html>
