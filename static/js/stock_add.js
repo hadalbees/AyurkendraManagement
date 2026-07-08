@@ -372,7 +372,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if(pack > 0){
 
-            perUnit = purchase / pack;
+            perUnit = selling / pack;
 
         }
 
