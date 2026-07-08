@@ -685,8 +685,6 @@
 }
 
 .billing-card {
-  width: 260px;
-  height: 190px;
   border-radius: 18px;
   padding: 26px;
   display: flex;
@@ -735,6 +733,185 @@
   background: linear-gradient(135deg,#ede9fe,#ddd6fe);
   color:#5b21b6;
 }
-.is-invalid {
-    border: 1px solid red !important;
+.billing-header{
+    background:linear-gradient(135deg,#0d6efd,#4f9cff);
+    border-radius:14px;
+    padding:20px 30px;
+    color:#fff;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 12px 30px rgba(0,0,0,.12);
+}
+
+.billing-card{
+    border:none;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 10px 25px rgba(0,0,0,.08);
+}
+
+.card-title-bar{
+    background:#f7f9fc;
+    border-bottom:1px solid #ececec;
+    padding:15px 20px;
+    font-size:18px;
+    font-weight:600;
+    color:#0d6efd;
+}
+
+.card-body{
+    padding:25px;
+}
+
+.form-label{
+    font-weight:600;
+    margin-bottom:6px;
+    color:#495057;
+}
+
+.form-control,
+.form-select{
+
+    height:46px;
+
+    border-radius:10px;
+
+    border:1px solid #d8dde6;
+
+    transition:.25s;
+}
+
+.form-control:focus,
+.form-select:focus{
+
+    border-color:#0d6efd;
+
+    box-shadow:0 0 0 .15rem rgba(13,110,253,.15);
+}
+
+.billing-summary{
+
+    border:none;
+
+    border-radius:16px;
+
+    overflow:hidden;
+
+    position:sticky;
+
+    top:20px;
+
+    box-shadow:0 12px 30px rgba(0,0,0,.08);
+}
+
+.summary-header{
+
+    background:#198754;
+
+    color:white;
+
+    padding:18px;
+
+    font-size:18px;
+
+    font-weight:600;
+}
+
+.billing-summary .card-body{
+
+    padding:25px;
+}
+
+.table{
+
+    margin-bottom:0;
+}
+
+.table thead{
+
+    background:#0d6efd;
+
+    color:white;
+}
+
+.table thead th{
+
+    border:none;
+
+    padding:14px;
+}
+
+.table tbody td{
+
+    vertical-align:middle;
+
+    padding:13px;
+}
+
+.table tbody tr:hover{
+
+    background:#f8fbff;
+}
+
+.btn-success,
+.btn-primary{
+
+    border-radius:10px;
+
+    padding:11px 30px;
+
+    font-weight:600;
+}
+
+.action-footer{
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    gap:15px;
+
+    margin-top:25px;
+}
+
+#subtotalText,
+#taxText{
+
+    font-size:18px;
+
+    font-weight:600;
+}
+
+#totalText{
+
+    color:#198754;
+
+    font-size:30px;
+
+    font-weight:700;
+}
+
+@media(max-width:991px){
+
+.billing-summary{
+
+position:relative;
+
+top:auto;
+
+margin-top:20px;
+
+}
+
+.billing-header{
+
+flex-direction:column;
+
+align-items:flex-start;
+
+gap:10px;
+
+}
+
 }
