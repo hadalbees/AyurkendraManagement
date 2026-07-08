@@ -18,4 +18,6 @@ urlpatterns = [
         views.stock_details,
         name="stock_details",
     ),
+    path("stock/export/excel/", views.ExportStockExcelView.as_view(), name="export_excel"),
+    path("stock/export/print/", views.StockPrintView.as_view(), name="export_print"),
 ]

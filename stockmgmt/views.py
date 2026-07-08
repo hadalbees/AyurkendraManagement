@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
 from decimal import Decimal, InvalidOperation
-
+from decimal import Decimal, ROUND_HALF_UP
 from django.http import JsonResponse
 from django.db import models
 
@@ -13,7 +13,18 @@ from fieldmgmt.models import AyurvedicType, ManufacturerMaster, SupplierMaster,A
 from .models import Stock, Medicine, StockTransaction
 import pandas as pd
 from django.db import transaction
-from django.db.models import Sum, Min, F, Q
+from django.db.models.functions import Coalesce
+from django.db.models import DecimalField,Value
+from django.db.models import (
+    Sum,
+    Min,
+    Max,
+    Count,
+    Q,
+    F,
+    DecimalField,
+    Value,
+)
 
 
 # --------------------------------------------------
@@ -56,123 +67,310 @@ def calculate_price_per_single(selling_price, quantity, unit):
 # Stock List View
 # --------------------------------------------------
 class StockListView(LoginRequiredMixin, ListView):
-    model = Stock
+
     template_name = "stockmgmt/stockhome.html"
     context_object_name = "stocks"
-    paginate_by = 50
+    paginate_by = 10
 
     def get_queryset(self):
+        # Base queryset of all medicines
+        queryset = Medicine.objects.all()
 
-        qs = (
-            Stock.objects
-            .values(
-                "medicine_id",
-                "medicine__name",
-                "base_unit",
-                "pack_size",
+        # Get query parameters
+        q = self.request.GET.get("q", "").strip()
+        category = self.request.GET.get("category", "").strip()
+        supplier = self.request.GET.get("supplier", "").strip()
+        manufacturer = self.request.GET.get("manufacturer", "").strip()
+        quick_filter = self.request.GET.get("quick_filter", "").strip()
+        sort_by = self.request.GET.get("sort_by", "").strip()
+
+        # 1. Apply basic search query
+        if q:
+            queryset = queryset.filter(
+                Q(name__icontains=q) |
+                Q(hsn_code__icontains=q) |
+                Q(stocks__batch_number__icontains=q)
+            ).distinct()
+
+        # 2. Apply Category filter
+        if category:
+            queryset = queryset.filter(ayurvedic_type_id=category)
+
+        # 3. Apply Supplier filter
+        if supplier:
+            queryset = queryset.filter(stocks__supplier_id=supplier)
+
+        # 4. Apply Manufacturer filter
+        if manufacturer:
+            queryset = queryset.filter(stocks__manufacturer_id=manufacturer)
+
+        # Annotate required aggregation fields
+        from django.db.models import Case, When, Value, CharField
+        today = timezone.localdate()
+
+        queryset = queryset.annotate(
+            medicine_id=F("id"),
+            medicine__name=F("name"),
+            medicine__form_type=F("form_type"),
+            medicine__gst_percentage=F("gst_percentage"),
+            medicine__reorder_level=F("reorder_level"),
+            medicine__hsn_code=F("hsn_code"),
+            total_qty=Coalesce(
+                Sum("stocks__total_base_quantity"),
+                Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))
+            ),
+            total_batches=Count("stocks"),
+            purchase_price=Coalesce(
+                Max("stocks__unit_price"),
+                Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))
+            ),
+            selling_price=Coalesce(
+                Max("stocks__selling_price"),
+                Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))
+            ),
+            nearest_expiry=Min("stocks__expiry_date"),
+            category_name=Coalesce(F("ayurvedic_type__name"), Value("Unassigned"), output_field=CharField()),
+            base_unit=Coalesce(
+                Max("stocks__base_unit"),
+                Case(
+                    When(form_type="LIQUID", then=Value("ml")),
+                    When(form_type="POWDER", then=Value("g")),
+                    default=Value("piece"),
+                    output_field=CharField()
+                )
             )
-            .annotate(
-                total_qty=Sum("total_base_quantity"),
-                reorder_level=Min("medicine__reorder_level"),
-                nearest_expiry=Min("expiry_date"),
-            )
-            .order_by("medicine__name")
         )
 
-        q = self.request.GET.get("q", "").strip()
-        low_stock = self.request.GET.get("low_stock")
-        near_expiry = self.request.GET.get("near_expiry")
-
-        # Search
-        if q:
-            qs = qs.filter(
-                Q(medicine__name__icontains=q)
+        # 5. Apply Quick Filters
+        if quick_filter == "low_stock":
+            queryset = queryset.filter(
+                total_qty__lte=F("reorder_level"),
+                total_qty__gt=0
             )
-
-        # Low Stock
-        if low_stock:
-            qs = qs.filter(
-                total_qty__lte=F("reorder_level")
-            )
-
-        # Near Expiry
-        if near_expiry:
-            today = timezone.localdate()
-
-            qs = qs.filter(
+        elif quick_filter == "near_expiry":
+            queryset = queryset.filter(
                 nearest_expiry__isnull=False,
-                nearest_expiry__lte=today + timezone.timedelta(days=30)
+                nearest_expiry__lte=today + timezone.timedelta(days=30),
+                nearest_expiry__gte=today
+            )
+        elif quick_filter == "expired":
+            queryset = queryset.filter(
+                nearest_expiry__lt=today
+            )
+        elif quick_filter == "zero_stock":
+            queryset = queryset.filter(
+                total_qty=0
             )
 
-        return qs
+        # 6. Apply Sorting
+        if sort_by == "name_desc":
+            queryset = queryset.order_by("-name")
+        elif sort_by == "stock_asc":
+            queryset = queryset.order_by("total_qty")
+        elif sort_by == "stock_desc":
+            queryset = queryset.order_by("-total_qty")
+        elif sort_by == "expiry_asc":
+            queryset = queryset.order_by(F("nearest_expiry").asc(nulls_last=True))
+        else:
+            # Default sorting: Name A-Z
+            queryset = queryset.order_by("name")
 
+        # Select the values as expected by templates and existing logic
+        return queryset.values(
+            "medicine_id",
+            "medicine__name",
+            "medicine__hsn_code",
+            "medicine__form_type",
+            "medicine__gst_percentage",
+            "medicine__reorder_level",
+            "total_qty",
+            "total_batches",
+            "purchase_price",
+            "selling_price",
+            "nearest_expiry",
+            "base_unit",
+            "category_name",
+        )
+    
     def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        stock = Stock.objects.all()
+        today = timezone.localdate()
 
-        ctx = super().get_context_data(**kwargs)
+        context["total_medicines"] = Medicine.objects.count()
+        context["total_batches"] = stock.count()
+        context["total_stock"] = stock.aggregate(
+            total=Coalesce(
+                Sum("total_base_quantity"),
+                Value(0),
+                output_field=DecimalField(max_digits=12, decimal_places=2)
+            )
+        )["total"]
 
-        ctx["q"] = self.request.GET.get("q", "")
-        ctx["low_stock"] = bool(self.request.GET.get("low_stock"))
-        ctx["near_expiry"] = bool(self.request.GET.get("near_expiry"))
+        context["low_stock_count"] = Medicine.objects.annotate(
+            total_qty=Coalesce(
+                Sum("stocks__total_base_quantity"),
+                Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))
+            )
+        ).filter(
+            total_qty__lte=F("reorder_level"),
+            total_qty__gt=0
+        ).count()
 
-        ctx["ayurvedic_forms"] = AyurvedicType.objects.filter(status=True)
-        ctx["suppliers"] = SupplierMaster.objects.filter(status=True)
-        ctx["manufacturers"] = ManufacturerMaster.objects.filter(status=True)
+        context["near_expiry_count"] = Medicine.objects.filter(
+            stocks__expiry_date__isnull=False,
+            stocks__expiry_date__lte=today + timezone.timedelta(days=30),
+            stocks__expiry_date__gte=today,
+        ).distinct().count()
 
-        return ctx
+        context["expired_count"] = Medicine.objects.filter(
+            stocks__expiry_date__lt=today
+        ).distinct().count()
+
+        context["zero_stock_count"] = Medicine.objects.annotate(
+            total_qty=Coalesce(
+                Sum("stocks__total_base_quantity"),
+                Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))
+            )
+        ).filter(total_qty=0).count()
+
+        # Pass active filter values back to context
+        context["q"] = self.request.GET.get("q", "")
+        context["category"] = self.request.GET.get("category", "")
+        context["supplier"] = self.request.GET.get("supplier", "")
+        context["manufacturer"] = self.request.GET.get("manufacturer", "")
+        context["quick_filter"] = self.request.GET.get("quick_filter", "all")
+        context["sort_by"] = self.request.GET.get("sort_by", "name_asc")
+
+        context["suppliers"] = SupplierMaster.objects.filter(status=True)
+        context["manufacturers"] = ManufacturerMaster.objects.filter(status=True)
+        context["forms"] = AyurvedicType.objects.filter(status=True)
+
+        # Build url parameters for keeping filter state in pagination links
+        params = self.request.GET.copy()
+        if "page" in params:
+            del params["page"]
+        context["query_params"] = params.urlencode()
+
+        return context
 def stock_details(request, medicine_id):
 
     medicine = get_object_or_404(
+
         Medicine,
+
         id=medicine_id
+
     )
 
     stocks = (
-        Stock.objects.filter(
+
+        Stock.objects
+
+        .filter(
+
             medicine=medicine
+
         )
+
         .select_related(
+
             "supplier",
+
             "manufacturer"
+
         )
-        .order_by("expiry_date")
+
+        .order_by(
+
+            "expiry_date"
+
+        )
+
     )
 
-    total_qty = stocks.aggregate(
-        total=Sum("total_base_quantity")
-    )["total"] or 0
+    summary = stocks.aggregate(
 
-    total_packs = stocks.aggregate(
-        total=Sum("number_of_packs")
-    )["total"] or 0
+        total_qty=Coalesce(
+            Sum("total_base_quantity"),
+            Value(0),
+            output_field=DecimalField(max_digits=12, decimal_places=2)
+        ),
+
+        total_packs=Coalesce(
+            Sum("number_of_packs"),
+            Value(0),
+            output_field=DecimalField(max_digits=12, decimal_places=2)
+        ),
+
+        total_purchase=Coalesce(
+            Sum(F("number_of_packs") * F("unit_price")),
+            Value(0),
+            output_field=DecimalField(max_digits=12, decimal_places=2)
+        ),
+
+        total_selling=Coalesce(
+            Sum(F("number_of_packs") * F("selling_price")),
+            Value(0),
+            output_field=DecimalField(max_digits=12, decimal_places=2)
+        ),
+
+        batches=Count("id"),
+
+    )
 
     nearest = (
-        stocks.exclude(expiry_date=None)
-        .order_by("expiry_date")
-        .first()
-    )
 
-    context = {
+        stocks
 
-        "medicine": medicine,
+        .exclude(
 
-        "stocks": stocks,
+            expiry_date=None
 
-        "total_qty": total_qty,
-
-        "total_packs": total_packs,
-
-        "total_batches": stocks.count(),
-
-        "nearest_expiry": (
-            nearest.expiry_date if nearest else None
         )
 
+        .order_by(
+
+            "expiry_date"
+
+        )
+
+        .first()
+
+    )
+
+    estimated_profit = (summary.get('total_selling') or 0) - (summary.get('total_purchase') or 0)
+
+    first_stock = stocks.first()
+    if first_stock and first_stock.base_unit:
+        base_unit = first_stock.base_unit
+    else:
+        if medicine.form_type == 'LIQUID':
+            base_unit = 'ml'
+        elif medicine.form_type == 'POWDER':
+            base_unit = 'g'
+        else:
+            base_unit = 'piece'
+
+    context = {
+        "medicine": medicine,
+        "stocks": stocks,
+        "summary": summary,
+        "nearest_expiry": nearest.expiry_date if nearest else None,
+        "nearest_stock": nearest,
+        "estimated_profit": estimated_profit,
+        "base_unit": base_unit,
+        "today": timezone.localdate(),
     }
 
     return render(
+
         request,
+
         "stockmgmt/stock_details.html",
-        context
+
+        context,
+
     )
 def stock_delete(request, pk):
 
@@ -323,161 +521,536 @@ def calculate_stock_values(
     gst_percentage,
     selling_price,
 ):
-    pack_size = Decimal(pack_size or 0)
-    number_of_packs = Decimal(number_of_packs or 0)
-    unit_price = Decimal(unit_price or 0)
-    gst_percentage = Decimal(gst_percentage or 0)
+    """
+    Calculate stock quantities and pricing.
 
-    # Total quantity in base units (Example: 450ml × 4 = 1800ml)
+    unit_price = Purchase Price per Pack (GST Included)
+    """
+
+    pack_size = Decimal(str(pack_size or 0))
+    number_of_packs = Decimal(str(number_of_packs or 0))
+    unit_price = Decimal(str(unit_price or 0))
+    gst_percentage = Decimal(str(gst_percentage or 0))
+    selling_price = Decimal(str(selling_price or 0))
+
+    # ---------------------------------------
+    # Total Quantity
+    # Example:
+    # 450ml × 4 = 1800ml
+    # ---------------------------------------
+
     total_base_quantity = pack_size * number_of_packs
 
-    # GST Amount
+    # ---------------------------------------
+    # Extract GST from Purchase Price
+    # ---------------------------------------
+
+    gst_amount = Decimal("0.00")
+
     if gst_percentage > 0:
+
         gst_amount = (
             unit_price * gst_percentage
         ) / (Decimal("100") + gst_percentage)
-    else:
-        gst_amount = Decimal("0")
 
-    # Selling price
-    if not selling_price or Decimal(selling_price) == 0:
+    # ---------------------------------------
+    # Default Selling Price
+    # ---------------------------------------
+
+    if selling_price <= 0:
         selling_price = unit_price
-    else:
-        selling_price = Decimal(selling_price)
 
-    # Billing uses pack price
-    price_per_base_unit = selling_price
+    # ---------------------------------------
+    # Price Per Base Unit
+    # Example
+    # ₹100 / 450ml
+    # = ₹0.222222
+    # ---------------------------------------
+
+    if pack_size > 0:
+
+        price_per_base_unit = (
+            unit_price / pack_size
+        )
+
+    else:
+
+        price_per_base_unit = Decimal("0")
 
     return (
-        total_base_quantity,
-        gst_amount,
-        selling_price,
-        price_per_base_unit,
-    )
 
+        total_base_quantity.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        ),
+
+        gst_amount.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        ),
+
+        selling_price.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        ),
+
+        price_per_base_unit.quantize(
+            Decimal("0.000001"),
+            rounding=ROUND_HALF_UP
+        ),
+
+    )
 # --------------------------------------------------
 # Stock Create View
 # --------------------------------------------------
-class StockCreateView(LoginRequiredMixin, CreateView):
-    model = Stock
-
-    fields = [
-        "medicine",
-        "batch_number",
-        "base_unit",
-        "pack_size",
-        "number_of_packs",
-        "unit_price",
-        "selling_price",
-        "manufacture_date",
-        "expiry_date",
-        "supplier",
-        "manufacturer",
-    ]
+class StockCreateView(LoginRequiredMixin, View):
 
     template_name = "stockmgmt/stockform.html"
     success_url = reverse_lazy("stockmgmt:stock_list")
 
-    def form_valid(self, form):
+    # ---------------------------------------------------
+    # GET
+    # ---------------------------------------------------
 
-        obj = form.save(commit=False)
+    def get(self, request):
 
-        gst_percentage = obj.medicine.gst_percentage
-
-        (
-            obj.total_base_quantity,
-            obj.gst_amount,
-            obj.selling_price,
-            obj.price_per_base_unit,
-        ) = calculate_stock_values(
-            obj.pack_size,
-            obj.number_of_packs,
-            obj.unit_price,
-            gst_percentage,
-            obj.selling_price,
+        medicines = (
+            Medicine.objects.annotate(
+                stock_total=Coalesce(
+                    Sum("stocks__total_base_quantity"),
+                    Value(0),
+                    output_field=DecimalField(
+                        max_digits=12,
+                        decimal_places=2
+                    )
+                )
+            ).order_by("name")
         )
 
-        obj.last_updated_by = self.request.user
+        context = {
 
-        obj.save()
+            "medicines": medicines,
 
-        ActivityHistory.objects.create(
-            user=self.request.user,
-            action="CREATE",
-            module="STOCK",
-            record_id=obj.id,
-            description=f"Stock #{obj.id} created by {self.request.user}",
+            "suppliers": SupplierMaster.objects.filter(status=True),
+
+            "manufacturers": ManufacturerMaster.objects.filter(status=True),
+
+        }
+
+        return render(
+            request,
+            self.template_name,
+            context
         )
 
-        messages.success(
-            self.request,
-            "Stock added successfully."
-        )
+    # ---------------------------------------------------
+    # POST
+    # ---------------------------------------------------
 
-        return redirect(self.success_url)
+    @transaction.atomic
+    def post(self, request):
 
+        try:
 
+            medicine = Medicine.objects.get(
+                id=request.POST.get("medicine")
+            )
+
+            supplier = None
+            supplier_id = request.POST.get("supplier")
+
+            if supplier_id:
+                supplier = SupplierMaster.objects.get(id=supplier_id)
+
+            manufacturer = None
+            manufacturer_id = request.POST.get("manufacturer")
+
+            if manufacturer_id:
+                manufacturer = ManufacturerMaster.objects.get(id=manufacturer_id)
+
+            batch_number = request.POST.get("batch_number")
+
+            base_unit = request.POST.get("base_unit")
+
+            pack_size = Decimal(
+                request.POST.get("pack_size") or 0
+            )
+
+            number_of_packs = Decimal(
+                request.POST.get("number_of_packs") or 0
+            )
+
+            unit_price = Decimal(
+                request.POST.get("unit_price") or 0
+            )
+
+            selling_price = Decimal(
+                request.POST.get("selling_price") or 0
+            )
+
+            manufacture_date = request.POST.get("manufacture_date") or None
+
+            expiry_date = request.POST.get("expiry_date") or None
+
+            # -----------------------------------------
+            # Duplicate Batch
+            # -----------------------------------------
+
+            if Stock.objects.filter(
+
+                medicine=medicine,
+
+                batch_number__iexact=batch_number
+
+            ).exists():
+
+                messages.error(
+                    request,
+                    "Batch already exists for this medicine."
+                )
+
+                return redirect(request.path)
+
+            # -----------------------------------------
+            # Calculate Values
+            # -----------------------------------------
+
+            (
+                total_base_quantity,
+                gst_amount,
+                selling_price,
+                price_per_base_unit,
+            ) = calculate_stock_values(
+
+                pack_size,
+
+                number_of_packs,
+
+                unit_price,
+
+                medicine.gst_percentage,
+
+                selling_price,
+
+            )
+
+            # -----------------------------------------
+            # Save Stock
+            # -----------------------------------------
+
+            stock = Stock.objects.create(
+
+                medicine=medicine,
+
+                batch_number=batch_number,
+
+                base_unit=base_unit,
+
+                unit_price=unit_price,
+
+                selling_price=selling_price,
+
+                gst_amount=gst_amount,
+
+                pack_size=pack_size,
+
+                number_of_packs=number_of_packs,
+
+                total_base_quantity=total_base_quantity,
+
+                price_per_base_unit=price_per_base_unit,
+
+                manufacture_date=manufacture_date,
+
+                expiry_date=expiry_date,
+
+                supplier=supplier,
+
+                manufacturer=manufacturer,
+
+                last_updated_by=request.user,
+
+            )
+
+            # -----------------------------------------
+            # Stock Transaction
+            # -----------------------------------------
+
+            StockTransaction.objects.create(
+
+                stock_item=stock,
+
+                transaction_type="PURCHASE",
+
+                quantity_change=total_base_quantity,
+
+                recorded_by=request.user,
+
+                notes="Opening Stock"
+
+            )
+
+            # -----------------------------------------
+            # Activity History
+            # -----------------------------------------
+
+            ActivityHistory.objects.create(
+
+                user=request.user,
+
+                action="CREATE",
+
+                module="STOCK",
+
+                record_id=stock.id,
+
+                description=f"{medicine.name} ({batch_number}) Stock Added"
+
+            )
+
+            messages.success(
+
+                request,
+
+                "Medicine Stock Added Successfully."
+
+            )
+
+            return redirect(self.success_url)
+
+        except Exception as e:
+
+            print(e)
+
+            messages.error(
+
+                request,
+
+                str(e)
+
+            )
+
+            return redirect(request.path)
 # --------------------------------------------------
 # Stock Update View
 # --------------------------------------------------
-class StockUpdateView(LoginRequiredMixin, UpdateView):
-    model = Stock
-
-    fields = [
-        "medicine",
-        "batch_number",
-        "base_unit",
-        "pack_size",
-        "number_of_packs",
-        "unit_price",
-        "selling_price",
-        "manufacture_date",
-        "expiry_date",
-        "supplier",
-        "manufacturer",
-    ]
+class StockUpdateView(LoginRequiredMixin, View):
 
     template_name = "stockmgmt/stockform.html"
     success_url = reverse_lazy("stockmgmt:stock_list")
 
-    def form_valid(self, form):
+    def get(self, request, pk):
 
-        obj = form.save(commit=False)
+        stock = get_object_or_404(Stock, pk=pk)
 
-        gst_percentage = obj.medicine.gst_percentage
-
-        (
-            obj.total_base_quantity,
-            obj.gst_amount,
-            obj.selling_price,
-            obj.price_per_base_unit,
-        ) = calculate_stock_values(
-            obj.pack_size,
-            obj.number_of_packs,
-            obj.unit_price,
-            gst_percentage,
-            obj.selling_price,
+        medicines = (
+            Medicine.objects.annotate(
+                stock_total=Coalesce(
+                    Sum("stocks__total_base_quantity"),
+                    Value(0),
+                    output_field=DecimalField(
+                        max_digits=12,
+                        decimal_places=2,
+                    ),
+                )
+            ).order_by("name")
         )
 
-        obj.last_updated_by = self.request.user
+        context = {
+            "object": stock,
+            "medicines": medicines,
+            "suppliers": SupplierMaster.objects.filter(status=True),
+            "manufacturers": ManufacturerMaster.objects.filter(status=True),
+        }
 
-        obj.save()
+        return render(request, self.template_name, context)
 
-        ActivityHistory.objects.create(
-            user=self.request.user,
-            action="UPDATE",
-            module="STOCK",
-            record_id=obj.id,
-            description=f"Stock #{obj.id} updated by {self.request.user}",
-        )
+    @transaction.atomic
+    def post(self, request, pk):
+        
+        stock = get_object_or_404(Stock, pk=pk)
+        print("PK:", pk)
+        print("Stock before:", stock.id, stock.batch_number)
 
-        messages.success(
-            self.request,
-            "Stock updated successfully."
-        )
+        try:
 
-        return redirect(self.success_url)
+            medicine = get_object_or_404(
+                Medicine,
+                pk=request.POST.get("medicine"),
+            )
 
+            supplier = None
+            supplier_id = request.POST.get("supplier")
+
+            if supplier_id:
+                supplier = SupplierMaster.objects.filter(
+                    pk=supplier_id
+                ).first()
+
+            manufacturer = None
+            manufacturer_id = request.POST.get("manufacturer")
+
+            if manufacturer_id:
+                manufacturer = ManufacturerMaster.objects.filter(
+                    pk=manufacturer_id
+                ).first()
+
+            batch_number = request.POST.get(
+                "batch_number", ""
+            ).strip()
+
+            duplicate = (
+                Stock.objects.filter(
+                    medicine=medicine,
+                    batch_number__iexact=batch_number,
+                )
+                .exclude(pk=stock.pk)
+                .exists()
+            )
+
+            if duplicate:
+
+                messages.error(
+                    request,
+                    "Batch number already exists."
+                )
+        
+                return redirect(request.path)
+
+            stock.medicine = medicine
+            stock.batch_number = batch_number
+            stock.base_unit = request.POST.get("base_unit")
+
+            stock.pack_size = Decimal(
+                request.POST.get("pack_size") or "0"
+            )
+
+            stock.number_of_packs = Decimal(
+                request.POST.get("number_of_packs") or "0"
+            )
+
+            stock.unit_price = Decimal(
+                request.POST.get("unit_price") or "0"
+            )
+
+            stock.selling_price = Decimal(
+                request.POST.get("selling_price") or "0"
+            )
+
+            stock.manufacture_date = (
+                request.POST.get("manufacture_date") or None
+            )
+
+            stock.expiry_date = (
+                request.POST.get("expiry_date") or None
+            )
+
+            stock.supplier = supplier
+            stock.manufacturer = manufacturer
+
+            (
+                stock.total_base_quantity,
+                stock.gst_amount,
+                stock.selling_price,
+                stock.price_per_base_unit,
+            ) = calculate_stock_values(
+                stock.pack_size,
+                stock.number_of_packs,
+                stock.unit_price,
+                medicine.gst_percentage,
+                stock.selling_price,
+            )
+
+            stock.last_updated_by = request.user
+
+            stock.save(update_fields=[
+                "medicine",
+                "batch_number",
+                "base_unit",
+                "pack_size",
+                "number_of_packs",
+                "unit_price",
+                "selling_price",
+                "gst_amount",
+                "total_base_quantity",
+                "price_per_base_unit",
+                "manufacture_date",
+                "expiry_date",
+                "supplier",
+                "manufacturer",
+                "last_updated_by",
+            ])
+            stock.refresh_from_db()
+
+            print("==============")
+            print("Updated Successfully")
+            print("ID :", stock.id)
+            print("Medicine :", stock.medicine.name)
+            print("Batch :", stock.batch_number)
+            print("Pack :", stock.pack_size)
+            print("Qty :", stock.number_of_packs)
+            print("Purchase :", stock.unit_price)
+            print("Selling :", stock.selling_price)
+            print("Total Qty :", stock.total_base_quantity)
+            print("==============")
+
+            transaction, created = StockTransaction.objects.get_or_create(
+                stock_item=stock,
+                transaction_type="PURCHASE",
+                defaults={
+                    "quantity_change": stock.total_base_quantity,
+                    "recorded_by": request.user,
+                    "notes": "Opening Stock",
+                },
+            )
+
+            if not created:
+                transaction.quantity_change = stock.total_base_quantity
+                transaction.recorded_by = request.user
+                transaction.notes = "Opening Stock Updated"
+                transaction.save()
+
+            ActivityHistory.objects.create(
+                user=request.user,
+                action="UPDATE",
+                module="STOCK",
+                record_id=stock.pk,
+                description=f"{stock.medicine.name} ({stock.batch_number}) Updated",
+            )
+
+            messages.success(
+                request,
+                "Stock updated successfully."
+            )
+
+            return redirect(self.success_url)
+
+        except Exception as e:
+
+            import traceback
+            traceback.print_exc()
+
+            messages.error(request, str(e))
+
+            return render(
+                request,
+                self.template_name,
+                {
+                    "object": stock,
+                    "medicines": Medicine.objects.annotate(
+                        stock_total=Coalesce(
+                            Sum("stocks__total_base_quantity"),
+                            Value(0),
+                            output_field=DecimalField(
+                                max_digits=12,
+                                decimal_places=2,
+                            ),
+                        )
+                    ).order_by("name"),
+                    "suppliers": SupplierMaster.objects.filter(status=True),
+                    "manufacturers": ManufacturerMaster.objects.filter(status=True),
+                },
+            )
 # --------------------------------------------------
 # Stock Dispense View
 # --------------------------------------------------
@@ -502,14 +1075,18 @@ class StockDispenseView(LoginRequiredMixin, View):
             messages.error(request, "Enter a valid positive quantity.")
             return redirect(reverse_lazy("stockmgmt:stock_list"))
 
-        if Decimal(stock.quantity) < qty_dec:
+        if Decimal(stock.total_base_quantity) < qty_dec:
             messages.error(
                 request,
-                f"Insufficient stock. Available quantity: {stock.quantity}"
+                f"Insufficient stock. Available quantity: {stock.total_base_quantity}"
             )
             return redirect(reverse_lazy("stockmgmt:stock_list"))
 
-        stock.quantity -= qty_dec
+        stock.total_base_quantity -= qty_dec
+        if stock.pack_size > 0:
+            stock.number_of_packs = stock.total_base_quantity / stock.pack_size
+        else:
+            stock.number_of_packs = Decimal("0.00")
         stock.last_updated_by = request.user
         stock.save()
 
@@ -561,14 +1138,15 @@ def safe_decimal(val, default=0):
 def fix_quantity(val):
     try:
         if pd.isna(val):
-            return 0
+            return Decimal("0")
 
         if isinstance(val, pd.Timestamp):
-            return val.day
+            return Decimal(str(val.day))
 
-        return int(val)
+        # Check if it can be represented as float/decimal
+        return Decimal(str(val))
     except:
-        return 0
+        return Decimal("0")
 
 
 # -----------------------------
@@ -595,14 +1173,19 @@ def parse_expiry(val):
         if pd.isna(val):
             return None
 
-        if isinstance(val, pd.Timestamp):
+        if hasattr(val, "date"):
             return val.date()
+
+        # Handle 4-digit year integers (e.g., 2027 -> 2027-12-31)
+        val_str = str(val).strip()
+        if val_str.isdigit() and len(val_str) == 4:
+            return datetime(int(val_str), 12, 31).date()
 
         if isinstance(val, str):
             try:
-                return datetime.strptime(val, "%b-%y").date()
+                return datetime.strptime(val_str, "%b-%y").date()
             except:
-                return pd.to_datetime(val).date()
+                return pd.to_datetime(val_str).date()
 
         return None
     except:
@@ -640,12 +1223,13 @@ def bulk_import_stock(request):
                 medicine_name = str(row.get("medicine_name", "")).strip()
 
                 # ✅ Skip ONLY empty medicine name
-                if not medicine_name:
+                if not medicine_name or medicine_name.lower() in ["nan", "none"]:
                     skipped += 1
                     continue
 
-                # ✅ Category rows
-                if medicine_name.isupper():
+                # ✅ Category rows: price, manufacturer, and quantity are null
+                is_category = pd.isna(row.get("price")) and pd.isna(row.get("manufacturer")) and pd.isna(row.get("quantity"))
+                if is_category:
                     current_type, _ = AyurvedicType.objects.get_or_create(
                         name=medicine_name.title()
                     )
@@ -654,17 +1238,17 @@ def bulk_import_stock(request):
                 # -------------------------
                 # FIELDS
                 # -------------------------
-                batch_number = str(row.get("batch_no", "")).strip()
-
-                # 🔥 FIX: allow empty batch
-                if not batch_number:
-                    batch_number = f"NO-BATCH-{_}"
+                batch_val = row.get("batch_no")
+                if pd.isna(batch_val) or str(batch_val).strip().lower() in ["", "nan", "none"]:
+                    batch_number = "NO-BATCH"
+                else:
+                    batch_number = str(batch_val).strip()
 
                 manufacturer_name = str(row.get("manufacturer", "")).strip()
 
                 pack_size = safe_decimal(row.get("package"))
                 number_of_packs = fix_quantity(row.get("quantity"))
-                selling_price = safe_decimal(row.get("total_price"))
+                selling_price = safe_decimal(row.get("price"))
                 unitprice_excel = safe_decimal(row.get("unit_price"))
 
                 # 🔥 ALLOW ZERO VALUES
@@ -695,7 +1279,7 @@ def bulk_import_stock(request):
                 # MANUFACTURER
                 # -------------------------
                 manufacturer = None
-                if manufacturer_name:
+                if manufacturer_name and manufacturer_name.lower() not in ["nan", "none"]:
                     manufacturer, _ = ManufacturerMaster.objects.get_or_create(
                         name=manufacturer_name
                     )
@@ -703,11 +1287,25 @@ def bulk_import_stock(request):
                 # -------------------------
                 # MEDICINE
                 # -------------------------
+                # Parse clean HSN code without trailing float decimals (.0)
+                hsn_val = row.get("hsn_code")
+                if pd.isna(hsn_val) or str(hsn_val).strip().lower() in ["nan", "none"]:
+                    hsn_code = ""
+                else:
+                    try:
+                        hsn_float = float(hsn_val)
+                        if hsn_float.is_integer():
+                            hsn_code = str(int(hsn_float))
+                        else:
+                            hsn_code = str(hsn_val)
+                    except:
+                        hsn_code = str(hsn_val)
+
                 medicine, created_medicine = Medicine.objects.get_or_create(
                     name__iexact=medicine_name,
                     defaults={
                         "name": medicine_name,
-                        "hsn_code": str(row.get("hsn_code", "")),
+                        "hsn_code": hsn_code,
                         "form_type": form_type,
                         "ayurvedic_type": current_type,
                         "gst_percentage": Decimal("0"),
@@ -863,3 +1461,186 @@ def medicine_check(request):
     ).values("name")[:10]
 
     return JsonResponse(list(medicines), safe=False)
+
+
+# ==============================================================================
+# INVENTORY EXPORT VIEWS
+# ==============================================================================
+
+class BaseExportStockView(LoginRequiredMixin, View):
+    def get_filtered_stocks(self, request):
+        queryset = Medicine.objects.all()
+
+        # Get query parameters
+        q = request.GET.get("q", "").strip()
+        category = request.GET.get("category", "").strip()
+        supplier = request.GET.get("supplier", "").strip()
+        manufacturer = request.GET.get("manufacturer", "").strip()
+        quick_filter = request.GET.get("quick_filter", "").strip()
+        sort_by = request.GET.get("sort_by", "").strip()
+
+        # 1. Apply basic search query
+        if q:
+            queryset = queryset.filter(
+                Q(name__icontains=q) |
+                Q(hsn_code__icontains=q) |
+                Q(stocks__batch_number__icontains=q)
+            ).distinct()
+
+        # 2. Apply Category filter
+        if category:
+            queryset = queryset.filter(ayurvedic_type_id=category)
+
+        # 3. Apply Supplier filter
+        if supplier:
+            queryset = queryset.filter(stocks__supplier_id=supplier)
+
+        # 4. Apply Manufacturer filter
+        if manufacturer:
+            queryset = queryset.filter(stocks__manufacturer_id=manufacturer)
+
+        # Annotate required aggregation fields
+        from django.db.models import Case, When, Value, CharField
+        today = timezone.localdate()
+
+        queryset = queryset.annotate(
+            medicine_id=F("id"),
+            medicine__name=F("name"),
+            medicine__form_type=F("form_type"),
+            medicine__gst_percentage=F("gst_percentage"),
+            medicine__reorder_level=F("reorder_level"),
+            medicine__hsn_code=F("hsn_code"),
+            total_qty=Coalesce(
+                Sum("stocks__total_base_quantity"),
+                Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))
+            ),
+            total_batches=Count("stocks"),
+            purchase_price=Coalesce(
+                Max("stocks__unit_price"),
+                Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))
+            ),
+            selling_price=Coalesce(
+                Max("stocks__selling_price"),
+                Value(0, output_field=DecimalField(max_digits=12, decimal_places=2))
+            ),
+            nearest_expiry=Min("stocks__expiry_date"),
+            category_name=Coalesce(F("ayurvedic_type__name"), Value("Unassigned"), output_field=CharField()),
+            base_unit=Coalesce(
+                Max("stocks__base_unit"),
+                Case(
+                    When(form_type="LIQUID", then=Value("ml")),
+                    When(form_type="POWDER", then=Value("g")),
+                    default=Value("piece"),
+                    output_field=CharField()
+                )
+            )
+        )
+
+        # 5. Apply Quick Filters
+        if quick_filter == "low_stock":
+            queryset = queryset.filter(
+                total_qty__lte=F("reorder_level"),
+                total_qty__gt=0
+            )
+        elif quick_filter == "near_expiry":
+            queryset = queryset.filter(
+                nearest_expiry__isnull=False,
+                nearest_expiry__lte=today + timezone.timedelta(days=30),
+                nearest_expiry__gte=today
+            )
+        elif quick_filter == "expired":
+            queryset = queryset.filter(
+                nearest_expiry__lt=today
+            )
+        elif quick_filter == "zero_stock":
+            queryset = queryset.filter(
+                total_qty=0
+            )
+
+        # 6. Apply Sorting
+        if sort_by == "name_desc":
+            queryset = queryset.order_by("-name")
+        elif sort_by == "stock_asc":
+            queryset = queryset.order_by("total_qty")
+        elif sort_by == "stock_desc":
+            queryset = queryset.order_by("-total_qty")
+        elif sort_by == "expiry_asc":
+            queryset = queryset.order_by(F("nearest_expiry").asc(nulls_last=True))
+        else:
+            queryset = queryset.order_by("name")
+
+        return queryset.values(
+            "medicine_id",
+            "medicine__name",
+            "medicine__hsn_code",
+            "medicine__form_type",
+            "medicine__gst_percentage",
+            "medicine__reorder_level",
+            "total_qty",
+            "total_batches",
+            "purchase_price",
+            "selling_price",
+            "nearest_expiry",
+            "base_unit",
+            "category_name",
+        )
+
+
+class ExportStockExcelView(BaseExportStockView):
+    def get(self, request):
+        import io
+        from django.http import HttpResponse
+
+        stocks = self.get_filtered_stocks(request)
+        today = timezone.localdate()
+
+        data = []
+        for index, item in enumerate(stocks, 1):
+            expiry_str = "-"
+            if item["nearest_expiry"]:
+                expiry_str = item["nearest_expiry"].strftime("%d-%m-%Y")
+
+            status = "Available"
+            if item["nearest_expiry"] and item["nearest_expiry"] < today:
+                status = "Expired"
+            elif item["total_qty"] == 0:
+                status = "Zero Stock"
+            elif item["total_qty"] <= item["medicine__reorder_level"]:
+                status = "Low Stock"
+
+            data.append({
+                "S.No": index,
+                "Medicine Name": item["medicine__name"],
+                "HSN Code": item["medicine__hsn_code"] or "-",
+                "GST %": f"{item['medicine__gst_percentage']}%",
+                "Stock Quantity": float(item["total_qty"]),
+                "Unit": item["base_unit"],
+                "Purchase Price (Max)": float(item["purchase_price"]),
+                "Selling Price (Max)": float(item["selling_price"]),
+                "Nearest Expiry": expiry_str,
+                "Status": status
+            })
+
+        df = pd.DataFrame(data)
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename="stock_inventory_{today.strftime("%Y-%m-%d")}.xlsx"'
+
+        with io.BytesIO() as b:
+            with pd.ExcelWriter(b, engine='openpyxl') as writer:
+                df.to_excel(writer, sheet_name="Stock Inventory", index=False)
+            response.write(b.getvalue())
+
+        return response
+
+
+class StockPrintView(BaseExportStockView):
+    def get(self, request):
+        stocks = self.get_filtered_stocks(request)
+        today = timezone.localdate()
+
+        context = {
+            "stocks": stocks,
+            "today": today,
+        }
+        return render(request, "stockmgmt/stock_print.html", context)
