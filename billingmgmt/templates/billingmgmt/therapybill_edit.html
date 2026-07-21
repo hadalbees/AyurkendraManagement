@@ -23,30 +23,38 @@
             value="{{ settings.therapy_gst|default:0 }}"
           />
 
-          <!-- PATIENT -->
+          <!-- PATIENT / CUSTOMER -->
 
           <div class="card mb-4">
             <div class="card-body">
-              <label>Patient</label>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">Customer Type</label>
+                  <select name="customer_type" id="customerType" class="form-select">
+                    <option value="patient" {% if bill.customer_type == "patient" %}selected{% endif %}>Registered Patient</option>
+                    <option value="walkin" {% if bill.customer_type == "walkin" %}selected{% endif %}>Walk-in Customer</option>
+                  </select>
+                </div>
 
-              <select class="form-select" name="patient_id">
-                {% for p in patients %}
+                <!-- Patient field -->
+                <div class="col-md-8" id="patientBox">
+                  <label class="form-label">Select Patient</label>
+                  <select class="form-select" name="patient_id" id="patientSelect">
+                    <option value="">-- Select Patient --</option>
+                    {% for p in patients %}
+                    <option value="{{ p.id }}" {% if p.id == bill.patient_id %}selected{% endif %}>
+                      {{ p.patient_name }}
+                    </option>
+                    {% endfor %}
+                  </select>
+                </div>
 
-                <option
-                  value="{{p.id}}"
-                  {%
-                  if
-                  p.id=""
-                  ="bill.patient.id"
-                  %}selected{%
-                  endif
-                  %}
-                >
-                  {{p.patient_name}}
-                </option>
-
-                {% endfor %}
-              </select>
+                <!-- Walk-in field -->
+                <div class="col-md-8 d-none" id="walkinBox">
+                  <label class="form-label">Walk-in Customer Name</label>
+                  <input type="text" name="walkin_name" id="walkinName" class="form-control" value="{{ bill.walkin_name|default:'' }}" placeholder="Enter customer name">
+                </div>
+              </div>
             </div>
           </div>
 
@@ -89,13 +97,7 @@
                           value="{{therapy.id}}"
                           data-price="{{therapy.charges}}"
                           data-serial="{{therapy.serial_no}}"
-                          {%
-                          if
-                          therapy.id=""
-                          ="item.therapy.id"
-                          %}selected{%
-                          endif
-                          %}
+                          {% if therapy.id == item.therapy_id %}selected{% endif %}
                         >
                           {{therapy.name}}
                         </option>
@@ -446,6 +448,38 @@ document.getElementById("advanceInput")
         document
           .getElementById("advanceInput")
           .addEventListener("input", calcBalance);
+
+        /* ---------- CUSTOMER TYPE TOGGLE ---------- */
+        const customerType = document.getElementById("customerType");
+        const patientBox = document.getElementById("patientBox");
+        const walkinBox = document.getElementById("walkinBox");
+        const patientSelect = document.getElementById("patientSelect");
+        const walkinName = document.getElementById("walkinName");
+
+        function toggleCustomerFields() {
+          if (!customerType) return;
+          const isPatient = customerType.value === "patient";
+
+          if (patientBox) patientBox.classList.toggle("d-none", !isPatient);
+          if (walkinBox) walkinBox.classList.toggle("d-none", isPatient);
+
+          if (isPatient) {
+            if (patientSelect) patientSelect.required = true;
+            if (walkinName) {
+              walkinName.required = false;
+            }
+          } else {
+            if (patientSelect) {
+              patientSelect.required = false;
+            }
+            if (walkinName) walkinName.required = true;
+          }
+        }
+
+        if (customerType) {
+          customerType.addEventListener("change", toggleCustomerFields);
+          toggleCustomerFields(); // Run on initial load
+        }
       });
 
       document.addEventListener("DOMContentLoaded", function () {
