@@ -1475,27 +1475,63 @@ def edit_therapy_bill_view(request, bill_no):
         if balance_amount < 0:
             balance_amount = Decimal("0")
 
-        bill.subtotal = subtotal
-        bill.discount_percent = discount_percent
-        bill.discount = discount
-        bill.tax = tax
-        bill.total = total
+        therapy_ids = request.POST.getlist("therapy_id[]")
+        quantities = request.POST.getlist("quantity[]")
+        unit_prices = request.POST.getlist("unit_price[]")
+        subtotals = request.POST.getlist("subtotal[]")
 
-        bill.advance_payment = total_advance
-        bill.balance_amount = balance_amount
+        with transaction.atomic():
+            bill.subtotal = subtotal
+            bill.discount_percent = discount_percent
+            bill.discount = discount
+            bill.tax = tax
+            bill.total = total
 
-        bill.payment_mode = request.POST.get("payment_mode")
-        bill.payment_status = request.POST.get("payment_status")
-        bill.remarks = request.POST.get("remarks")
+            bill.advance_payment = total_advance
+            bill.balance_amount = balance_amount
 
-        bill.save()
-        ActivityHistory.objects.create(
-            user=request.user,
-            action="UPDATE",
-            module="THERAPY BILL",
-            record_id=bill.id,
-            description=f"Therapy Bill #{bill.id} updated by {request.user}"
-        )
+            bill.payment_mode = request.POST.get("payment_mode")
+            bill.payment_status = request.POST.get("payment_status")
+            bill.remarks = request.POST.get("remarks")
+
+            bill.save()
+
+            # Delete old items and recreate
+            bill.items.all().delete()
+
+            for t_id, qty, price, sub in zip(
+                therapy_ids, quantities, unit_prices, subtotals
+            ):
+                if not t_id:
+                    continue
+
+                try:
+                    therapy = TherapyMaster.objects.get(id=t_id)
+                    qty_int = int(float(qty))
+                    unit_price = Decimal(price)
+                    subtotal_amt = Decimal(sub)
+
+                except (TherapyMaster.DoesNotExist, ValueError, TypeError, InvalidOperation):
+                    continue
+
+                if qty_int <= 0:
+                    continue
+
+                TherapyBillItem.objects.create(
+                    bill=bill,
+                    therapy=therapy,
+                    unit_price=unit_price,
+                    quantity=qty_int,
+                    subtotal=subtotal_amt
+                )
+
+            ActivityHistory.objects.create(
+                user=request.user,
+                action="UPDATE",
+                module="THERAPY BILL",
+                record_id=bill.id,
+                description=f"Therapy Bill #{bill.id} updated by {request.user}"
+            )
         return redirect("billingmgmt:therapy_bill_print", bill_no=bill.bill_no)
 
     return render(request, "billingmgmt/therapybill_edit.html", {
@@ -1503,6 +1539,7 @@ def edit_therapy_bill_view(request, bill_no):
         "patients": Patient.objects.filter(is_active=True),
         "therapies": TherapyMaster.objects.filter(status=True),
         "settings": settings,
+        "items": bill.items.all(),
     })
 def therapy_bill_print_view(request, bill_no):
     bill = get_object_or_404(TherapyBill, bill_no=bill_no)
