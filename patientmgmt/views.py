@@ -34,6 +34,7 @@ from reportlab.lib.utils import ImageReader
 from django.utils.timezone import now
 from billingmgmt.models import HospitalSetting
 from fieldmgmt.models import AppointmentType
+from stockmgmt.models import Medicine as StockMedicine
 
 from .models import (
     Appointment,
@@ -583,7 +584,8 @@ class PatientListView(LoginRequiredMixin, ListView):
                 models.Q(patient_name__icontains=q) |
                 models.Q(consultant_doctor__icontains=q) |
                 models.Q(department__icontains=q) |
-                models.Q(patient_unique_id__icontains=q)
+                models.Q(patient_unique_id__icontains=q) |
+                models.Q(phone__icontains=q)
             )
 
         if phone:
@@ -596,6 +598,8 @@ class PatientListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
+        ctx["q"] = self.request.GET.get('q', '').strip()
+
 
         # Dashboard Counts
         ctx["total_patients"] = Patient.objects.filter(is_active=True).count()
@@ -1443,3 +1447,227 @@ def patient_export_pdf(request):
     )
 
     return response
+
+
+# =====================================================
+# DISCHARGE SUMMARY VIEWS
+# =====================================================
+from .models import DischargeSummary, DischargeMedication, InpatientAdmission
+
+def generate_summary_no():
+    last = DischargeSummary.objects.order_by('-id').first()
+    year = timezone.now().year
+    if last and last.summary_no and last.summary_no.startswith("DS"):
+        try:
+            parts = last.summary_no.split("-")
+            num = int(parts[-1])
+        except (ValueError, IndexError):
+            num = 0
+        return f"DS-{year}-{num+1:04d}"
+    return f"DS-{year}-0001"
+
+
+class DischargeSummaryListView(LoginRequiredMixin, ListView):
+    model = DischargeSummary
+    template_name = "patientmgmt/discharge_summary_list.html"
+    context_object_name = "summaries"
+    paginate_by = 15
+
+    def get_queryset(self):
+        qs = DischargeSummary.objects.select_related('patient', 'admission', 'created_by').all()
+        q = self.request.GET.get('q', '').strip()
+        if q:
+            qs = qs.filter(
+                models.Q(summary_no__icontains=q) |
+                models.Q(patient__patient_name__icontains=q) |
+                models.Q(patient__patient_unique_id__icontains=q) |
+                models.Q(consultant_doctor__icontains=q)
+            )
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['q'] = self.request.GET.get('q', '').strip()
+        return ctx
+
+
+class DischargeSummaryCreateView(LoginRequiredMixin, View):
+    template_name = "patientmgmt/discharge_summary_form.html"
+
+    def get(self, request, patient_id=None):
+        patient = None
+        admission = None
+        if patient_id:
+            patient = get_object_or_404(Patient, pk=patient_id)
+            admission = patient.admissions.filter(current_status='ACTIVE').first() or patient.admissions.order_by('-admission_date').first()
+
+        patients = Patient.objects.filter(is_active=True).order_by('patient_name')
+        doctors = CustomUser.objects.filter(
+            models.Q(role__role_name__icontains="doctor") |
+            models.Q(role__role_name__icontains="consultant") |
+            models.Q(role__role_name__icontains="therapist") |
+            models.Q(is_superuser=True),
+            is_active=True
+        ).order_by('first_name', 'last_name', 'username')
+        all_medicines = StockMedicine.objects.all().order_by('name')
+        summary_no = generate_summary_no()
+        hospital_settings = HospitalSetting.objects.first()
+
+        context = {
+            "patient": patient,
+            "admission": admission,
+            "patients": patients,
+            "doctors": doctors,
+            "all_medicines": all_medicines,
+            "summary_no": summary_no,
+            "today": timezone.localdate(),
+            "hospital_settings": hospital_settings,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, patient_id=None):
+        patient_id_val = request.POST.get("patient_id")
+        patient = get_object_or_404(Patient, pk=patient_id_val)
+
+        admission_id = request.POST.get("admission_id")
+        admission = InpatientAdmission.objects.filter(pk=admission_id).first() if admission_id else None
+
+        summary_no = request.POST.get("summary_no") or generate_summary_no()
+        consultant_doctor = request.POST.get("consultant_doctor", "").strip() or patient.consultant_doctor or "Doctor"
+
+        admission_date_str = request.POST.get("admission_date")
+        discharge_date_str = request.POST.get("discharge_date")
+        followup_date_str = request.POST.get("followup_date")
+
+        summary = DischargeSummary.objects.create(
+            summary_no=summary_no,
+            patient=patient,
+            admission=admission,
+            consultant_doctor=consultant_doctor,
+            admission_date=admission_date_str or (admission.admission_date.date() if admission else timezone.localdate()),
+            discharge_date=discharge_date_str or timezone.localdate(),
+            chief_complaints=request.POST.get("chief_complaints", "").strip(),
+            diagnosis_at_admission=request.POST.get("diagnosis_at_admission", "").strip(),
+            final_diagnosis=request.POST.get("final_diagnosis", "").strip(),
+            treatment_given=request.POST.get("treatment_given", "").strip(),
+            condition_at_discharge=request.POST.get("condition_at_discharge", "IMPROVED"),
+            discharge_advice=request.POST.get("discharge_advice", "").strip(),
+            followup_date=followup_date_str if followup_date_str else None,
+            followup_instructions=request.POST.get("followup_instructions", "").strip(),
+            created_by=request.user if request.user.is_authenticated else None
+        )
+
+        if admission:
+            admission.current_status = 'DISCHARGED'
+            admission.discharge_date = timezone.now()
+            admission.save()
+
+        med_names = request.POST.getlist("med_name[]")
+        dosages = request.POST.getlist("med_dosage[]")
+        durations = request.POST.getlist("med_duration[]")
+        instructions = request.POST.getlist("med_instructions[]")
+
+        for i in range(len(med_names)):
+            m_name = med_names[i].strip()
+            if m_name:
+                DischargeMedication.objects.create(
+                    discharge_summary=summary,
+                    medicine_name=m_name,
+                    dosage=dosages[i].strip() if i < len(dosages) else "",
+                    duration=durations[i].strip() if i < len(durations) else "",
+                    instructions=instructions[i].strip() if i < len(instructions) else ""
+                )
+
+        messages.success(request, f"Discharge Summary '{summary.summary_no}' created successfully!")
+        return redirect("patientmgmt:discharge_summary_detail", pk=summary.pk)
+
+
+class DischargeSummaryDetailView(LoginRequiredMixin, DetailView):
+    model = DischargeSummary
+    template_name = "patientmgmt/discharge_summary_detail.html"
+    context_object_name = "summary"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["hospital"] = HospitalSetting.objects.first()
+        return ctx
+
+
+class DischargeSummaryEditView(LoginRequiredMixin, View):
+    template_name = "patientmgmt/discharge_summary_edit.html"
+
+    def get(self, request, pk):
+        patients = Patient.objects.filter(is_active=True).order_by('patient_name')
+        doctors = CustomUser.objects.filter(
+            models.Q(role__role_name__icontains="doctor") |
+            models.Q(role__role_name__icontains="consultant") |
+            models.Q(role__role_name__icontains="therapist") |
+            models.Q(is_superuser=True),
+            is_active=True
+        ).order_by('first_name', 'last_name', 'username')
+        all_medicines = StockMedicine.objects.all().order_by('name')
+        hospital_settings = HospitalSetting.objects.first()
+        context = {
+            "summary": summary,
+            "patients": patients,
+            "doctors": doctors,
+            "all_medicines": all_medicines,
+            "hospital_settings": hospital_settings,
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, pk):
+        summary = get_object_or_404(DischargeSummary, pk=pk)
+
+        patient_id_val = request.POST.get("patient_id")
+        if patient_id_val:
+            summary.patient = get_object_or_404(Patient, pk=patient_id_val)
+
+        summary.consultant_doctor = request.POST.get("consultant_doctor", summary.consultant_doctor).strip()
+        summary.admission_date = request.POST.get("admission_date") or summary.admission_date
+        summary.discharge_date = request.POST.get("discharge_date") or summary.discharge_date
+        summary.chief_complaints = request.POST.get("chief_complaints", "").strip()
+        summary.diagnosis_at_admission = request.POST.get("diagnosis_at_admission", "").strip()
+        summary.final_diagnosis = request.POST.get("final_diagnosis", "").strip()
+        summary.treatment_given = request.POST.get("treatment_given", "").strip()
+        summary.condition_at_discharge = request.POST.get("condition_at_discharge", summary.condition_at_discharge)
+        summary.discharge_advice = request.POST.get("discharge_advice", "").strip()
+
+        followup_date_str = request.POST.get("followup_date")
+        summary.followup_date = followup_date_str if followup_date_str else None
+        summary.followup_instructions = request.POST.get("followup_instructions", "").strip()
+
+        summary.save()
+
+        summary.medicines.all().delete()
+        med_names = request.POST.getlist("med_name[]")
+        dosages = request.POST.getlist("med_dosage[]")
+        durations = request.POST.getlist("med_duration[]")
+        instructions = request.POST.getlist("med_instructions[]")
+
+        for i in range(len(med_names)):
+            m_name = med_names[i].strip()
+            if m_name:
+                DischargeMedication.objects.create(
+                    discharge_summary=summary,
+                    medicine_name=m_name,
+                    dosage=dosages[i].strip() if i < len(dosages) else "",
+                    duration=durations[i].strip() if i < len(durations) else "",
+                    instructions=instructions[i].strip() if i < len(instructions) else ""
+                )
+
+        messages.success(request, f"Discharge Summary '{summary.summary_no}' updated successfully!")
+        return redirect("patientmgmt:discharge_summary_detail", pk=summary.pk)
+
+
+class DischargeSummaryPrintView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        summary = get_object_or_404(DischargeSummary, pk=pk)
+        hospital = HospitalSetting.objects.first()
+        context = {
+            "summary": summary,
+            "hospital": hospital,
+            "settings": hospital,
+        }
+        return render(request, "patientmgmt/print_discharge_summary.html", context)
+

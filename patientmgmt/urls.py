@@ -67,6 +67,12 @@ urlpatterns = [
     path("check-availability/", views.check_availability, name="check_availability"),
     path("patients/export/pdf/",views.patient_export_pdf,name="patient_export_pdf"),
 
-
-
+    # Discharge Summaries
+    path("discharge-summaries/", views.DischargeSummaryListView.as_view(), name="discharge_summary_list"),
+    path("discharge-summary/add/", views.DischargeSummaryCreateView.as_view(), name="discharge_summary_create"),
+    path("discharge-summary/add/<int:patient_id>/", views.DischargeSummaryCreateView.as_view(), name="discharge_summary_create_patient"),
+    path("discharge-summary/<int:pk>/detail/", views.DischargeSummaryDetailView.as_view(), name="discharge_summary_detail"),
+    path("discharge-summary/<int:pk>/edit/", views.DischargeSummaryEditView.as_view(), name="discharge_summary_edit"),
+    path("discharge-summary/<int:pk>/print/", views.DischargeSummaryPrintView.as_view(), name="discharge_summary_print"),
 ]
+

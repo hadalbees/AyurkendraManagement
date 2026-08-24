@@ -24,12 +24,24 @@ from reportlab.lib.utils import ImageReader
 from fieldmgmt.models import ActivityHistory
 # from django.contrib.auth.decorators import login_required
 
+from django.db.models import Q
+
 # @login_required
 def permissionhome(request):
     staff_qs = CustomUser.objects.filter(
         is_superuser=False,
         is_staff=False
     ).order_by("id")
+
+    q = request.GET.get("q", "").strip()
+    if q:
+        staff_qs = staff_qs.filter(
+            Q(username__icontains=q) |
+            Q(staff_id__icontains=q) |
+            Q(email__icontains=q) |
+            Q(mobile_number__icontains=q) |
+            Q(role__role_name__icontains=q)
+        )
 
     paginator = Paginator(staff_qs, 10)   # ✅ 10 records per page
     page_number = request.GET.get("page")
@@ -38,8 +50,9 @@ def permissionhome(request):
     return render(
         request,
         "permissionmgmt/permissionhome.html",
-        {"staffs": staffs}
+        {"staffs": staffs, "q": q}
     )
+
 def staffaddform(request):
     roles = Role.objects.all()
 

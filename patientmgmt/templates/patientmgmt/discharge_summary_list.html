@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4 list-page">
+
+  <!-- PAGE TITLE -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-1">Discharge Summaries</h4>
+      <p class="text-muted text-sm mb-0">
+        Manage inpatient discharge clinical summaries and discharge notes.
+      </p>
+    </div>
+
+    <div>
+      <a href="{% url 'patientmgmt:discharge_summary_create' %}" class="btn btn-success rounded-pill px-4" style="background:#c1e7d2;color:#065f46;">
+        + Create Discharge Summary
+      </a>
+    </div>
+  </div>
+
+  {% if q %}
+  <div class="alert alert-info d-flex justify-content-between align-items-center py-2 px-3 mb-3 text-sm rounded-3">
+    <span><i class="material-symbols-rounded align-middle me-1">search</i> Search results for: <strong>"{{ q }}"</strong></span>
+    <a href="{% url 'patientmgmt:discharge_summary_list' %}" class="btn btn-sm btn-outline-secondary rounded-pill mb-0 py-1 px-3 fs-7">Clear Search</a>
+  </div>
+  {% endif %}
+
+  <!-- SUMMARY TABLE -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Summary No</th>
+              <th>Patient</th>
+              <th>Doctor</th>
+              <th>Admit Date</th>
+              <th>Discharge Date</th>
+              <th>Condition</th>
+              <th class="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in summaries %}
+            <tr>
+              <td class="fw-semibold">{{ forloop.counter0|add:summaries.start_index }}</td>
+              <td>
+                <span class="fw-bold text-dark">{{ s.summary_no }}</span>
+              </td>
+              <td>
+                <div class="fw-semibold text-sm">{{ s.patient.patient_name }}</div>
+                <div class="text-muted text-xs">{{ s.patient.patient_unique_id }}</div>
+              </td>
+              <td class="text-sm">{{ s.consultant_doctor }}</td>
+              <td class="text-sm">{{ s.admission_date|date:"d-m-Y" }}</td>
+              <td class="text-sm">{{ s.discharge_date|date:"d-m-Y" }}</td>
+              <td>
+                <span class="badge 
+                  {% if s.condition_at_discharge == 'IMPROVED' %}bg-success
+                  {% elif s.condition_at_discharge == 'RECOVERED' %}bg-primary
+                  {% elif s.condition_at_discharge == 'STABLE' %}bg-info
+                  {% else %}bg-warning text-dark{% endif %}">
+                  {{ s.get_condition_at_discharge_display }}
+                </span>
+              </td>
+              <td class="text-center">
+                <a href="{% url 'patientmgmt:discharge_summary_detail' s.pk %}" class="btn btn-sm btn-outline-primary me-1 mb-0 py-1 px-2">
+                  <i class="material-symbols-rounded align-middle fs-6">visibility</i> View
+                </a>
+                <a href="{% url 'patientmgmt:discharge_summary_edit' s.pk %}" class="btn btn-sm btn-outline-secondary me-1 mb-0 py-1 px-2">
+                  <i class="material-symbols-rounded align-middle fs-6">edit</i> Edit
+                </a>
+                <a href="{% url 'patientmgmt:discharge_summary_print' s.pk %}" target="_blank" class="btn btn-sm btn-outline-success mb-0 py-1 px-2">
+                  <i class="material-symbols-rounded align-middle fs-6">print</i> Print
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center text-muted py-4">
+                No discharge summaries found.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION -->
+      {% if summaries.has_other_pages %}
+      <div class="p-3 d-flex justify-content-between align-items-center border-top">
+        <small class="text-muted">Showing {{ summaries.start_index }} to {{ summaries.end_index }} of {{ summaries.paginator.count }} summaries</small>
+        <nav>
+          <ul class="pagination mb-0">
+            {% if summaries.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ summaries.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">Previous</a></li>
+            {% endif %}
+            {% for num in summaries.paginator.page_range %}
+              {% if summaries.number == num %}
+              <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+              {% elif num > summaries.number|add:"-2" and num < summaries.number|add:"2" %}
+              <li class="page-item"><a class="page-link" href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}">{{ num }}</a></li>
+              {% endif %}
+            {% endfor %}
+            {% if summaries.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ summaries.next_page_number }}{% if q %}&q={{ q }}{% endif %}">Next</a></li>
+            {% endif %}
+          </ul>
+        </nav>
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</div>
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

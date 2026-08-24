@@ -11,12 +11,257 @@
       <i class="material-symbols-rounded fs-2">menu</i>
     </button>
 
-    <!-- CENTER : SEARCH BAR -->
-    <div class="header-search flex-grow-1 mx-3 d-none d-md-flex">
+    <!-- CENTER : SEARCH BAR WITH REAL-TIME AUTOCOMPLETE -->
+    <div class="header-search flex-grow-1 mx-3 d-none d-md-flex position-relative" id="globalSearchWrapper">
       <i class="material-symbols-rounded">search</i>
       <input type="text"
-             placeholder="Search patients, staff, or medicine...">
+             id="headerGlobalSearch"
+             placeholder="Search patients, staff, or medicine..."
+             autocomplete="off">
+      <div id="globalSearchResults" class="search-dropdown-menu shadow-lg border"></div>
     </div>
+
+    <style>
+      .search-dropdown-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12) !important;
+        border: 1px solid rgba(0, 0, 0, 0.08) !important;
+        max-height: 380px;
+        overflow-y: auto;
+        z-index: 9999;
+        display: none;
+        padding: 6px 0;
+      }
+      .search-dropdown-menu.show {
+        display: block;
+      }
+      .search-result-group-header {
+        padding: 8px 16px 4px 16px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #065f46;
+        background-color: #f8faf9;
+        border-top: 1px solid #edf2f0;
+      }
+      .search-result-group-header:first-child {
+        border-top: none;
+      }
+      .search-result-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        color: #1f2937;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+      }
+      .search-result-item:hover,
+      .search-result-item.active {
+        background-color: #ecfdf5;
+        text-decoration: none;
+      }
+      .search-result-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .search-result-icon.patient {
+        background-color: #d1fae5;
+        color: #065f46;
+      }
+      .search-result-icon.staff {
+        background-color: #ede9fe;
+        color: #5b21b6;
+      }
+      .search-result-icon.medicine {
+        background-color: #fef3c7;
+        color: #92400e;
+      }
+      .search-result-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #111827;
+        line-height: 1.2;
+      }
+      .search-result-subtitle {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 2px;
+      }
+      .search-category-badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 12px;
+        margin-left: auto;
+        flex-shrink: 0;
+      }
+      .badge-patient { background-color: #d1fae5; color: #065f46; }
+      .badge-staff { background-color: #ede9fe; color: #5b21b6; }
+      .badge-medicine { background-color: #fef3c7; color: #92400e; }
+
+      .search-no-results, .search-loading {
+        padding: 16px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 13px;
+      }
+    </style>
+
+    <script>
+    (function() {
+      document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('headerGlobalSearch');
+        const resultsContainer = document.getElementById('globalSearchResults');
+        const searchWrapper = document.getElementById('globalSearchWrapper');
+
+        if (!searchInput || !resultsContainer) return;
+
+        let debounceTimer = null;
+        let activeIndex = -1;
+
+        searchInput.addEventListener('input', function() {
+          const query = this.value.trim();
+          clearTimeout(debounceTimer);
+
+          if (query.length === 0) {
+            resultsContainer.innerHTML = '';
+            resultsContainer.classList.remove('show');
+            return;
+          }
+
+          resultsContainer.innerHTML = '<div class="search-loading"><i class="material-symbols-rounded align-middle me-1">sync</i> Searching...</div>';
+          resultsContainer.classList.add('show');
+
+          debounceTimer = setTimeout(() => {
+            fetch(`/dashboard/global-search/?q=${encodeURIComponent(query)}`)
+              .then(response => response.json())
+              .then(data => {
+                renderSearchResults(data.results, query);
+              })
+              .catch(err => {
+                console.error('Search error:', err);
+                resultsContainer.innerHTML = '<div class="search-no-results">Error performing search</div>';
+              });
+          }, 250);
+        });
+
+        function renderSearchResults(results, query) {
+          if (!results || results.length === 0) {
+            resultsContainer.innerHTML = `<div class="search-no-results">No records found for "<strong>${escapeHtml(query)}</strong>"</div>`;
+            resultsContainer.classList.add('show');
+            return;
+          }
+
+          // Group results by category
+          const grouped = {};
+          results.forEach(item => {
+            if (!grouped[item.category]) grouped[item.category] = [];
+            grouped[item.category].push(item);
+          });
+
+          let html = '';
+          const categories = ['Patient', 'Staff', 'Medicine'];
+
+          categories.forEach(cat => {
+            if (grouped[cat] && grouped[cat].length > 0) {
+              html += `<div class="search-result-group-header">${cat}s</div>`;
+              grouped[cat].forEach(item => {
+                const typeClass = item.type;
+                html += `
+                  <a href="${item.url}" class="search-result-item">
+                    <div class="search-result-icon ${typeClass}">
+                      <i class="material-symbols-rounded">${item.icon}</i>
+                    </div>
+                    <div class="flex-grow-1 overflow-hidden me-2">
+                      <div class="search-result-title text-truncate">${escapeHtml(item.title)}</div>
+                      <div class="search-result-subtitle text-truncate">${escapeHtml(item.subtitle)}</div>
+                    </div>
+                    <span class="search-category-badge badge-${typeClass}">${cat}</span>
+                  </a>
+                `;
+              });
+            }
+          });
+
+          resultsContainer.innerHTML = html;
+          resultsContainer.classList.add('show');
+          activeIndex = -1;
+        }
+
+        function escapeHtml(text) {
+          if (!text) return '';
+          return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        // Keyboard Navigation
+        searchInput.addEventListener('keydown', function(e) {
+          const items = resultsContainer.querySelectorAll('.search-result-item');
+
+          if (e.key === 'ArrowDown') {
+            if (!items.length) return;
+            e.preventDefault();
+            activeIndex = (activeIndex + 1) % items.length;
+            updateActiveItem(items);
+          } else if (e.key === 'ArrowUp') {
+            if (!items.length) return;
+            e.preventDefault();
+            activeIndex = (activeIndex - 1 + items.length) % items.length;
+            updateActiveItem(items);
+          } else if (e.key === 'Enter') {
+            if (activeIndex >= 0 && items[activeIndex]) {
+              e.preventDefault();
+              window.location.href = items[activeIndex].getAttribute('href');
+            } else if (items.length > 0) {
+              // Default to first item if Enter pressed without selection
+              e.preventDefault();
+              window.location.href = items[0].getAttribute('href');
+            }
+          } else if (e.key === 'Escape') {
+            resultsContainer.classList.remove('show');
+          }
+        });
+
+        function updateActiveItem(items) {
+          items.forEach((item, idx) => {
+            if (idx === activeIndex) {
+              item.classList.add('active');
+              item.scrollIntoView({ block: 'nearest' });
+            } else {
+              item.classList.remove('active');
+            }
+          });
+        }
+
+        // Close dropdown on click outside
+        document.addEventListener('click', function(e) {
+          if (searchWrapper && !searchWrapper.contains(e.target)) {
+            resultsContainer.classList.remove('show');
+          }
+        });
+
+        // Re-open on focus if query present
+        searchInput.addEventListener('focus', function() {
+          if (this.value.trim().length > 0 && resultsContainer.children.length > 0) {
+            resultsContainer.classList.add('show');
+          }
+        });
+      });
+    })();
+    </script>
+
 
     <!-- RIGHT : ICONS + USER -->
     <div class="header-right d-flex align-items-center gap-3">

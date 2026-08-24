@@ -1,0 +1,165 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- TOP HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">Discharge Summary - {{ summary.summary_no }}</h4>
+      <p class="text-muted text-sm mb-0">Patient: <strong>{{ summary.patient.patient_name }}</strong> ({{ summary.patient.patient_unique_id }})</p>
+    </div>
+    <div>
+      <a href="{% url 'patientmgmt:discharge_summary_list' %}" class="btn btn-outline-secondary me-2">← Back to List</a>
+      <a href="{% url 'patientmgmt:discharge_summary_edit' summary.pk %}" class="btn btn-outline-primary me-2">✏ Edit</a>
+      <a href="{% url 'patientmgmt:discharge_summary_print' summary.pk %}" target="_blank" class="btn btn-success">🖨 Print / PDF</a>
+    </div>
+  </div>
+
+  <!-- DETAILS CONTAINER -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body p-4">
+      
+      <!-- PATIENT & ADMISSION SUMMARY TABLE -->
+      <h6 class="fw-bold text-success border-bottom pb-2 mb-3">1. Patient & Admission Information</h6>
+      <div class="table-responsive mb-4">
+        <table class="table table-bordered align-middle text-sm mb-0">
+          <tbody>
+            <tr>
+              <td class="text-muted py-2" style="width: 25%;">Summary No</td>
+              <td class="text-muted py-2" style="width: 25%;">Patient ID / UHID</td>
+              <td class="text-muted py-2" style="width: 25%;">Admission Date</td>
+              <td class="text-muted py-2" style="width: 25%;">Discharge Date</td>
+            </tr>
+            <tr>
+              <td class="fw-bold py-2">{{ summary.summary_no }}</td>
+              <td class="fw-bold py-2">{{ summary.patient.patient_unique_id }}</td>
+              <td class="fw-bold py-2">{{ summary.admission_date|date:"d-m-Y" }}</td>
+              <td class="fw-bold py-2">{{ summary.discharge_date|date:"d-m-Y" }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">Patient Name</td>
+              <td class="text-muted py-2">Age / Gender</td>
+              <td class="text-muted py-2">Consultant Doctor</td>
+              <td class="text-muted py-2">Condition at Discharge</td>
+            </tr>
+            <tr>
+              <td class="fw-bold py-2">{{ summary.patient.patient_name }}</td>
+              <td class="fw-bold py-2">{{ summary.patient.age|default:'-' }} / {{ summary.patient.get_gender_display|default:'-' }}</td>
+              <td class="fw-bold py-2">{{ summary.consultant_doctor }}</td>
+              <td class="fw-bold py-2">
+                <span class="badge 
+                  {% if summary.condition_at_discharge == 'IMPROVED' %}bg-success
+                  {% elif summary.condition_at_discharge == 'RECOVERED' %}bg-primary
+                  {% elif summary.condition_at_discharge == 'STABLE' %}bg-info
+                  {% else %}bg-warning text-dark{% endif %}">
+                  {{ summary.get_condition_at_discharge_display }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- CLINICAL NOTES -->
+      <h6 class="fw-bold text-success border-bottom pb-2 mb-3">2. Clinical Diagnosis & Treatment Summary</h6>
+      <div class="row g-3 mb-4">
+        {% if summary.chief_complaints %}
+        <div class="col-12">
+          <label class="fw-semibold text-muted text-xs text-uppercase d-block mb-1">Chief Complaints</label>
+          <div class="p-3 bg-light rounded-3 text-sm text-dark">{{ summary.chief_complaints|linebreaks }}</div>
+        </div>
+        {% endif %}
+
+        {% if summary.diagnosis_at_admission %}
+        <div class="col-md-6">
+          <label class="fw-semibold text-muted text-xs text-uppercase d-block mb-1">Diagnosis at Admission</label>
+          <div class="p-3 bg-light rounded-3 text-sm text-dark">{{ summary.diagnosis_at_admission|linebreaks }}</div>
+        </div>
+        {% endif %}
+
+        {% if summary.final_diagnosis %}
+        <div class="col-md-6">
+          <label class="fw-semibold text-muted text-xs text-uppercase d-block mb-1">Final Diagnosis</label>
+          <div class="p-3 bg-light rounded-3 text-sm text-dark">{{ summary.final_diagnosis|linebreaks }}</div>
+        </div>
+        {% endif %}
+
+        {% if summary.treatment_given %}
+        <div class="col-12">
+          <label class="fw-semibold text-muted text-xs text-uppercase d-block mb-1">Treatment Given / Procedures Performed</label>
+          <div class="p-3 bg-light rounded-3 text-sm text-dark">{{ summary.treatment_given|linebreaks }}</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- DISCHARGE MEDICATIONS -->
+      {% if summary.medicines.exists %}
+      <h6 class="fw-bold text-success border-bottom pb-2 mb-3">3. Prescribed Discharge Medicines</h6>
+      <div class="table-responsive mb-4">
+        <table class="table table-bordered text-sm align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th width="8%">S.No</th>
+              <th>Medicine Name</th>
+              <th width="20%">Dosage</th>
+              <th width="15%">Duration</th>
+              <th>Instructions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in summary.medicines.all %}
+            <tr>
+              <td class="text-center">{{ forloop.counter }}</td>
+              <td class="fw-semibold text-dark">{{ m.medicine_name }}</td>
+              <td>{{ m.dosage|default:"-" }}</td>
+              <td>{{ m.duration|default:"-" }}</td>
+              <td>{{ m.instructions|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+      <!-- ADVICE & FOLLOW-UP -->
+      <h6 class="fw-bold text-success border-bottom pb-2 mb-3">4. Discharge Advice & Follow-Up</h6>
+      <div class="row g-3">
+        {% if summary.discharge_advice %}
+        <div class="col-12">
+          <label class="fw-semibold text-muted text-xs text-uppercase d-block mb-1">Dietary & Lifestyle Advice (Pathya / Apathya)</label>
+          <div class="p-3 bg-light rounded-3 text-sm text-dark">{{ summary.discharge_advice|linebreaks }}</div>
+        </div>
+        {% endif %}
+
+        {% if summary.followup_date or summary.followup_instructions %}
+        <div class="col-md-4">
+          <label class="fw-semibold text-muted text-xs text-uppercase d-block mb-1">Follow-up Date</label>
+          <div class="p-3 bg-light rounded-3 text-sm fw-bold text-primary">
+            {% if summary.followup_date %}{{ summary.followup_date|date:"d-m-Y" }}{% else %}-{% endif %}
+          </div>
+        </div>
+        <div class="col-md-8">
+          <label class="fw-semibold text-muted text-xs text-uppercase d-block mb-1">Follow-up Instructions</label>
+          <div class="p-3 bg-light rounded-3 text-sm text-dark">{{ summary.followup_instructions|default:"-" }}</div>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</main>
+
+{% include "includes/script.html" %}
+</body>
+</html>

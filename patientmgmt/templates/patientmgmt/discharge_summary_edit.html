@@ -1,0 +1,517 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+{% include "includes/head.html" %}
+
+<body class="g-sidenav-show bg-gray-100">
+{% include "includes/sidebar.html" %}
+
+<main class="main-content position-relative max-height-vh-100 h-100 border-radius-lg">
+{% include "includes/header.html" %}
+
+<div class="container-fluid py-4">
+
+  <!-- PAGE HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">Edit Discharge Summary - {{ summary.summary_no }}</h4>
+      <p class="text-muted text-sm mb-0">Patient: <strong>{{ summary.patient.patient_name }}</strong> ({{ summary.patient.patient_unique_id }})</p>
+    </div>
+    <div>
+      <a href="{% url 'patientmgmt:discharge_summary_detail' summary.pk %}" class="btn btn-outline-secondary">← Back to Detail</a>
+    </div>
+  </div>
+
+  <form method="post" action="{% url 'patientmgmt:discharge_summary_edit' summary.pk %}">
+    {% csrf_token %}
+
+    <div class="row g-4">
+      
+      <!-- LEFT: CLINICAL & MEDICATIONS -->
+      <div class="col-lg-8">
+
+        <!-- BASIC INFORMATION -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white py-3">
+            <h6 class="fw-bold mb-0 text-dark">1. Patient & Doctor Information</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Patient Name <span class="text-danger">*</span></label>
+                <div class="position-relative patient-search-wrapper">
+                  <input type="text" id="patientSearchInput" class="form-control" placeholder="Type name, patient ID, or phone..." autocomplete="off" value="{{ summary.patient.patient_name }} ({{ summary.patient.patient_unique_id }}){% if summary.patient.phone %} - Ph: {{ summary.patient.phone }}{% endif %}" required>
+                  <input type="hidden" name="patient_id" id="patientIdInput" value="{{ summary.patient.id }}" required>
+                  
+                  <div id="patientDropdown" class="list-group position-absolute w-100 shadow-lg border rounded-3 mt-1" style="display:none; max-height:250px; overflow-y:auto; z-index:9999; top:100%; left:0; background:#fff;">
+                    {% for p in patients %}
+                    <button type="button" class="list-group-item list-group-item-action patient-option-item py-2 px-3 border-bottom text-start"
+                            data-id="{{ p.id }}"
+                            data-name="{{ p.patient_name }}"
+                            data-uid="{{ p.patient_unique_id }}"
+                            data-phone="{{ p.phone|default:'' }}"
+                            data-doctor="{{ p.consultant_doctor|default:'' }}">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                          <strong class="text-dark d-block text-sm mb-0">{{ p.patient_name }}</strong>
+                          <small class="text-muted">ID: {{ p.patient_unique_id }} | Phone: {{ p.phone|default:'-' }}</small>
+                        </div>
+                        <span class="badge bg-light text-dark text-xs">{{ p.get_patient_type_display }}</span>
+                      </div>
+                    </button>
+                    {% endfor %}
+                    <div id="noPatientsFound" class="py-2 px-3 text-muted text-center text-sm" style="display:none;">No patients found matching search</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Summary Number</label>
+                <input type="text" class="form-control bg-light fw-bold text-dark" value="{{ summary.summary_no }}" readonly>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Consultant Doctor <span class="text-danger">*</span></label>
+                <div class="position-relative doctor-search-wrapper">
+                  <input type="text" name="consultant_doctor" id="doctorSearchInput" class="form-control" placeholder="Type or select Consultant Doctor..." autocomplete="off" value="{{ summary.consultant_doctor }}" required>
+                  
+                  <div id="doctorDropdown" class="list-group position-absolute w-100 shadow-lg border rounded-3 mt-1" style="display:none; max-height:220px; overflow-y:auto; z-index:9999; top:100%; left:0; background:#fff;">
+                    {% for doc in doctors %}
+                    <button type="button" class="list-group-item list-group-item-action doctor-option-item py-2 px-3 border-bottom text-start"
+                            data-name="{% if doc.get_full_name %}{{ doc.get_full_name }}{% else %}{{ doc.username }}{% endif %}"
+                            data-role="{{ doc.role.role_name|default:'Doctor' }}">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                          <strong class="text-dark d-block text-sm mb-0">
+                            {% if doc.get_full_name %}{{ doc.get_full_name }}{% else %}{{ doc.username }}{% endif %}
+                          </strong>
+                          <small class="text-muted">Staff ID: {{ doc.staff_id|default:'-' }}</small>
+                        </div>
+                        <span class="badge bg-success-soft text-success text-xs">{{ doc.role.role_name|default:'Doctor' }}</span>
+                      </div>
+                    </button>
+                    {% endfor %}
+                    <div id="noDoctorsFound" class="py-2 px-3 text-muted text-center text-sm" style="display:none;">No matching doctors found</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Admission Date <span class="text-danger">*</span></label>
+                <input type="date" name="admission_date" class="form-control" value="{{ summary.admission_date|date:'Y-m-d' }}" required>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label fw-semibold">Discharge Date <span class="text-danger">*</span></label>
+                <input type="date" name="discharge_date" class="form-control" value="{{ summary.discharge_date|date:'Y-m-d' }}" required>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- CLINICAL DETAILS -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white py-3">
+            <h6 class="fw-bold mb-0 text-dark">2. Clinical Details & Diagnosis</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              
+              <div class="col-12">
+                <label class="form-label fw-semibold">Chief Complaints</label>
+                <textarea name="chief_complaints" class="form-control" rows="2">{{ summary.chief_complaints|default:'' }}</textarea>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Diagnosis at Admission</label>
+                <textarea name="diagnosis_at_admission" class="form-control" rows="2">{{ summary.diagnosis_at_admission|default:'' }}</textarea>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Final Diagnosis</label>
+                <textarea name="final_diagnosis" class="form-control" rows="2">{{ summary.final_diagnosis|default:'' }}</textarea>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label fw-semibold">Treatment Administered / Procedures Given</label>
+                <textarea name="treatment_given" class="form-control" rows="3">{{ summary.treatment_given|default:'' }}</textarea>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- DISCHARGE MEDICATIONS -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-dark">3. Prescribed Discharge Medicines</h6>
+            <button type="button" class="btn btn-sm btn-outline-success mb-0" id="addMedRow">
+              + Add Medicine
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table align-middle mb-0" id="medTable">
+                <thead class="table-light">
+                  <tr>
+                    <th>Medicine Name</th>
+                    <th width="140">Dosage</th>
+                    <th width="130">Duration</th>
+                    <th>Instructions</th>
+                    <th width="50"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for m in summary.medicines.all %}
+                  <tr class="medRow">
+                    <td style="min-width: 220px;">
+                      <div class="position-relative med-search-wrapper">
+                        <input type="text" name="med_name[]" class="form-control form-control-sm medSearchInput" placeholder="Type medicine name to search..." autocomplete="off" value="{{ m.medicine_name }}">
+                        
+                        <div class="medDropdown list-group position-absolute w-100 shadow-lg border rounded-3 mt-1" style="display:none; max-height:200px; overflow-y:auto; z-index:9999; top:100%; left:0; background:#fff;">
+                          {% for med in all_medicines %}
+                          <button type="button" class="list-group-item list-group-item-action med-option-item py-1.5 px-3 border-bottom text-start"
+                                  data-name="{{ med.name }}"
+                                  data-form="{{ med.form_type }}"
+                                  data-dosage="{% if med.form_type == 'LIQUID' %}15ml - 0 - 15ml{% elif med.form_type == 'POWDER' %}3g - 0 - 3g{% else %}1 - 0 - 1{% endif %}"
+                                  data-instructions="{% if med.form_type == 'LIQUID' %}After food with equal water{% elif med.form_type == 'POWDER' %}After food with warm water{% else %}After food{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                              <strong class="text-dark text-xs mb-0">{{ med.name }}</strong>
+                              <span class="badge bg-light text-muted text-xs ms-2">{{ med.get_form_type_display }}</span>
+                            </div>
+                          </button>
+                          {% endfor %}
+                          <div class="no-meds-found py-2 px-3 text-muted text-center text-xs" style="display:none;">No matching medicines</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <input type="text" name="med_dosage[]" class="form-control form-control-sm medDosageInput" value="{{ m.dosage|default:'' }}" placeholder="e.g. 15ml - 0 - 15ml">
+                    </td>
+                    <td>
+                      <input type="text" name="med_duration[]" class="form-control form-control-sm medDurationInput" value="{{ m.duration|default:'' }}" placeholder="e.g. 15 Days">
+                    </td>
+                    <td>
+                      <input type="text" name="med_instructions[]" class="form-control form-control-sm medInstructionInput" value="{{ m.instructions|default:'' }}" placeholder="After food">
+                    </td>
+                    <td>
+                      <button type="button" class="btn btn-sm btn-link text-danger removeMedRow p-0 mb-0">
+                        <i class="material-symbols-rounded align-middle">close</i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr class="medRow">
+                    <td style="min-width: 220px;">
+                      <div class="position-relative med-search-wrapper">
+                        <input type="text" name="med_name[]" class="form-control form-control-sm medSearchInput" placeholder="Type medicine name to search..." autocomplete="off">
+                        
+                        <div class="medDropdown list-group position-absolute w-100 shadow-lg border rounded-3 mt-1" style="display:none; max-height:200px; overflow-y:auto; z-index:9999; top:100%; left:0; background:#fff;">
+                          {% for med in all_medicines %}
+                          <button type="button" class="list-group-item list-group-item-action med-option-item py-1.5 px-3 border-bottom text-start"
+                                  data-name="{{ med.name }}"
+                                  data-form="{{ med.form_type }}"
+                                  data-dosage="{% if med.form_type == 'LIQUID' %}15ml - 0 - 15ml{% elif med.form_type == 'POWDER' %}3g - 0 - 3g{% else %}1 - 0 - 1{% endif %}"
+                                  data-instructions="{% if med.form_type == 'LIQUID' %}After food with equal water{% elif med.form_type == 'POWDER' %}After food with warm water{% else %}After food{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                              <strong class="text-dark text-xs mb-0">{{ med.name }}</strong>
+                              <span class="badge bg-light text-muted text-xs ms-2">{{ med.get_form_type_display }}</span>
+                            </div>
+                          </button>
+                          {% endfor %}
+                          <div class="no-meds-found py-2 px-3 text-muted text-center text-xs" style="display:none;">No matching medicines</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <input type="text" name="med_dosage[]" class="form-control form-control-sm medDosageInput" placeholder="e.g. 15ml - 0 - 15ml">
+                    </td>
+                    <td>
+                      <input type="text" name="med_duration[]" class="form-control form-control-sm medDurationInput" placeholder="e.g. 15 Days">
+                    </td>
+                    <td>
+                      <input type="text" name="med_instructions[]" class="form-control form-control-sm medInstructionInput" placeholder="After food">
+                    </td>
+                    <td>
+                      <button type="button" class="btn btn-sm btn-link text-danger removeMedRow p-0 mb-0">
+                        <i class="material-symbols-rounded align-middle">close</i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: ADVICE & FOLLOW-UP -->
+      <div class="col-lg-4">
+
+        <div class="card shadow-sm mb-4">
+          <div class="card-header bg-white py-3">
+            <h6 class="fw-bold mb-0 text-dark">4. Condition & Advice</h6>
+          </div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Condition at Discharge</label>
+              <select name="condition_at_discharge" class="form-select">
+                <option value="IMPROVED" {% if summary.condition_at_discharge == 'IMPROVED' %}selected{% endif %}>Improved</option>
+                <option value="STABLE" {% if summary.condition_at_discharge == 'STABLE' %}selected{% endif %}>Stable</option>
+                <option value="RECOVERED" {% if summary.condition_at_discharge == 'RECOVERED' %}selected{% endif %}>Recovered</option>
+                <option value="DISCHARGED_AGAINST_ADVICE" {% if summary.condition_at_discharge == 'DISCHARGED_AGAINST_ADVICE' %}selected{% endif %}>Discharged Against Advice (LAMA)</option>
+                <option value="REFERRED" {% if summary.condition_at_discharge == 'REFERRED' %}selected{% endif %}>Referred</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Discharge Advice / Dietary Guidelines (Pathya / Apathya)</label>
+              <textarea name="discharge_advice" class="form-control" rows="4">{{ summary.discharge_advice|default:'' }}</textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Follow-up Date</label>
+              <input type="date" name="followup_date" class="form-control" value="{% if summary.followup_date %}{{ summary.followup_date|date:'Y-m-d' }}{% endif %}">
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Follow-up Instructions</label>
+              <textarea name="followup_instructions" class="form-control" rows="2">{{ summary.followup_instructions|default:'' }}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold fs-6">
+              💾 Update Discharge Summary
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </form>
+
+</div>
+</main>
+
+{% include "includes/script.html" %}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const addMedBtn = document.getElementById("addMedRow");
+  const medTableBody = document.querySelector("#medTable tbody");
+
+  if (addMedBtn && medTableBody) {
+    addMedBtn.addEventListener("click", function () {
+      const firstRow = medTableBody.querySelector(".medRow");
+      if (!firstRow) return;
+      const newRow = firstRow.cloneNode(true);
+      newRow.querySelectorAll("input").forEach(input => input.value = "");
+      medTableBody.appendChild(newRow);
+      attachRowEvents(newRow);
+    });
+  }
+
+  function attachRowEvents(row) {
+    const removeBtn = row.querySelector(".removeMedRow");
+    if (removeBtn) {
+      removeBtn.addEventListener("click", function () {
+        const totalRows = medTableBody.querySelectorAll(".medRow").length;
+        if (totalRows > 1) {
+          row.remove();
+        } else {
+          row.querySelectorAll("input").forEach(input => input.value = "");
+        }
+      });
+    }
+
+    const searchInput = row.querySelector(".medSearchInput");
+    const dropdown = row.querySelector(".medDropdown");
+    const dosageInput = row.querySelector(".medDosageInput");
+    const durationInput = row.querySelector(".medDurationInput");
+    const instructionInput = row.querySelector(".medInstructionInput");
+
+    if (searchInput && dropdown) {
+      const options = dropdown.querySelectorAll(".med-option-item");
+      const noMeds = dropdown.querySelector(".no-meds-found");
+
+      function filterMeds() {
+        const query = searchInput.value.trim().toLowerCase();
+        let matchCount = 0;
+
+        options.forEach(opt => {
+          const name = (opt.dataset.name || '').toLowerCase();
+          if (!query || name.includes(query)) {
+            opt.style.display = "block";
+            matchCount++;
+          } else {
+            opt.style.display = "none";
+          }
+        });
+
+        if (noMeds) {
+          noMeds.style.display = matchCount === 0 ? "block" : "none";
+        }
+
+        dropdown.style.display = "block";
+      }
+
+      searchInput.addEventListener("focus", filterMeds);
+      searchInput.addEventListener("input", filterMeds);
+
+      options.forEach(opt => {
+        opt.addEventListener("click", function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const name = this.dataset.name;
+          const dosage = this.dataset.dosage;
+          const instructions = this.dataset.instructions;
+
+          searchInput.value = name;
+          if (dosageInput) dosageInput.value = dosage;
+          if (instructionInput && !instructionInput.value) instructionInput.value = instructions;
+
+          dropdown.style.display = "none";
+
+          if (durationInput) durationInput.focus();
+        });
+      });
+
+      document.addEventListener("click", function (e) {
+        if (!row.contains(e.target)) {
+          dropdown.style.display = "none";
+        }
+      });
+    }
+  }
+
+  document.querySelectorAll(".medRow").forEach(row => attachRowEvents(row));
+
+  // Patient Autocomplete Search
+  const patientSearchInput = document.getElementById("patientSearchInput");
+  const patientIdInput = document.getElementById("patientIdInput");
+  const patientDropdown = document.getElementById("patientDropdown");
+  const consultantDoctorInput = document.querySelector("input[name='consultant_doctor']");
+
+  if (patientSearchInput && patientDropdown && patientIdInput) {
+    const options = patientDropdown.querySelectorAll(".patient-option-item");
+    const noResults = document.getElementById("noPatientsFound");
+
+    function filterPatients() {
+      const query = patientSearchInput.value.trim().toLowerCase();
+      let matchCount = 0;
+
+      options.forEach(opt => {
+        const name = (opt.dataset.name || '').toLowerCase();
+        const uid = (opt.dataset.uid || '').toLowerCase();
+        const phone = (opt.dataset.phone || '').toLowerCase();
+
+        if (!query || name.includes(query) || uid.includes(query) || phone.includes(query)) {
+          opt.style.display = "block";
+          matchCount++;
+        } else {
+          opt.style.display = "none";
+        }
+      });
+
+      if (noResults) {
+        noResults.style.display = matchCount === 0 ? "block" : "none";
+      }
+
+      patientDropdown.style.display = "block";
+    }
+
+    patientSearchInput.addEventListener("focus", filterPatients);
+    patientSearchInput.addEventListener("input", function() {
+      patientIdInput.value = "";
+      filterPatients();
+    });
+
+    options.forEach(opt => {
+      opt.addEventListener("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const id = this.dataset.id;
+        const name = this.dataset.name;
+        const uid = this.dataset.uid;
+        const phone = this.dataset.phone;
+        const doctor = this.dataset.doctor;
+
+        patientIdInput.value = id;
+        patientSearchInput.value = `${name} (${uid})${phone ? ' - Ph: ' + phone : ''}`;
+
+        if (consultantDoctorInput && doctor && !consultantDoctorInput.value) {
+          consultantDoctorInput.value = doctor;
+        }
+
+        patientDropdown.style.display = "none";
+      });
+    });
+
+    document.addEventListener("click", function(e) {
+      if (!patientSearchInput.parentElement.contains(e.target)) {
+        patientDropdown.style.display = "none";
+      }
+    });
+  }
+
+  // Doctor Autocomplete Search
+  const doctorSearchInput = document.getElementById("doctorSearchInput");
+  const doctorDropdown = document.getElementById("doctorDropdown");
+
+  if (doctorSearchInput && doctorDropdown) {
+    const docOptions = doctorDropdown.querySelectorAll(".doctor-option-item");
+    const noDocResults = document.getElementById("noDoctorsFound");
+
+    function filterDoctors() {
+      const query = doctorSearchInput.value.trim().toLowerCase();
+      let matchCount = 0;
+
+      docOptions.forEach(opt => {
+        const name = (opt.dataset.name || '').toLowerCase();
+        const role = (opt.dataset.role || '').toLowerCase();
+
+        if (!query || name.includes(query) || role.includes(query)) {
+          opt.style.display = "block";
+          matchCount++;
+        } else {
+          opt.style.display = "none";
+        }
+      });
+
+      if (noDocResults) {
+        noDocResults.style.display = matchCount === 0 ? "block" : "none";
+      }
+
+      doctorDropdown.style.display = "block";
+    }
+
+    doctorSearchInput.addEventListener("focus", filterDoctors);
+    doctorSearchInput.addEventListener("input", filterDoctors);
+
+    docOptions.forEach(opt => {
+      opt.addEventListener("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const name = this.dataset.name;
+        doctorSearchInput.value = name;
+        doctorDropdown.style.display = "none";
+      });
+    });
+
+    document.addEventListener("click", function(e) {
+      if (!doctorSearchInput.parentElement.contains(e.target)) {
+        doctorDropdown.style.display = "none";
+      }
+    });
+  }
+});
+</script>
+</body>
+</html>

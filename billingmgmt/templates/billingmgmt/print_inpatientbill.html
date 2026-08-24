@@ -280,7 +280,7 @@ INPATIENT BILL
 
 <div class="value">
 
-{{ bill.created_at|date:"d-m-Y" }}
+{{ bill.admit_date|default:bill.created_at|date:"d-m-Y" }}
 
 </div>
 

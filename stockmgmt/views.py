@@ -809,12 +809,12 @@ class StockCreateView(LoginRequiredMixin, View):
             )
 
             messages.success(
-
                 request,
-
                 "Medicine Stock Added Successfully."
-
             )
+
+            if request.POST.get("save_add") == "1":
+                return redirect("stockmgmt:stock_add")
 
             return redirect(self.success_url)
 
@@ -994,7 +994,7 @@ class StockUpdateView(LoginRequiredMixin, View):
             print("Total Qty :", stock.total_base_quantity)
             print("==============")
 
-            transaction, created = StockTransaction.objects.get_or_create(
+            st_tx, created = StockTransaction.objects.get_or_create(
                 stock_item=stock,
                 transaction_type="PURCHASE",
                 defaults={
@@ -1005,10 +1005,10 @@ class StockUpdateView(LoginRequiredMixin, View):
             )
 
             if not created:
-                transaction.quantity_change = stock.total_base_quantity
-                transaction.recorded_by = request.user
-                transaction.notes = "Opening Stock Updated"
-                transaction.save()
+                st_tx.quantity_change = stock.total_base_quantity
+                st_tx.recorded_by = request.user
+                st_tx.notes = "Opening Stock Updated"
+                st_tx.save()
 
             ActivityHistory.objects.create(
                 user=request.user,
@@ -1119,15 +1119,20 @@ REQUIRED_COLUMNS = [
 ]
 
 
-from datetime import datetime
+from datetime import datetime, date
+import re
+
 # -----------------------------
 # SAFE DECIMAL
 # -----------------------------
 def safe_decimal(val, default=0):
     try:
-        if pd.isna(val):
+        if pd.isna(val) or val is None:
             return Decimal(default)
-        return Decimal(str(val).replace("₹", "").strip())
+        s = str(val).replace("₹", "").replace(",", "").strip()
+        if not s or s.lower() in ["nan", "none"]:
+            return Decimal(default)
+        return Decimal(s)
     except:
         return Decimal(default)
 
@@ -1137,14 +1142,17 @@ def safe_decimal(val, default=0):
 # -----------------------------
 def fix_quantity(val):
     try:
-        if pd.isna(val):
+        if pd.isna(val) or val is None:
             return Decimal("0")
 
         if isinstance(val, pd.Timestamp):
             return Decimal(str(val.day))
 
-        # Check if it can be represented as float/decimal
-        return Decimal(str(val))
+        s = str(val).replace(",", "").strip()
+        if not s or s.lower() in ["nan", "none"]:
+            return Decimal("0")
+
+        return Decimal(s)
     except:
         return Decimal("0")
 
@@ -1162,34 +1170,66 @@ def detect_form_and_unit(name):
         return "POWDER", "g"
 
     else:
-        return "PIECE", "piece"   # 🔥 IMPORTANT FIX
+        return "PIECE", "piece"
 
 
 # -----------------------------
-# EXPIRY PARSER (FIX ERROR)
+# SAFE DATE PARSER
 # -----------------------------
-def parse_expiry(val):
+def parse_excel_date(val):
     try:
-        if pd.isna(val):
+        if pd.isna(val) or val is None:
             return None
 
-        if hasattr(val, "date"):
-            return val.date()
+        if isinstance(val, (datetime, date)):
+            if isinstance(val, datetime):
+                return val.date()
+            return val
+
+        val_str = str(val).strip()
+        if not val_str or val_str.lower() in ["nan", "none", "-", "nat"]:
+            return None
+
+        # Check MM.YYYY or M.YYYY (e.g., 10.2024 or 1.2023)
+        m = re.match(r'^(\d{1,2})\.(\d{4})$', val_str)
+        if m:
+            month, year = int(m.group(1)), int(m.group(2))
+            if 1 <= month <= 12:
+                return date(year, month, 1)
 
         # Handle 4-digit year integers (e.g., 2027 -> 2027-12-31)
-        val_str = str(val).strip()
         if val_str.isdigit() and len(val_str) == 4:
-            return datetime(int(val_str), 12, 31).date()
+            return date(int(val_str), 12, 31)
 
-        if isinstance(val, str):
+        formats = [
+            "%d.%m.%Y", "%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y",
+            "%d.%m.%y", "%d/%m/%y", "%m/%d/%Y", "%b-%y", "%B-%Y"
+        ]
+        for fmt in formats:
             try:
-                return datetime.strptime(val_str, "%b-%y").date()
-            except:
-                return pd.to_datetime(val_str).date()
+                return datetime.strptime(val_str, fmt).date()
+            except ValueError:
+                pass
+
+        try:
+            res = pd.to_datetime(val_str, dayfirst=True)
+            if not pd.isna(res):
+                return res.date()
+        except Exception:
+            pass
 
         return None
     except:
         return None
+
+
+def get_row_val(row_dict, *keys):
+    for k in keys:
+        if k in row_dict and not pd.isna(row_dict[k]):
+            v = str(row_dict[k]).strip()
+            if v and v.lower() not in ["nan", "none"]:
+                return row_dict[k]
+    return None
 
 
 # =============================
@@ -1208,8 +1248,6 @@ def bulk_import_stock(request):
     try:
         df = pd.read_excel(file)
 
-        df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
-
         created = 0
         updated = 0
         skipped = 0
@@ -1220,76 +1258,97 @@ def bulk_import_stock(request):
 
             for _, row in df.iterrows():
 
-                medicine_name = str(row.get("medicine_name", "")).strip()
+                row_dict = {str(k).strip().lower().replace(" ", "_"): v for k, v in row.items()}
+
+                medicine_name = str(get_row_val(row_dict, "medicine_name", "name", "medicine") or "").strip()
 
                 # ✅ Skip ONLY empty medicine name
                 if not medicine_name or medicine_name.lower() in ["nan", "none"]:
                     skipped += 1
                     continue
 
-                # ✅ Category rows: price, manufacturer, and quantity are null
-                is_category = pd.isna(row.get("price")) and pd.isna(row.get("manufacturer")) and pd.isna(row.get("quantity"))
+                # Fields extraction with alias support
+                pkg_val = get_row_val(row_dict, "package", "pack_size")
+                no_pack_val = get_row_val(row_dict, "no_of_pack", "quantity", "no_of_packs", "stock")
+                sell_price_val = get_row_val(row_dict, "sell_price", "selling_price", "price")
+                purchase_price_val = get_row_val(row_dict, "purchase_price", "unit_price")
+                batch_val = get_row_val(row_dict, "batch_no", "batch_number", "batch")
+                mfg_val = get_row_val(row_dict, "manufacturer")
+                supplier_val = get_row_val(row_dict, "supplier")
+                base_unit_val = get_row_val(row_dict, "base_unit")
+                mfg_date_val = get_row_val(row_dict, "manufacture_date", "mfg_date")
+                exp_date_val = get_row_val(row_dict, "expiry", "expiry_date")
+                hsn_val = get_row_val(row_dict, "hsn_code", "hsn")
+
+                # ✅ Category section row check (no pkg, quantity, prices, batch, manufacturer)
+                is_category = all(x is None for x in [pkg_val, no_pack_val, sell_price_val, purchase_price_val, batch_val, mfg_val])
                 if is_category:
                     current_type, _ = AyurvedicType.objects.get_or_create(
-                        name=medicine_name.title()
+                        name=medicine_name.strip().title()
                     )
                     continue
 
                 # -------------------------
-                # FIELDS
+                # BATCH NUMBER
                 # -------------------------
-                batch_val = row.get("batch_no")
-                if pd.isna(batch_val) or str(batch_val).strip().lower() in ["", "nan", "none"]:
+                if not batch_val:
                     batch_number = "NO-BATCH"
                 else:
                     batch_number = str(batch_val).strip()
 
-                manufacturer_name = str(row.get("manufacturer", "")).strip()
+                # -------------------------
+                # QUANTITY & PRICES
+                # -------------------------
+                pack_size = safe_decimal(pkg_val, default=0)
+                number_of_packs = fix_quantity(no_pack_val)
+                selling_price = safe_decimal(sell_price_val, default=0)
+                purchase_price = safe_decimal(purchase_price_val, default=selling_price)
 
-                pack_size = safe_decimal(row.get("package"))
-                number_of_packs = fix_quantity(row.get("quantity"))
-                selling_price = safe_decimal(row.get("price"))
-                unitprice_excel = safe_decimal(row.get("unit_price"))
+                if selling_price <= 0 and purchase_price > 0:
+                    selling_price = purchase_price
 
-                # 🔥 ALLOW ZERO VALUES
-                if pack_size < 0:
-                    pack_size = Decimal("0")
+                unit_price = purchase_price if purchase_price > 0 else selling_price
 
-                if number_of_packs < 0:
-                    number_of_packs = Decimal("0")
+                # -------------------------
+                # DATES
+                # -------------------------
+                manufacture_date = parse_excel_date(mfg_date_val)
+                expiry_date = parse_excel_date(exp_date_val)
 
-                if selling_price < 0:
-                    selling_price = Decimal("0")
-
-                unit_price = selling_price
-                total_qty = pack_size * number_of_packs
-                if total_qty > 0:
-                    price_per_base_unit = selling_price / total_qty
+                # -------------------------
+                # FORM TYPE & BASE UNIT
+                # -------------------------
+                auto_form_type, auto_base_unit = detect_form_and_unit(medicine_name)
+                if base_unit_val and str(base_unit_val).strip().lower() in ["ml", "g", "piece"]:
+                    base_unit = str(base_unit_val).strip().lower()
                 else:
-                    price_per_base_unit = Decimal("0")
+                    base_unit = auto_base_unit
 
-                expiry_date = parse_expiry(row.get("expiry"))
-
-                # -------------------------
-                # FORM TYPE
-                # -------------------------
-                form_type, base_unit = detect_form_and_unit(medicine_name)
+                form_type = auto_form_type
 
                 # -------------------------
-                # MANUFACTURER
+                # MANUFACTURER & SUPPLIER
                 # -------------------------
                 manufacturer = None
-                if manufacturer_name and manufacturer_name.lower() not in ["nan", "none"]:
-                    manufacturer, _ = ManufacturerMaster.objects.get_or_create(
-                        name=manufacturer_name
-                    )
+                if mfg_val:
+                    mfg_name = str(mfg_val).strip()
+                    if mfg_name.lower() not in ["nan", "none"]:
+                        manufacturer, _ = ManufacturerMaster.objects.get_or_create(
+                            name=mfg_name
+                        )
+
+                supplier = None
+                if supplier_val:
+                    sup_name = str(supplier_val).strip()
+                    if sup_name.lower() not in ["nan", "none"]:
+                        supplier, _ = SupplierMaster.objects.get_or_create(
+                            name=sup_name
+                        )
 
                 # -------------------------
-                # MEDICINE
+                # HSN CODE
                 # -------------------------
-                # Parse clean HSN code without trailing float decimals (.0)
-                hsn_val = row.get("hsn_code")
-                if pd.isna(hsn_val) or str(hsn_val).strip().lower() in ["nan", "none"]:
+                if not hsn_val:
                     hsn_code = ""
                 else:
                     try:
@@ -1299,8 +1358,11 @@ def bulk_import_stock(request):
                         else:
                             hsn_code = str(hsn_val)
                     except:
-                        hsn_code = str(hsn_val)
+                        hsn_code = str(hsn_val).strip()
 
+                # -------------------------
+                # MEDICINE
+                # -------------------------
                 medicine, created_medicine = Medicine.objects.get_or_create(
                     name__iexact=medicine_name,
                     defaults={
@@ -1315,13 +1377,20 @@ def bulk_import_stock(request):
                     }
                 )
 
-                # -------------------------
-                # STOCK
-                # -------------------------
-                # -------------------------
-                # STOCK
-                # -------------------------
+                # Update category/HSN if medicine already existed and wasn't assigned
+                updated_med = False
+                if current_type and medicine.ayurvedic_type != current_type:
+                    medicine.ayurvedic_type = current_type
+                    updated_med = True
+                if hsn_code and not medicine.hsn_code:
+                    medicine.hsn_code = hsn_code
+                    updated_med = True
+                if updated_med:
+                    medicine.save()
 
+                # -------------------------
+                # STOCK
+                # -------------------------
                 stock = Stock.objects.filter(
                     medicine=medicine,
                     batch_number=batch_number
@@ -1329,7 +1398,6 @@ def bulk_import_stock(request):
 
                 gst_percentage = medicine.gst_percentage or Decimal("0")
 
-                # SAME LOGIC AS CREATE VIEW
                 total_qty, gst_amount, selling_price_final, price_per_base = calculate_stock_values(
                     pack_size,
                     number_of_packs,
@@ -1339,31 +1407,24 @@ def bulk_import_stock(request):
                 )
 
                 if stock:
-
                     stock.pack_size = pack_size
-
                     stock.number_of_packs += number_of_packs
-
                     stock.total_base_quantity += total_qty
-
                     stock.unit_price = unit_price
-
                     stock.selling_price = selling_price_final
-
                     stock.gst_amount = gst_amount
-
-                    stock.price_per_base_unit = unitprice_excel
-
+                    stock.price_per_base_unit = price_per_base
                     stock.base_unit = base_unit
-
-                    stock.manufacturer = manufacturer
-
-                    stock.expiry_date = expiry_date
-
+                    if manufacturer:
+                        stock.manufacturer = manufacturer
+                    if supplier:
+                        stock.supplier = supplier
+                    if manufacture_date:
+                        stock.manufacture_date = manufacture_date
+                    if expiry_date:
+                        stock.expiry_date = expiry_date
                     stock.updated_at = timezone.now()
-
                     stock.last_updated_by = request.user
-
                     stock.save()
 
                     # STOCK TRANSACTION
@@ -1387,39 +1448,22 @@ def bulk_import_stock(request):
                     updated += 1
 
                 else:
-
                     stock = Stock.objects.create(
-
                         medicine=medicine,
-
                         batch_number=batch_number,
-
                         base_unit=base_unit,
-
                         pack_size=pack_size,
-
                         number_of_packs=number_of_packs,
-
                         total_base_quantity=total_qty,
-
                         unit_price=unit_price,
-
                         selling_price=selling_price_final,
-
                         gst_amount=gst_amount,
-
-                        price_per_base_unit=unitprice_excel,
-
-                        manufacture_date=None,
-
+                        price_per_base_unit=price_per_base,
+                        manufacture_date=manufacture_date,
                         expiry_date=expiry_date,
-
-                        supplier=None,
-
+                        supplier=supplier,
                         manufacturer=manufacturer,
-
                         last_updated_by=request.user,
-
                     )
 
                     # STOCK TRANSACTION
@@ -1444,7 +1488,7 @@ def bulk_import_stock(request):
 
         messages.success(
             request,
-            f"✔ Import Done → Created: {created}, Updated: {updated}, Skipped: {skipped}"
+            f"Import Done -> Created: {created}, Updated: {updated}, Skipped: {skipped}"
         )
 
     except Exception as e:

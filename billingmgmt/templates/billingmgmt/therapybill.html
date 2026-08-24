@@ -217,16 +217,32 @@
                                         </thead>
                                         <tbody>
                                             <tr class="therapyRow align-middle">
-                                                <td>
-                                                    <select class="form-select therapySelect" name="therapy_id[]" required>
-                                                        <option value="">-- Select Therapy --</option>
-                                                        {% for therapy in therapies %}
-                                                        <option value="{{ therapy.id }}" data-price="{{ therapy.charges }}" data-serial="{{ therapy.serial_no }}">
-                                                            {{ therapy.name }}
-                                                        </option>
-                                                        {% endfor %}
-                                                    </select>
+                                                <td style="min-width: 250px;">
+                                                    <div class="position-relative therapy-search-wrapper">
+                                                        <input type="text" class="form-control therapySearchInput" placeholder="Search therapy name..." autocomplete="off" required>
+                                                        <input type="hidden" class="therapy_id" name="therapy_id[]" required>
+
+                                                        <div class="therapyDropdown list-group position-absolute w-100 shadow-lg border rounded-3 mt-1" style="display:none; max-height:220px; overflow-y:auto; z-index:9999; top:100%; left:0; background:#fff;">
+                                                            {% for therapy in therapies %}
+                                                            <button type="button" class="list-group-item list-group-item-action therapy-option-item py-2 px-3 border-bottom text-start"
+                                                                    data-id="{{ therapy.id }}"
+                                                                    data-name="{{ therapy.name }}"
+                                                                    data-price="{{ therapy.charges }}"
+                                                                    data-serial="{{ therapy.serial_no|default:'' }}">
+                                                                <div class="d-flex justify-content-between align-items-center">
+                                                                    <div>
+                                                                        <strong class="text-dark text-sm d-block mb-0">{{ therapy.name }}</strong>
+                                                                        <small class="text-muted">Serial: {{ therapy.serial_no|default:'-' }}</small>
+                                                                    </div>
+                                                                    <span class="badge bg-success-soft text-success fw-bold ms-2">₹{{ therapy.charges }}</span>
+                                                                </div>
+                                                            </button>
+                                                            {% endfor %}
+                                                            <div class="no-therapies-found py-2 px-3 text-muted text-center text-sm" style="display:none;">No therapies found</div>
+                                                        </div>
+                                                    </div>
                                                 </td>
+
                                                 <td>
                                                     <input type="text" class="form-control serial_no bg-light text-center" readonly placeholder="-">
                                                 </td>
@@ -393,40 +409,120 @@
             }
 
             function attach(row) {
-                row.querySelector(".therapySelect").addEventListener("change", function () {
-                    const opt = this.options[this.selectedIndex];
-                    if (!opt.value) return;
+                const searchInput = row.querySelector(".therapySearchInput");
+                const hiddenIdInput = row.querySelector(".therapy_id");
+                const dropdown = row.querySelector(".therapyDropdown");
 
-                    row.querySelector(".unitPrice").value = opt.dataset.price;
-                    row.querySelector(".serial_no").value = opt.dataset.serial;
+                if (searchInput && dropdown && hiddenIdInput) {
+                    const options = dropdown.querySelectorAll(".therapy-option-item");
+                    const noResults = dropdown.querySelector(".no-therapies-found");
 
-                    recalcRow(row);
-                    recalcTotal();
-                });
+                    function filterTherapies() {
+                        const query = searchInput.value.trim().toLowerCase();
+                        let matchCount = 0;
+
+                        options.forEach(opt => {
+                            const name = (opt.dataset.name || '').toLowerCase();
+                            const serial = (opt.dataset.serial || '').toLowerCase();
+
+                            if (!query || name.includes(query) || serial.includes(query)) {
+                                opt.style.display = "block";
+                                matchCount++;
+                            } else {
+                                opt.style.display = "none";
+                            }
+                        });
+
+                        if (noResults) {
+                            noResults.style.display = matchCount === 0 ? "block" : "none";
+                        }
+
+                        dropdown.style.display = "block";
+                    }
+
+                    searchInput.addEventListener("focus", filterTherapies);
+                    searchInput.addEventListener("input", function() {
+                        hiddenIdInput.value = "";
+                        filterTherapies();
+                    });
+
+                    options.forEach(opt => {
+                        opt.addEventListener("click", function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            const id = this.dataset.id;
+                            const name = this.dataset.name;
+                            const price = this.dataset.price;
+                            const serial = this.dataset.serial;
+
+                            hiddenIdInput.value = id;
+                            searchInput.value = name;
+
+                            if (row.querySelector(".unitPrice")) {
+                                row.querySelector(".unitPrice").value = price;
+                            }
+                            if (row.querySelector(".serial_no")) {
+                                row.querySelector(".serial_no").value = serial;
+                            }
+
+                            dropdown.style.display = "none";
+
+                            recalcRow(row);
+                            recalcTotal();
+                        });
+                    });
+
+                    document.addEventListener("click", function(e) {
+                        if (!row.contains(e.target)) {
+                            dropdown.style.display = "none";
+                        }
+                    });
+                }
 
                 row.querySelector(".quantityInput").addEventListener("input", () => {
                     recalcRow(row);
                     recalcTotal();
                 });
 
-                row.querySelector(".removeTherapyRow").addEventListener("click", () => {
-                    row.remove();
-                    recalcTotal();
-                });
+                const removeBtn = row.querySelector(".removeTherapyRow");
+                if (removeBtn) {
+                    removeBtn.addEventListener("click", () => {
+                        const allRows = document.querySelectorAll(".therapyRow");
+                        if (allRows.length > 1) {
+                            row.remove();
+                            recalcTotal();
+                        } else {
+                            if (searchInput) searchInput.value = "";
+                            if (hiddenIdInput) hiddenIdInput.value = "";
+                            if (row.querySelector(".unitPrice")) row.querySelector(".unitPrice").value = "";
+                            if (row.querySelector(".serial_no")) row.querySelector(".serial_no").value = "";
+                            row.querySelector(".quantityInput").value = 1;
+                            if (row.querySelector(".subtotalInput")) row.querySelector(".subtotalInput").value = "0.00";
+                            recalcTotal();
+                        }
+                    });
+                }
             }
 
             attach(document.querySelector(".therapyRow"));
 
             document.getElementById("addTherapyRow").addEventListener("click", () => {
-                const row = document.querySelector(".therapyRow").cloneNode(true);
+                const firstRow = document.querySelector(".therapyRow");
+                if (!firstRow) return;
 
-                row.querySelectorAll("input").forEach(i => i.value = "");
-                row.querySelector(".quantityInput").value = 1;
-                row.querySelector("select").selectedIndex = 0;
+                const newRow = firstRow.cloneNode(true);
 
-                document.querySelector("#therapyTable tbody").appendChild(row);
-                attach(row);
+                newRow.querySelectorAll("input").forEach(i => i.value = "");
+                newRow.querySelector(".quantityInput").value = 1;
+
+                const dropdown = newRow.querySelector(".therapyDropdown");
+                if (dropdown) dropdown.style.display = "none";
+
+                document.querySelector("#therapyTable tbody").appendChild(newRow);
+                attach(newRow);
             });
+
 
             document.getElementById("discountInput").addEventListener("input", recalcTotal);
             document.getElementById("advanceInput").addEventListener("input", calcBalance);

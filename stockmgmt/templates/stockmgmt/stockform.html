@@ -98,7 +98,7 @@
             <form method="post" action="{% url 'stockmgmt:stock_add' %}">
             {% endif %}
             {% csrf_token %}
-            <input type="hidden" id="is_edit" value="{% if view.object %}1{% else %}0{% endif %}">
+            <input type="hidden" id="is_edit" value="{% if object %}1{% else %}0{% endif %}">
 
             <!-- Today's Date, User, Godown, Currency Stats row -->
             <div class="row g-3 mb-4">
@@ -352,8 +352,8 @@
                                 
                                 <!-- Supplier -->
                                 <div class="col-12">
-                                    <label class="form-label fw-bold text-muted small mb-1">Supplier <span class="text-danger">*</span></label>
-                                    <select id="supplier" name="supplier" class="form-select" required>
+                                    <label class="form-label fw-bold text-muted small mb-1">Supplier</label>
+                                    <select id="supplier" name="supplier" class="form-select">
                                         <option value="">Select Supplier</option>
                                         {% for supplier in suppliers %}
                                         <option value="{{ supplier.id }}" {% if object.supplier and supplier.id == object.supplier.id %}selected{% endif %}>
@@ -365,8 +365,8 @@
                                 
                                 <!-- Manufacturer -->
                                 <div class="col-12">
-                                    <label class="form-label fw-bold text-muted small mb-1">Manufacturer <span class="text-danger">*</span></label>
-                                    <select id="manufacturer" name="manufacturer" class="form-select" required>
+                                    <label class="form-label fw-bold text-muted small mb-1">Manufacturer</label>
+                                    <select id="manufacturer" name="manufacturer" class="form-select">
                                         <option value="">Select Manufacturer</option>
                                         {% for manufacturer in manufacturers %}
                                         <option value="{{ manufacturer.id }}" {% if object.manufacturer and manufacturer.id == object.manufacturer.id %}selected{% endif %}>

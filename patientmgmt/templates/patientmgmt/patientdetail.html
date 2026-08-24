@@ -54,6 +54,10 @@
          class="btn btn-success rounded-pill px-4">
         ✏ Edit Patient
       </a>
+      <a href="{% url 'patientmgmt:discharge_summary_create_patient' patient.id %}"
+         class="btn btn-outline-success rounded-pill px-4">
+        📄 Discharge Summary
+      </a>
       <a href="{% url 'reportmgmt:patientreports' patient.pk %}"
          class="btn btn-outline-primary rounded-pill px-4">
         📁 Reports
