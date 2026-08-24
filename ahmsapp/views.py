@@ -293,3 +293,84 @@ def dashboardview(request):
         context
     )
 
+
+def global_search(request):
+    """
+    Global search API endpoint for header search bar.
+    Searches Patients, Staff, and Medicine.
+    """
+    from django.http import JsonResponse
+    from django.urls import reverse
+    from django.db.models import Q
+    from patientmgmt.models import Patient
+    from authentication.models import CustomUser
+    from stockmgmt.models import Medicine as StockMedicine
+
+    q = request.GET.get('q', '').strip()
+    if not q:
+        return JsonResponse({'results': []})
+
+    results = []
+
+    # 1. Search Patients
+    patients = Patient.objects.filter(is_active=True).filter(
+        Q(patient_name__icontains=q) |
+        Q(patient_unique_id__icontains=q) |
+        Q(phone__icontains=q)
+    )[:6]
+
+    for p in patients:
+        results.append({
+            'category': 'Patient',
+            'type': 'patient',
+            'id': p.id,
+            'title': p.patient_name,
+            'subtitle': f"UHID: {p.patient_unique_id}" + (f" • Ph: {p.phone}" if p.phone else ""),
+            'icon': 'person',
+            'url': f"{reverse('patientmgmt:patient_list')}?q={p.patient_unique_id}"
+        })
+
+    # 2. Search Staff
+    staffs = CustomUser.objects.filter(is_superuser=False, is_staff=False).filter(
+        Q(username__icontains=q) |
+        Q(staff_id__icontains=q) |
+        Q(email__icontains=q) |
+        Q(mobile_number__icontains=q) |
+        Q(role__role_name__icontains=q)
+    )[:6]
+
+    for s in staffs:
+        role_name = s.role.role_name if s.role else "Staff"
+        results.append({
+            'category': 'Staff',
+            'type': 'staff',
+            'id': s.id,
+            'title': s.username,
+            'subtitle': f"ID: {s.staff_id or 'N/A'} • Role: {role_name}" + (f" • Ph: {s.mobile_number}" if s.mobile_number else ""),
+            'icon': 'badge',
+            'url': f"{reverse('permissionhome')}?q={s.username}"
+        })
+
+    # 3. Search Medicine (Stock)
+    medicines = StockMedicine.objects.filter(
+        Q(name__icontains=q) |
+        Q(hsn_code__icontains=q)
+    ).distinct()[:6]
+
+    for m in medicines:
+        hsn_str = f"HSN: {m.hsn_code}" if m.hsn_code else ""
+        form_str = m.get_form_type_display() if hasattr(m, 'get_form_type_display') else ""
+        sub = " • ".join(filter(None, [hsn_str, form_str])) or "Medicine"
+        results.append({
+            'category': 'Medicine',
+            'type': 'medicine',
+            'id': m.id,
+            'title': m.name,
+            'subtitle': sub,
+            'icon': 'medication',
+            'url': f"{reverse('stockmgmt:stock_list')}?q={m.name}"
+        })
+
+    return JsonResponse({'results': results})
+
+

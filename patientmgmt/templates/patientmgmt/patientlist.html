@@ -216,8 +216,16 @@
    
   </div>
 
+  {% if q %}
+  <div class="alert alert-info d-flex justify-content-between align-items-center py-2 px-3 mb-3 text-sm rounded-3">
+    <span><i class="material-symbols-rounded align-middle me-1">search</i> Search results for: <strong>"{{ q }}"</strong></span>
+    <a href="{% url 'patientmgmt:patient_list' %}" class="btn btn-sm btn-outline-secondary rounded-pill mb-0 py-1 px-3 fs-7">Clear Search</a>
+  </div>
+  {% endif %}
+
   <!-- ================= PATIENT TABLE ================= -->
   <div class="card shadow-sm border-0">
+
     <div class="card-body p-0">
 
       <div class="table-responsive">

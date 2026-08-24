@@ -1,0 +1,403 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Discharge Summary - {{ summary.summary_no }}</title>
+
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 6mm 10mm 6mm 10mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            font-size: 11px;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 0;
+            line-height: 1.25;
+            background: #fff;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2.5px solid #0d5c3a;
+            padding-bottom: 5px;
+            margin-bottom: 6px;
+        }
+
+        .logo-area {
+            width: 22%;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo {
+            max-height: 52px;
+            max-width: 150px;
+            object-fit: contain;
+        }
+
+        .center-area {
+            flex: 1;
+            text-align: center;
+            padding: 0 8px;
+        }
+
+        .center-area h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 800;
+            color: #0d5c3a;
+            letter-spacing: 0.2px;
+        }
+
+        .center-area p {
+            margin: 2px 0 0 0;
+            font-size: 10.5px;
+            color: #444;
+            line-height: 1.3;
+        }
+
+        .right-area {
+            width: 28%;
+            text-align: right;
+            font-size: 10px;
+            color: #333;
+            line-height: 1.35;
+        }
+
+        .right-area p {
+            margin: 1px 0;
+            font-weight: 600;
+        }
+
+        /* TITLE BAR */
+        .title-bar {
+            text-align: center;
+            background: #0d5c3a;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 3.5px 0;
+            margin: 6px 0 8px 0;
+            border-radius: 3px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* PATIENT CARD TABLE */
+        .patient-card {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+            border: 1px solid #0d5c3a;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .patient-card th {
+            background: #f0f7f2;
+            border: 1px solid #d0e3d5;
+            padding: 2.5px 6px;
+            font-size: 9px;
+            font-weight: 700;
+            color: #0d5c3a;
+            text-transform: uppercase;
+            text-align: left;
+        }
+
+        .patient-card td {
+            border: 1px solid #d5d5d5;
+            padding: 4px 6px;
+            vertical-align: top;
+            font-size: 11px;
+        }
+
+        .label {
+            font-size: 8.5px;
+            color: #555;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .value {
+            margin-top: 1px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #111;
+        }
+
+        /* SECTION HEADER */
+        .section-header {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #0d5c3a;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            border-left: 3.5px solid #0d5c3a;
+            padding-left: 5px;
+            margin: 6px 0 2px 0;
+            line-height: 1.1;
+        }
+
+        /* CONTENT BOX */
+        .content-box {
+            background: #fcfcfc;
+            border: 1px solid #e2e2e2;
+            border-radius: 3px;
+            padding: 4px 7px;
+            margin-bottom: 5px;
+            font-size: 10.5px;
+            color: #222;
+            line-height: 1.3;
+        }
+
+        .content-box p {
+            margin: 0;
+        }
+
+        /* MEDICINES TABLE */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 4px 0 6px 0;
+        }
+
+        .table th {
+            background: #0d5c3a;
+            color: #ffffff;
+            border: 1px solid #0d5c3a;
+            padding: 4px 6px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .table td {
+            border: 1px solid #ccc;
+            padding: 4px 6px;
+            font-size: 10.5px;
+        }
+
+        .table tbody tr:nth-child(even) {
+            background-color: #f9fbf9;
+        }
+
+        /* SIGNATURES */
+        .signatures-area {
+            margin-top: 18px;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            page-break-inside: avoid;
+        }
+
+        .sig-box {
+            text-align: center;
+            width: 210px;
+            border-top: 1.2px solid #333;
+            padding-top: 4px;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #222;
+        }
+
+        /* NO PRINT BUTTONS */
+        .no-print {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        @media print {
+            body {
+                zoom: 95%;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .signatures-area {
+                margin-top: 16px;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ================= HEADER ================= -->
+    <div class="header">
+        <div class="logo-area">
+            {% if hospital and hospital.hospital_logo %}
+            <img src="{{ hospital.hospital_logo.url }}" class="logo" alt="Hospital Logo" onerror="this.onerror=null; this.src='{% static 'img/logos/logohms.png' %}';">
+            {% else %}
+            <img src="{% static 'img/logos/logohms.png' %}" class="logo" alt="Hospital Logo">
+            {% endif %}
+        </div>
+
+        <div class="center-area">
+            <h2>{{ hospital.hospital_name|default:"Aayur Kendra Ayurveda Speciality Hospital" }}</h2>
+            <p>
+                {{ hospital.address|default:"" }}<br>
+                📞 {{ hospital.phone|default:"" }}
+                {% if hospital.email %} | ✉ {{ hospital.email }}{% endif %}
+            </p>
+        </div>
+
+        <div class="right-area">
+            {% if hospital.gst_number %}<p>GST No : {{ hospital.gst_number }}</p>{% endif %}
+            {% if hospital.registration_number %}<p>Reg No : {{ hospital.registration_number }}</p>{% endif %}
+        </div>
+    </div>
+
+    <!-- ================= TITLE BAR ================= -->
+    <div class="title-bar">
+        DISCHARGE SUMMARY
+    </div>
+
+    <!-- ================= PATIENT DETAILS ================= -->
+    <table class="patient-card">
+        <tr>
+            <td width="25%">
+                <div class="label">Summary No</div>
+                <div class="value">{{ summary.summary_no }}</div>
+            </td>
+            <td width="25%">
+                <div class="label">Patient ID / UHID</div>
+                <div class="value">{{ summary.patient.patient_unique_id }}</div>
+            </td>
+            <td width="25%">
+                <div class="label">Admission Date</div>
+                <div class="value">{{ summary.admission_date|date:"d-m-Y" }}</div>
+            </td>
+            <td width="25%">
+                <div class="label">Discharge Date</div>
+                <div class="value">{{ summary.discharge_date|date:"d-m-Y" }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="label">Patient Name</div>
+                <div class="value">{{ summary.patient.patient_name }}</div>
+            </td>
+            <td>
+                <div class="label">Age / Gender</div>
+                <div class="value">{{ summary.patient.age|default:'-' }} / {{ summary.patient.get_gender_display|default:'-' }}</div>
+            </td>
+            <td>
+                <div class="label">Consultant Doctor</div>
+                <div class="value">{{ summary.consultant_doctor }}</div>
+            </td>
+            <td>
+                <div class="label">Condition at Discharge</div>
+                <div class="value">{{ summary.get_condition_at_discharge_display }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <div class="label">Mobile Number</div>
+                <div class="value">{{ summary.patient.phone|default:'-' }}</div>
+            </td>
+            <td colspan="2">
+                <div class="label">Address</div>
+                <div class="value">{{ summary.patient.address|default:'-' }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- ================= CLINICAL DETAILS ================= -->
+    {% if summary.chief_complaints %}
+    <div class="section-header">Chief Complaints</div>
+    <div class="content-box">{{ summary.chief_complaints|linebreaks }}</div>
+    {% endif %}
+
+    {% if summary.diagnosis_at_admission %}
+    <div class="section-header">Diagnosis at Admission</div>
+    <div class="content-box">{{ summary.diagnosis_at_admission|linebreaks }}</div>
+    {% endif %}
+
+    {% if summary.final_diagnosis %}
+    <div class="section-header">Final Diagnosis</div>
+    <div class="content-box">{{ summary.final_diagnosis|linebreaks }}</div>
+    {% endif %}
+
+    {% if summary.treatment_given %}
+    <div class="section-header">Treatment Given & Procedures Performed</div>
+    <div class="content-box">{{ summary.treatment_given|linebreaks }}</div>
+    {% endif %}
+
+    <!-- ================= DISCHARGE MEDICATIONS ================= -->
+    {% if summary.medicines.exists %}
+    <div class="section-header">Medicines Prescribed on Discharge</div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th width="5%" style="text-align:center;">S.No</th>
+                <th style="text-align:left;">Medicine Name</th>
+                <th width="22%" style="text-align:center;">Dosage</th>
+                <th width="15%" style="text-align:center;">Duration</th>
+                <th style="text-align:left;">Instructions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in summary.medicines.all %}
+            <tr>
+                <td style="text-align:center; font-weight:600;">{{ forloop.counter }}</td>
+                <td style="font-weight:700; color:#0d5c3a;">{{ m.medicine_name }}</td>
+                <td style="text-align:center;">{{ m.dosage|default:"-" }}</td>
+                <td style="text-align:center;">{{ m.duration|default:"-" }}</td>
+                <td>{{ m.instructions|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+    <!-- ================= ADVICE & FOLLOW-UP ================= -->
+    {% if summary.discharge_advice %}
+    <div class="section-header">Discharge Advice / Pathya & Apathya</div>
+    <div class="content-box">{{ summary.discharge_advice|linebreaks }}</div>
+    {% endif %}
+
+    {% if summary.followup_date or summary.followup_instructions %}
+    <div class="section-header">Follow-up Instructions</div>
+    <div class="content-box">
+        {% if summary.followup_date %}
+        <strong>Next Review Date:</strong> {{ summary.followup_date|date:"d-m-Y" }}<br>
+        {% endif %}
+        {% if summary.followup_instructions %}{{ summary.followup_instructions|linebreaks }}{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ================= SIGNATURES ================= -->
+    <div class="signatures-area">
+        <div class="sig-box">
+            Prepared By
+        </div>
+        <div class="sig-box">
+            Consultant Doctor Signature
+        </div>
+    </div>
+
+    <!-- ================= PRINT BUTTONS ================= -->
+    <div class="no-print">
+        <button onclick="window.print()" style="background:#0d5c3a; color:#fff; border:none; padding:9px 22px; border-radius:5px; cursor:pointer; font-size:13px; font-weight:600; margin-right:10px;">
+            🖨 Print Discharge Summary
+        </button>
+        <a href="{% url 'patientmgmt:discharge_summary_detail' summary.pk %}" style="display:inline-block; padding:8px 20px; border:1.5px solid #0d5c3a; border-radius:5px; text-decoration:none; color:#0d5c3a; font-weight:bold; font-size:13px;">
+            ⬅ Back to Detail
+        </a>
+    </div>
+
+</body>
+</html>

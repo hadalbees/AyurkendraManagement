@@ -33,35 +33,66 @@
     </div>
   </div>
 
-  <!-- ================= PATIENT INFO ================= -->
+  <!-- ================= PATIENT & BILL DETAILS ================= -->
   <div class="card shadow-sm mb-4">
-    <div class="card-body">
-      <h6 class="fw-bold mb-3">Patient Information</h6>
-
-      <div class="row text-sm">
-        <div class="col-md-4">
-          <strong>Patient Name:</strong><br>
-          {% if bill.patient %}
-              {{ bill.patient.patient_name }}
-          {% else %}
-              {{ bill.customer_name }}
-          {% endif %}
-        </div>
-
-        <div class="col-md-4">
-          <strong>Bill Date:</strong><br>
-          {{ bill.created_at|date:"d M Y, h:i A" }}
-        </div>
-
-        <div class="col-md-4">
-          <strong>Payment Status:</strong><br>
-          <span class="badge bg-secondary">
-            {{ bill.payment_status }}
-          </span>
-        </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-bordered mb-0 align-middle text-sm">
+          <tbody>
+            <tr>
+              <td class="text-muted py-2" style="width: 25%;">Bill No</td>
+              <td class="text-muted py-2" style="width: 25%;">Bill Date</td>
+              <td class="text-muted py-2" style="width: 25%;">Patient ID</td>
+              <td class="text-muted py-2" style="width: 25%;">Payment Status</td>
+            </tr>
+            <tr>
+              <td class="fw-bold py-2">{{ bill.bill_no }}</td>
+              <td class="fw-bold py-2">{{ bill.bill_date|default:bill.created_at|date:"d-m-Y" }}</td>
+              <td class="fw-bold py-2">{% if bill.patient %}{{ bill.patient.patient_unique_id }}{% else %}N/A{% endif %}</td>
+              <td class="fw-bold py-2">{{ bill.payment_status }}</td>
+            </tr>
+            <tr>
+              <td class="text-muted py-2">Patient Name</td>
+              <td class="text-muted py-2">Age / Gender</td>
+              <td class="text-muted py-2">Mobile Number</td>
+              <td class="text-muted py-2">Payment Mode</td>
+            </tr>
+            <tr>
+              <td class="fw-bold py-2">
+                {% if bill.patient %}
+                  {{ bill.patient.patient_name }}
+                {% else %}
+                  {{ bill.customer_name|default:"Walk-in Customer" }}
+                {% endif %}
+              </td>
+              <td class="fw-bold py-2">
+                {% if bill.patient %}
+                  {{ bill.patient.age|default:'-' }} / {{ bill.patient.get_gender_display|default:'-' }}
+                {% else %}
+                  {{ bill.customer_age|default:'-' }} / {{ bill.customer_gender|default:'-' }}
+                {% endif %}
+              </td>
+              <td class="fw-bold py-2">
+                {% if bill.patient %}{{ bill.patient.phone|default:'-' }}{% else %}-{% endif %}
+              </td>
+              <td class="fw-bold py-2">
+                {{ bill.payment_mode|default:'-' }}
+              </td>
+            </tr>
+            <tr>
+              <td colspan="4" class="text-muted py-2">Address</td>
+            </tr>
+            <tr>
+              <td colspan="4" class="fw-bold py-2">
+                {% if bill.patient %}{{ bill.patient.address|default:'-' }}{% else %}-{% endif %}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
+
 
   <!-- ================= BILL ITEMS ================= -->
   <div class="card shadow-sm mb-4">

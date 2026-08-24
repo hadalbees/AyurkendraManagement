@@ -48,6 +48,7 @@
                                     <a class="btn btn-sm btn-light"
                                         href="{% url 'patientmgmt:admission_edit' a.patient.pk a.pk %}">Edit</a>
 
+                                    <a href="{% url 'patientmgmt:discharge_summary_create_patient' a.patient.pk %}" class="btn btn-sm btn-outline-success me-1">Summary</a>
                                     {% if a.current_status == "ACTIVE" %}
                                     <form method="post"
                                         action="{% url 'patientmgmt:admission_discharge' a.patient.pk a.pk %}"

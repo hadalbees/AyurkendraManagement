@@ -264,11 +264,11 @@ OUTPATIENT BILL
 
 <td>
 
-<div class="label">Visit Date</div>
+<div class="label">Bill Date</div>
 
 <div class="value">
 
-{{ bill.visit_date|date:"d-m-Y" }}
+{{ bill.visit_date|default:bill.created_at|date:"d-m-Y" }}
 
 </div>
 

@@ -114,35 +114,27 @@ WSGI_APPLICATION = 'ahms.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# DATABASES = {
-#      'default': {
-#          'ENGINE': 'django.db.backends.sqlite3',
-#  #        'NAME': BASE_DIR / 'db.sqlite3',
-#    	 'NAME': config('DB_NAME', default=BASE_DIR / 'db.sqlite3'),
-#      }
-# }
+DB_ENGINE = config('DB_ENGINE', default='django.db.backends.postgresql')
 
+if DB_ENGINE == 'django.db.backends.sqlite3':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': config('DB_NAME', default=BASE_DIR / 'db.sqlite3'),
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': DB_ENGINE,
+            'NAME': config('DB_NAME', default='hospital_db'),
+            'USER': config('DB_USER', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+        }
+    }
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'hospital_db',
-#         'USER': 'postgres',
-#         'PASSWORD': '1881',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
-DATABASES = {
-   'default': {
-       'ENGINE': 'django.db.backends.postgresql',
-       'NAME': config('DB_NAME'),
-       'USER': config('DB_USER'),
-       'PASSWORD': config('DB_PASSWORD'),
-       'HOST': config('DB_HOST'),
-       'PORT': config('DB_PORT'),
-   }
-}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

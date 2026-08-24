@@ -267,7 +267,7 @@
 
                 <div class="value">
 
-                    {{ bill.bill_date|date:"d-m-Y" }}
+                    {{ bill.bill_date|default:bill.created_at|date:"d-m-Y" }}
 
                 </div>
 

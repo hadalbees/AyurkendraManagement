@@ -277,3 +277,53 @@ class WhatsAppLog(models.Model):
 
     def __str__(self):
         return f"{self.phone} - {self.status}"
+
+
+class DischargeSummary(models.Model):
+    CONDITION_CHOICES = (
+        ('IMPROVED', 'Improved'),
+        ('STABLE', 'Stable'),
+        ('RECOVERED', 'Recovered'),
+        ('DISCHARGED_AGAINST_ADVICE', 'Discharged Against Medical Advice (LAMA)'),
+        ('REFERRED', 'Referred'),
+    )
+
+    summary_no = models.CharField(max_length=30, unique=True)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name="discharge_summaries")
+    admission = models.ForeignKey(InpatientAdmission, on_delete=models.SET_NULL, null=True, blank=True, related_name="discharge_summaries")
+    
+    consultant_doctor = models.CharField(max_length=255)
+    admission_date = models.DateField()
+    discharge_date = models.DateField(default=timezone.localdate)
+
+    chief_complaints = models.TextField(blank=True, null=True)
+    diagnosis_at_admission = models.TextField(blank=True, null=True)
+    final_diagnosis = models.TextField(blank=True, null=True)
+    treatment_given = models.TextField(blank=True, null=True)
+    
+    condition_at_discharge = models.CharField(max_length=40, choices=CONDITION_CHOICES, default='IMPROVED')
+    discharge_advice = models.TextField(blank=True, null=True)
+    
+    followup_date = models.DateField(null=True, blank=True)
+    followup_instructions = models.TextField(blank=True, null=True)
+
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.summary_no} - {self.patient.patient_name}"
+
+
+class DischargeMedication(models.Model):
+    discharge_summary = models.ForeignKey(DischargeSummary, on_delete=models.CASCADE, related_name="medicines")
+    medicine_name = models.CharField(max_length=255)
+    dosage = models.CharField(max_length=100, blank=True, null=True)
+    duration = models.CharField(max_length=100, blank=True, null=True)
+    instructions = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.medicine_name} ({self.discharge_summary.summary_no})"

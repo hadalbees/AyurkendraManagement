@@ -41,6 +41,7 @@ build/
 
 # Environment variables
 .env
+.env.example
 *.env
 
 # Backup files
