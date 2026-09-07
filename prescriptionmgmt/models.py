@@ -13,6 +13,44 @@ class Prescription(models.Model):
     patient = models.ForeignKey('patientmgmt.Patient', on_delete=models.CASCADE)
     doctor = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # ===== CASE SHEET CLINICAL FIELDS =====
+    occupation = models.CharField(max_length=255, blank=True, null=True)
+    presenting_complaints = models.TextField(blank=True, null=True)
+    associated_complaints = models.TextField(blank=True, null=True)
+    history_present_illness = models.TextField(blank=True, null=True)
+    history_past_illness = models.TextField(blank=True, null=True)
+
+    # Co-morbidities & Current Meds
+    comorbid_diabetes = models.BooleanField(default=False)
+    comorbid_hypertension = models.BooleanField(default=False)
+    comorbid_thyroid = models.BooleanField(default=False)
+    comorbid_cardiac = models.BooleanField(default=False)
+    comorbid_kidney = models.BooleanField(default=False)
+    comorbid_others = models.CharField(max_length=255, blank=True, null=True)
+    current_medications = models.TextField(blank=True, null=True)
+
+    # Vitals / Ashtasthana & Physical Exam Grid (16 fields)
+    exam_malam = models.CharField(max_length=100, blank=True, null=True)
+    exam_nadi = models.CharField(max_length=100, blank=True, null=True)
+    exam_jivha = models.CharField(max_length=100, blank=True, null=True)
+    exam_akri = models.CharField(max_length=100, blank=True, null=True)
+
+    exam_diet_habit = models.CharField(max_length=100, blank=True, null=True)
+    exam_mutr = models.CharField(max_length=100, blank=True, null=True)
+    exam_shabda = models.CharField(max_length=100, blank=True, null=True)
+    exam_bp = models.CharField(max_length=100, blank=True, null=True)
+
+    exam_addiction = models.CharField(max_length=100, blank=True, null=True)
+    exam_lmp = models.CharField(max_length=100, blank=True, null=True)
+    exam_sharira = models.CharField(max_length=100, blank=True, null=True)
+    exam_sparsha = models.CharField(max_length=100, blank=True, null=True)
+
+    exam_allergies = models.CharField(max_length=100, blank=True, null=True)
+    exam_pulse = models.CharField(max_length=100, blank=True, null=True)
+    exam_shir = models.CharField(max_length=100, blank=True, null=True)
+    exam_nakha = models.CharField(max_length=100, blank=True, null=True)
+
     notes = models.TextField(blank=True, null=True)
     next_visit = models.DateField(null=True, blank=True)
 
@@ -40,3 +78,13 @@ class PrescriptionItem(models.Model):
     )
     def __str__(self):
         return f"{self.medicine_name} ({self.prescription.prescription_no})"
+
+class TreatmentPlanItem(models.Model):
+    prescription = models.ForeignKey(Prescription, related_name='treatment_items', on_delete=models.CASCADE)
+    treatment_name = models.CharField(max_length=255)
+    tailam = models.CharField(max_length=255, blank=True, null=True)
+    instructions = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.treatment_name} ({self.prescription.prescription_no})"
+

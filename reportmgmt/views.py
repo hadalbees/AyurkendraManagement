@@ -262,10 +262,9 @@ class EditReportView(LoginRequiredMixin, View):
 # LIST
 # ================================
 def prescription_list(request):
-
     prescriptions = Prescription.objects.select_related(
         "patient", "doctor"
-    ).prefetch_related("items")
+    ).prefetch_related("items", "treatment_items").order_by("-created_at")
 
     paginator = Paginator(prescriptions, 10)
     page = request.GET.get("page")
@@ -280,10 +279,9 @@ def prescription_list(request):
 # VIEW
 # ================================
 def prescription_view(request, pk):
-
     prescription = get_object_or_404(
         Prescription.objects.select_related("patient", "doctor")
-        .prefetch_related("items"),
+        .prefetch_related("items", "treatment_items"),
         pk=pk
     )
 
@@ -296,30 +294,60 @@ def prescription_view(request, pk):
 # EDIT
 # ================================
 def prescription_edit(request, pk):
-
     prescription = get_object_or_404(
-        Prescription.objects.prefetch_related("items"),
+        Prescription.objects.select_related("patient", "doctor")
+        .prefetch_related("items", "treatment_items"),
         pk=pk
     )
 
     if request.method == "POST":
+        # --- Update main & Case Sheet fields ---
+        prescription.occupation = request.POST.get("occupation", "").strip()
+        prescription.presenting_complaints = request.POST.get("presenting_complaints", "").strip()
+        prescription.associated_complaints = request.POST.get("associated_complaints", "").strip()
+        prescription.history_present_illness = request.POST.get("history_present_illness", "").strip()
+        prescription.history_past_illness = request.POST.get("history_past_illness", "").strip()
 
-        # --- Update main fields ---
+        prescription.comorbid_diabetes = request.POST.get("comorbid_diabetes") in ["on", "true", True]
+        prescription.comorbid_hypertension = request.POST.get("comorbid_hypertension") in ["on", "true", True]
+        prescription.comorbid_thyroid = request.POST.get("comorbid_thyroid") in ["on", "true", True]
+        prescription.comorbid_cardiac = request.POST.get("comorbid_cardiac") in ["on", "true", True]
+        prescription.comorbid_kidney = request.POST.get("comorbid_kidney") in ["on", "true", True]
+        prescription.comorbid_others = request.POST.get("comorbid_others", "").strip()
+        prescription.current_medications = request.POST.get("current_medications", "").strip()
+
+        # Vitals / Examination Grid
+        prescription.exam_malam = request.POST.get("exam_malam", "").strip()
+        prescription.exam_nadi = request.POST.get("exam_nadi", "").strip()
+        prescription.exam_jivha = request.POST.get("exam_jivha", "").strip()
+        prescription.exam_akri = request.POST.get("exam_akri", "").strip()
+        prescription.exam_diet_habit = request.POST.get("exam_diet_habit", "").strip()
+        prescription.exam_mutr = request.POST.get("exam_mutr", "").strip()
+        prescription.exam_shabda = request.POST.get("exam_shabda", "").strip()
+        prescription.exam_bp = request.POST.get("exam_bp", "").strip()
+        prescription.exam_addiction = request.POST.get("exam_addiction", "").strip()
+        prescription.exam_lmp = request.POST.get("exam_lmp", "").strip()
+        prescription.exam_sharira = request.POST.get("exam_sharira", "").strip()
+        prescription.exam_sparsha = request.POST.get("exam_sparsha", "").strip()
+        prescription.exam_allergies = request.POST.get("exam_allergies", "").strip()
+        prescription.exam_pulse = request.POST.get("exam_pulse", "").strip()
+        prescription.exam_shir = request.POST.get("exam_shir", "").strip()
+        prescription.exam_nakha = request.POST.get("exam_nakha", "").strip()
+
         prescription.notes = request.POST.get("notes")
         prescription.next_visit = request.POST.get("next_visit") or None
         prescription.save()
+
         ActivityHistory.objects.create(
             user=request.user,
             action="UPDATE",
             module="PRESCRIPTION",
             record_id=prescription.id,
-            description=f"prescription #{prescription.id} updated by {request.user}"
+            description=f"prescription #{prescription.prescription_no} updated by {request.user}"
         )
 
-        # --- Clear old items ---
+        # --- Re-create medicine items ---
         prescription.items.all().delete()
-
-        # --- Add new items ---
         medicine_names = request.POST.getlist("medicine_name[]")
         dosages = request.POST.getlist("dosage[]")
         durations = request.POST.getlist("duration_days[]")
@@ -327,29 +355,57 @@ def prescription_edit(request, pk):
         instructions = request.POST.getlist("instructions[]")
         food_timings = request.POST.getlist("food_timing[]")
 
-        for name, dosage, dur, qty, inst, food in zip(
-            medicine_names, dosages, durations,
-            quantities, instructions, food_timings
-        ):
-
+        for idx in range(len(medicine_names)):
+            name = medicine_names[idx].strip()
             if not name:
                 continue
+            dosage = dosages[idx] if idx < len(dosages) else ""
+            dur = durations[idx] if idx < len(durations) else 0
+            qty = quantities[idx] if idx < len(quantities) else 0
+            inst = instructions[idx] if idx < len(instructions) else ""
+            food = food_timings[idx] if idx < len(food_timings) else ""
 
+            from prescriptionmgmt.models import PrescriptionItem
             PrescriptionItem.objects.create(
                 prescription=prescription,
                 medicine_name=name,
                 dosage=dosage,
                 duration_days=int(dur or 0),
-                quantity=qty or 0,
+                quantity=Decimal(str(qty or 0)),
                 instructions=inst,
                 food_timing=food
             )
 
+        # --- Re-create treatment plan items ---
+        prescription.treatment_items.all().delete()
+        treatment_names = request.POST.getlist("treatment_name[]")
+        tailams = request.POST.getlist("tailam[]")
+        t_instructions = request.POST.getlist("treatment_instructions[]")
+
+        for idx in range(len(treatment_names)):
+            t_name = treatment_names[idx].strip()
+            if not t_name:
+                continue
+            tailam = tailams[idx].strip() if idx < len(tailams) else ""
+            t_inst = t_instructions[idx].strip() if idx < len(t_instructions) else ""
+
+            from prescriptionmgmt.models import TreatmentPlanItem
+            TreatmentPlanItem.objects.create(
+                prescription=prescription,
+                treatment_name=t_name,
+                tailam=tailam,
+                instructions=t_inst
+            )
+
         return redirect("reportmgmt:prescription_list")
 
+    from fieldmgmt.models import Adjuvant
+    adjuvants = Adjuvant.objects.filter(status=True).order_by("name")
     return render(request, "reportmgmt/prescription_edit.html", {
-        "prescription": prescription
+        "prescription": prescription,
+        "adjuvants": adjuvants
     })
+
 
 
 # ================================

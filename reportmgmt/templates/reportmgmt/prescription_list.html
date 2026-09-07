@@ -53,6 +53,13 @@
 
               <td class="text-center">
 
+                <a href="{% url 'prescriptionmgmt:print' p.prescription_no %}"
+                   target="_blank"
+                   class="icon-btn edit text-success"
+                   title="Print Case Sheet">
+                  <i class="material-symbols-rounded">print</i>
+                </a>
+
                 <a href="{% url 'reportmgmt:prescription_view' p.id %}"
                    class="icon-btn edit"
                    title="View">
@@ -78,6 +85,7 @@
                 </a>
 
               </td>
+
             </tr>
             {% endfor %}
             {% else %}
