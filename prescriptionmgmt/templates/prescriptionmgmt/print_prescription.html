@@ -3,137 +3,223 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Prescription — {{ prescription.prescription_no }}</title>
-
+<title>Case Sheet — {{ prescription.prescription_no }}</title>
 <style>
-@page { size: A4; margin: 15mm; }
-body { font-family: "Times New Roman", serif; font-size: 14px; color: #000; }
+@page { size: A4; margin: 10mm 12mm; }
+body { font-family: Arial, "Helvetica Neue", sans-serif; font-size: 12px; color: #000; line-height: 1.3; }
 
-.header { text-align: center; border-bottom: 1px solid #000; padding-bottom: 6px; }
-.logo { width: 180px; margin-bottom: 6px; }
-.address { font-size: 12px; line-height: 1.4; }
-.gst { font-size: 12px; font-weight: bold; margin-top: 3px; }
+.header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 6px; margin-bottom: 10px; }
+.logo { max-height: 50px; margin-bottom: 4px; }
+.hospital-title { font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+.address { font-size: 11px; color: #444; }
 
-.info-table { width: 100%; margin-top: 10px; font-size: 13px; }
-.info-table td { padding: 4px; }
+.sheet-title { text-align: center; font-size: 14px; font-weight: bold; text-transform: uppercase; margin: 8px 0; letter-spacing: 1px; text-decoration: underline; }
 
-table.bill-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-  font-size: 13px;
+table.grid-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px; }
+table.grid-table td, table.grid-table th { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
+table.grid-table th { background: #f0f0f0; text-align: left; font-weight: bold; text-transform: uppercase; font-size: 10px; }
+
+.box-title { font-weight: bold; text-transform: uppercase; font-size: 11px; margin-bottom: 3px; background: #f8f8f8; padding: 3px 6px; border: 1px solid #000; border-bottom: none; }
+.box-content { border: 1px solid #000; min-height: 45px; padding: 6px; margin-bottom: 10px; font-size: 11px; }
+
+.checkbox-span { display: inline-block; margin-right: 15px; font-size: 11px; }
+.checkbox-box { display: inline-block; width: 12px; height: 12px; border: 1px solid #000; text-align: center; line-height: 10px; font-weight: bold; margin-right: 3px; vertical-align: middle; }
+
+.page-break { page-break-before: always; margin-top: 15px; }
+
+.section-heading { font-size: 13px; font-weight: bold; text-align: center; text-transform: uppercase; margin: 12px 0 6px 0; letter-spacing: 0.5px; }
+
+.signature-box { margin-top: 60px; text-align: right; padding-right: 20px; font-weight: bold; font-size: 12px; }
+
+@media print {
+  .no-print { display: none !important; }
 }
-table.bill-table th,
-table.bill-table td {
-  border: 1px solid #000;
-  padding: 6px;
-  text-align: center;
-}
-table.bill-table th { background: #f2f2f2; }
-
-.totals {
-  width: 45%;
-  float: right;
-  margin-top: 10px;
-  font-size: 14px;
-}
-.totals td { padding: 5px; }
-
-.footer {
-  clear: both;
-  margin-top: 60px;
-  font-size: 12px;
-  text-align: center;
-  border-top: 1px solid #000;
-  padding-top: 5px;
-}
-
-@media print { .no-print { display: none; } }
 </style>
 </head>
 
 <body>
 
-<!-- ================= HEADER ================= -->
+<!-- ================= PAGE 1: CASE SHEET ================= -->
 <div class="header">
   {% if settings.hospital_logo %}
     <img src="{{ settings.hospital_logo.url }}" class="logo">
   {% endif %}
-
-  {% comment %} <strong>{{ settings.hospital_name }}</strong> {% endcomment %}
-
+  <div class="hospital-title">{{ settings.hospital_name|default:"AYURKENDRA MANAGEMENT" }}</div>
   <div class="address">
-    {{ settings.address }}<br>
-    Ph: {{ settings.phone }} | Email: {{ settings.email }}
+    {{ settings.address }} | Ph: {{ settings.phone }}
   </div>
-
-  {% if settings.gst_number %}
-  <div class="gst">
-    GST Reg No : {{ settings.gst_number }}
-  </div>
-  {% endif %}
-
-  {% if settings.registration_number %}
-    <div style="font-size:12px;">
-      Registration No : {{ settings.registration_number }}
-    </div>
-  {% endif %}
 </div>
 
-<!-- ================= PATIENT INFO ================= -->
-<table class="info-table">
+<div class="sheet-title">CASE SHEET</div>
+
+<!-- Patient Header Grid -->
+<table class="grid-table">
   <tr>
-    <td>
-      <strong>Patient Name:</strong>
-      {% if prescription.patient %}
-        {{ prescription.patient.patient_name }}
-      {% else %}
-        Walk-in Customer
-      {% endif %}
-    </td>
-    <td>
-      <strong>Age / Sex:</strong>
-      {% if prescription.patient %}
-        {{ prescription.patient.age }} / {{ prescription.patient.get_gender_display }}
-      {% endif %}
-    </td>
-    <td><strong>Date:</strong> {{ prescription.created_at|date:"d-m-Y" }}</td>
+    <td width="50%"><strong>PATIENT NAME:</strong> {{ prescription.patient.patient_name }}</td>
+    <td width="50%"><strong>DATE:</strong> {{ prescription.created_at|date:"d-m-Y" }}</td>
+  </tr>
+  <tr>
+    <td><strong>AGE & GENDER:</strong> {{ prescription.patient.age }} Y / {{ prescription.patient.get_gender_display }}</td>
+    <td><strong>OCCUPATION:</strong> {{ prescription.occupation|default:"—" }}</td>
+  </tr>
+  <tr>
+    <td><strong>CONTACT NO:</strong> {{ prescription.patient.phone|default:"—" }}</td>
+    <td><strong>ADDRESS:</strong> {{ prescription.patient.address|default:"—" }}</td>
   </tr>
 </table>
 
-<!-- ================= MEDICINE TABLE ================= -->
-<table class="bill-table">
-  <thead>
-    <tr><th>#</th><th>Medicine</th><th>Dosage</th><th>Duration (days)</th><th>Qty</th><th>Instructions</th></tr>
-  </thead>
-  <tbody>
-     {% for it in items %}
-          <tr>
-            <td>{{ forloop.counter }}</td>
-            <td>{{ it.medicine_name }}</td>
-            <td>{{ it.dosage }}</td>
-            <td>{{ it.duration_days }}</td>
-            <td>{{ it.quantity }}</td>
-            <td>{{ it.instructions }}</td>
-          </tr>
-        {% endfor %}
-  </tbody>
-  <p><strong>Notes:</strong> {{ prescription.notes }}</p>
+<!-- Presenting Complaints -->
+<div class="box-title">Presenting complaints:</div>
+<div class="box-content">{{ prescription.presenting_complaints|linebreaksbr|default:"Nil" }}</div>
+
+<!-- Associated Complaints -->
+<div class="box-title">Associated complaints:</div>
+<div class="box-content">{{ prescription.associated_complaints|linebreaksbr|default:"Nil" }}</div>
+
+<!-- History of Present Illness -->
+<div class="box-title">History Of Present Illness:</div>
+<div class="box-content">{{ prescription.history_present_illness|linebreaksbr|default:"Nil" }}</div>
+
+<!-- History of Past Illness -->
+<div class="box-title">History of past illness:</div>
+<div class="box-content">{{ prescription.history_past_illness|linebreaksbr|default:"Nil" }}</div>
+
+<!-- Co-morbidities & Current Medications -->
+<table class="grid-table">
+  <tr>
+    <td width="50%">
+      <strong>Co-morbidities:</strong><br>
+      <div style="margin-top:4px;">
+        <span class="checkbox-span"><span class="checkbox-box">{% if prescription.comorbid_diabetes %}✓{% endif %}</span> Diabetes</span>
+        <span class="checkbox-span"><span class="checkbox-box">{% if prescription.comorbid_hypertension %}✓{% endif %}</span> Hypertension</span><br>
+        <span class="checkbox-span"><span class="checkbox-box">{% if prescription.comorbid_thyroid %}✓{% endif %}</span> Thyroid disease</span>
+        <span class="checkbox-span"><span class="checkbox-box">{% if prescription.comorbid_cardiac %}✓{% endif %}</span> Cardiac disease</span><br>
+        <span class="checkbox-span"><span class="checkbox-box">{% if prescription.comorbid_kidney %}✓{% endif %}</span> Kidney disease</span>
+      </div>
+      {% if prescription.comorbid_others %}
+        <div style="margin-top:4px;"><strong>Others:</strong> {{ prescription.comorbid_others }}</div>
+      {% endif %}
+    </td>
+    <td width="50%">
+      <strong>Current medications:</strong><br>
+      {{ prescription.current_medications|linebreaksbr|default:"Nil" }}
+    </td>
+  </tr>
 </table>
-<!-- ================= FOOTER ================= -->
-<div class="footer">
-  Thank you for visiting {{ settings.hospital_name }}<br>
-  Get Well Soon 🙏
+
+<!-- Vitals & Ayurvedic Examination 4x4 Grid -->
+<table class="grid-table" style="text-align: center;">
+  <tr>
+    <td width="25%"><strong>MALAM:</strong> {{ prescription.exam_malam|default:"—" }}</td>
+    <td width="25%"><strong>NADI:</strong> {{ prescription.exam_nadi|default:"—" }}</td>
+    <td width="25%"><strong>JIVHA:</strong> {{ prescription.exam_jivha|default:"—" }}</td>
+    <td width="25%"><strong>AKRI:</strong> {{ prescription.exam_akri|default:"—" }}</td>
+  </tr>
+  <tr>
+    <td><strong>DIET/HABIT:</strong> {{ prescription.exam_diet_habit|default:"—" }}</td>
+    <td><strong>MUTR:</strong> {{ prescription.exam_mutr|default:"—" }}</td>
+    <td><strong>SHABDA:</strong> {{ prescription.exam_shabda|default:"—" }}</td>
+    <td><strong>BP:</strong> {{ prescription.exam_bp|default:"—" }}</td>
+  </tr>
+  <tr>
+    <td><strong>ADDICTION:</strong> {{ prescription.exam_addiction|default:"—" }}</td>
+    <td><strong>LMP:</strong> {{ prescription.exam_lmp|default:"—" }}</td>
+    <td><strong>SHARIRA:</strong> {{ prescription.exam_sharira|default:"—" }}</td>
+    <td><strong>SPARSHA:</strong> {{ prescription.exam_sparsha|default:"—" }}</td>
+  </tr>
+  <tr>
+    <td><strong>ALLERGIES:</strong> {{ prescription.exam_allergies|default:"—" }}</td>
+    <td><strong>PULSE:</strong> {{ prescription.exam_pulse|default:"—" }}</td>
+    <td><strong>SHIR:</strong> {{ prescription.exam_shir|default:"—" }}</td>
+    <td><strong>NAKHA:</strong> {{ prescription.exam_nakha|default:"—" }}</td>
+  </tr>
+</table>
+
+
+<!-- ================= PAGE 2: PRESCRIPTION & TREATMENT PLAN ================= -->
+<div class="page-break"></div>
+
+<div class="header">
+  <div class="hospital-title">{{ settings.hospital_name|default:"AYURKENDRA MANAGEMENT" }}</div>
+  <div class="address">
+    Patient: <strong>{{ prescription.patient.patient_name }}</strong> (UHID: {{ prescription.patient.patient_unique_id }}) | Presc No: <strong>{{ prescription.prescription_no }}</strong> | Date: <strong>{{ prescription.created_at|date:"d-m-Y" }}</strong>
+  </div>
 </div>
 
-<!-- ================= PRINT ================= -->
-<div class="no-print" style="text-align:center; margin-top:20px;">
-  <button onclick="window.print()">🖨 Print</button>
-  <a href="{% url 'billingmgmt:medicalbilling' %}"
-     style="padding:6px 12px;border:1px solid #000;text-decoration:none;color:#000;">
-     ⬅ Back
-  </a>
+<div class="section-heading">Medicine Prescribed:</div>
+<table class="grid-table">
+  <thead>
+    <tr>
+      <th width="8%" style="text-align:center;">S.NO</th>
+      <th width="35%">MEDICINE NAME</th>
+      <th width="15%">DOSAGE</th>
+      <th width="15%">TIMING</th>
+      <th width="27%">ANUPANAM / ADJUVANT</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for it in items %}
+      <tr>
+        <td style="text-align:center;">{{ forloop.counter }}</td>
+        <td><strong>{{ it.medicine_name }}</strong>{% if it.duration_days %} <small>({{ it.duration_days }} days)</small>{% endif %}</td>
+        <td>{{ it.dosage }}</td>
+        <td>{{ it.food_timing|default:"—" }}</td>
+        <td>{% if it.adjuvant %}{{ it.adjuvant.name }}{% else %}{{ it.instructions|default:"—" }}{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="5" style="text-align:center; color:#666;">No medicines prescribed.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="section-heading" style="margin-top:20px;">Treatment Plan:</div>
+<table class="grid-table">
+  <thead>
+    <tr>
+      <th width="8%" style="text-align:center;">S.NO</th>
+      <th width="35%">TREATMENT NAME</th>
+      <th width="25%">TAILAM</th>
+      <th width="32%">INSTRUCTIONS</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in treatment_items %}
+      <tr>
+        <td style="text-align:center;">{{ forloop.counter }}</td>
+        <td><strong>{{ t.treatment_name }}</strong></td>
+        <td>{{ t.tailam|default:"—" }}</td>
+        <td>{{ t.instructions|default:"—" }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4" style="text-align:center; color:#666;">No treatment plan specified.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if prescription.notes %}
+  <div style="margin-top:15px; font-size:11px;">
+    <strong>DOCTOR NOTES:</strong> {{ prescription.notes }}
+  </div>
+{% endif %}
+
+{% if prescription.next_visit %}
+  <div style="margin-top:5px; font-size:11px;">
+    <strong>NEXT VISIT:</strong> {{ prescription.next_visit|date:"d-m-Y" }}
+  </div>
+{% endif %}
+
+<div class="signature-box">
+  <br><br><br>
+  Doctor's signature: ______________________<br>
+  {% if prescription.doctor %}<small>({{ prescription.doctor.get_full_name|default:prescription.doctor.username }})</small>{% endif %}
+</div>
+
+<!-- ================= ACTION BUTTONS ================= -->
+<div class="no-print" style="text-align:center; margin-top:25px;">
+  <button onclick="window.print()" style="padding:8px 16px; background:#4CAF50; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">🖨 Print Case Sheet</button>
+  <a href="{% url 'dashboard' %}" style="padding:8px 16px; background:#2196F3; color:#fff; text-decoration:none; border-radius:4px; font-weight:bold; margin-left:10px;">⬅ Back to Dashboard</a>
 </div>
 
 </body>
 </html>
+

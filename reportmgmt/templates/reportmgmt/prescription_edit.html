@@ -10,92 +10,248 @@
 
 <div class="container-fluid py-4">
 
-  <div class="mb-4">
-    <h4 class="fw-bold mb-1">Edit Prescription</h4>
-    <p class="text-muted text-sm mb-0">
-      Update prescription details.
-    </p>
-  </div>
-
-  <div class="card shadow-sm border-0">
-    <div class="card-body">
-
-      <form method="post">
-        {% csrf_token %}
-
-        <!-- Notes -->
-        <div class="mb-3">
-          <label class="form-label">Notes</label>
-          <textarea name="notes"
-                    class="form-control"
-                    rows="3">{{ prescription.notes }}</textarea>
-        </div>
-
-        <!-- Next Visit -->
-        <div class="mb-4">
-          <label class="form-label">Next Visit</label>
-          <input type="date"
-                 name="next_visit"
-                 class="form-control"
-                 value="{{ prescription.next_visit|date:'Y-m-d' }}">
-        </div>
-
-        <h6 class="mb-3">Medicines</h6>
-
-        <div id="medicineContainer">
-
-          {% for item in prescription.items.all %}
-          <div class="row g-3 mb-2 medicineRow">
-            <div class="col-md-3">
-              <input type="text"
-                     name="medicine_name[]"
-                     class="form-control"
-                     value="{{ item.medicine_name }}">
-            </div>
-            <div class="col-md-2">
-              <input type="text"
-                     name="dosage[]"
-                     class="form-control"
-                     value="{{ item.dosage }}">
-            </div>
-            <div class="col-md-2">
-              <input type="number"
-                     name="duration_days[]"
-                     class="form-control"
-                     value="{{ item.duration_days }}">
-            </div>
-            <div class="col-md-2">
-              <input type="number"
-                     name="quantity[]"
-                     class="form-control"
-                     value="{{ item.quantity }}">
-            </div>
-            <div class="col-md-3">
-              <input type="text"
-                     name="instructions[]"
-                     class="form-control"
-                     value="{{ item.instructions }}">
-            </div>
-          </div>
-          {% endfor %}
-
-        </div>
-
-        <div class="mt-4">
-          <button type="submit"
-                  class="btn bg-gradient-dark px-5">
-            Update Prescription
-          </button>
-        </div>
-
-      </form>
-
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">Edit Case Sheet & Prescription</h4>
+      <p class="text-muted text-sm mb-0">
+        Update record #{{ prescription.prescription_no }} for {{ prescription.patient.patient_name }}
+      </p>
+    </div>
+    <div>
+      <a href="{% url 'reportmgmt:prescription_list' %}" class="btn btn-light fw-bold">Back to List</a>
     </div>
   </div>
+
+  <form method="post">
+    {% csrf_token %}
+
+    <!-- PATIENT INFO CARD -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <h5 class="fw-bold text-primary mb-3">Patient Basic Details</h5>
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Prescription No</label>
+            <input type="text" class="form-control" value="{{ prescription.prescription_no }}" readonly>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Patient Name</label>
+            <input type="text" class="form-control" value="{{ prescription.patient.patient_name }} ({{ prescription.patient.patient_unique_id }})" readonly>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Age / Gender</label>
+            <input type="text" class="form-control" value="{{ prescription.patient.age }} Y / {{ prescription.patient.get_gender_display }}" readonly>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Occupation</label>
+            <input type="text" name="occupation" class="form-control" value="{{ prescription.occupation|default:'' }}">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLINICAL COMPLAINTS & HISTORY -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <h5 class="fw-bold text-primary mb-3">Clinical Complaints & History</h5>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Presenting Complaints</label>
+            <textarea name="presenting_complaints" class="form-control" rows="3">{{ prescription.presenting_complaints|default:'' }}</textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Associated Complaints</label>
+            <textarea name="associated_complaints" class="form-control" rows="3">{{ prescription.associated_complaints|default:'' }}</textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">History of Present Illness</label>
+            <textarea name="history_present_illness" class="form-control" rows="3">{{ prescription.history_present_illness|default:'' }}</textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">History of Past Illness</label>
+            <textarea name="history_past_illness" class="form-control" rows="3">{{ prescription.history_past_illness|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CO-MORBIDITIES & CURRENT MEDS -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <h5 class="fw-bold text-primary mb-3">Co-morbidities & Current Medications</h5>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold d-block mb-2">Co-morbidities</label>
+            <div class="d-flex flex-wrap gap-3 p-2 bg-light rounded border mb-2">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="comorbid_diabetes" id="comorbid_diabetes" {% if prescription.comorbid_diabetes %}checked{% endif %}>
+                <label class="form-check-label" for="comorbid_diabetes">Diabetes</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="comorbid_hypertension" id="comorbid_hypertension" {% if prescription.comorbid_hypertension %}checked{% endif %}>
+                <label class="form-check-label" for="comorbid_hypertension">Hypertension</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="comorbid_thyroid" id="comorbid_thyroid" {% if prescription.comorbid_thyroid %}checked{% endif %}>
+                <label class="form-check-label" for="comorbid_thyroid">Thyroid Disease</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="comorbid_cardiac" id="comorbid_cardiac" {% if prescription.comorbid_cardiac %}checked{% endif %}>
+                <label class="form-check-label" for="comorbid_cardiac">Cardiac Disease</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="comorbid_kidney" id="comorbid_kidney" {% if prescription.comorbid_kidney %}checked{% endif %}>
+                <label class="form-check-label" for="comorbid_kidney">Kidney Disease</label>
+              </div>
+            </div>
+            <input type="text" name="comorbid_others" class="form-control" placeholder="Others (specify)..." value="{{ prescription.comorbid_others|default:'' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Current Medications</label>
+            <textarea name="current_medications" class="form-control" rows="3">{{ prescription.current_medications|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VITALS & EXAMINATION GRID -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <h5 class="fw-bold text-primary mb-3">Vitals & Ayurvedic Examination</h5>
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle text-center mb-0">
+            <thead class="bg-light">
+              <tr>
+                <th width="25%">ASHTASTHANA / GENERAL</th>
+                <th width="25%">EXAMINATION</th>
+                <th width="25%">EXAMINATION</th>
+                <th width="25%">VITALS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><small class="fw-bold d-block text-start text-muted">MALAM</small><input type="text" name="exam_malam" class="form-control form-control-sm text-center" value="{{ prescription.exam_malam|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">NADI</small><input type="text" name="exam_nadi" class="form-control form-control-sm text-center" value="{{ prescription.exam_nadi|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">JIVHA</small><input type="text" name="exam_jivha" class="form-control form-control-sm text-center" value="{{ prescription.exam_jivha|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">AKRI</small><input type="text" name="exam_akri" class="form-control form-control-sm text-center" value="{{ prescription.exam_akri|default:'' }}"></td>
+              </tr>
+              <tr>
+                <td><small class="fw-bold d-block text-start text-muted">DIET/HABIT</small><input type="text" name="exam_diet_habit" class="form-control form-control-sm text-center" value="{{ prescription.exam_diet_habit|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">MUTR</small><input type="text" name="exam_mutr" class="form-control form-control-sm text-center" value="{{ prescription.exam_mutr|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">SHABDA</small><input type="text" name="exam_shabda" class="form-control form-control-sm text-center" value="{{ prescription.exam_shabda|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">BP</small><input type="text" name="exam_bp" class="form-control form-control-sm text-center" value="{{ prescription.exam_bp|default:'' }}"></td>
+              </tr>
+              <tr>
+                <td><small class="fw-bold d-block text-start text-muted">ADDICTION</small><input type="text" name="exam_addiction" class="form-control form-control-sm text-center" value="{{ prescription.exam_addiction|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">LMP</small><input type="text" name="exam_lmp" class="form-control form-control-sm text-center" value="{{ prescription.exam_lmp|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">SHARIRA</small><input type="text" name="exam_sharira" class="form-control form-control-sm text-center" value="{{ prescription.exam_sharira|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">SPARSHA</small><input type="text" name="exam_sparsha" class="form-control form-control-sm text-center" value="{{ prescription.exam_sparsha|default:'' }}"></td>
+              </tr>
+              <tr>
+                <td><small class="fw-bold d-block text-start text-muted">ALLERGIES</small><input type="text" name="exam_allergies" class="form-control form-control-sm text-center" value="{{ prescription.exam_allergies|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">PULSE</small><input type="text" name="exam_pulse" class="form-control form-control-sm text-center" value="{{ prescription.exam_pulse|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">SHIR</small><input type="text" name="exam_shir" class="form-control form-control-sm text-center" value="{{ prescription.exam_shir|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">NAKHA</small><input type="text" name="exam_nakha" class="form-control form-control-sm text-center" value="{{ prescription.exam_nakha|default:'' }}"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEDICINES PRESCRIBED -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <h5 class="fw-bold text-primary mb-3">Medicines Prescribed</h5>
+        <div id="medicineContainer">
+          {% for item in prescription.items.all %}
+          <div class="row g-2 mb-2 medicineRow align-items-center">
+            <div class="col-md-3"><input type="text" name="medicine_name[]" class="form-control" placeholder="Medicine Name" value="{{ item.medicine_name }}"></div>
+            <div class="col-md-2"><input type="text" name="dosage[]" class="form-control" placeholder="Dosage" value="{{ item.dosage }}"></div>
+            <div class="col-md-2"><input type="number" name="duration_days[]" class="form-control" placeholder="Days" value="{{ item.duration_days }}"></div>
+            <div class="col-md-2"><input type="number" name="quantity[]" class="form-control" placeholder="Qty" value="{{ item.quantity }}"></div>
+            <div class="col-md-2"><input type="text" name="instructions[]" class="form-control" placeholder="Instructions/Food" value="{{ item.instructions|default:item.food_timing }}"></div>
+            <div class="col-md-1 text-center"><button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.medicineRow').remove()">&times;</button></div>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addMedEditRow()">+ Add Medicine</button>
+      </div>
+    </div>
+
+    <!-- TREATMENT PLAN -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <h5 class="fw-bold text-primary mb-3">Treatment Plan</h5>
+        <div id="treatmentEditContainer">
+          {% for t in prescription.treatment_items.all %}
+          <div class="row g-2 mb-2 treatmentEditRow align-items-center">
+            <div class="col-md-4"><input type="text" name="treatment_name[]" class="form-control" placeholder="Treatment Name" value="{{ t.treatment_name }}"></div>
+            <div class="col-md-3"><input type="text" name="tailam[]" class="form-control" placeholder="Tailam / Oil" value="{{ t.tailam }}"></div>
+            <div class="col-md-4"><input type="text" name="treatment_instructions[]" class="form-control" placeholder="Instructions" value="{{ t.instructions }}"></div>
+            <div class="col-md-1 text-center"><button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.treatmentEditRow').remove()">&times;</button></div>
+          </div>
+          {% endfor %}
+        </div>
+        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addTreatmentEditRow()">+ Add Treatment</button>
+      </div>
+    </div>
+
+    <!-- NOTES & NEXT VISIT -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Doctor Notes</label>
+            <textarea name="notes" class="form-control" rows="3">{{ prescription.notes|default:'' }}</textarea>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Next Visit</label>
+            <input type="date" name="next_visit" class="form-control" value="{{ prescription.next_visit|date:'Y-m-d' }}">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-5 text-end">
+      <button type="submit" class="btn btn-primary px-5 py-2 fw-bold">Update Case Sheet</button>
+    </div>
+
+  </form>
 
 </div>
 
 </main>
 {% include "includes/script.html" %}
+<script>
+function addMedEditRow() {
+  const container = document.getElementById("medicineContainer");
+  const div = document.createElement("div");
+  div.className = "row g-2 mb-2 medicineRow align-items-center";
+  div.innerHTML = `
+    <div class="col-md-3"><input type="text" name="medicine_name[]" class="form-control" placeholder="Medicine Name"></div>
+    <div class="col-md-2"><input type="text" name="dosage[]" class="form-control" placeholder="Dosage"></div>
+    <div class="col-md-2"><input type="number" name="duration_days[]" class="form-control" placeholder="Days"></div>
+    <div class="col-md-2"><input type="number" name="quantity[]" class="form-control" placeholder="Qty"></div>
+    <div class="col-md-2"><input type="text" name="instructions[]" class="form-control" placeholder="Instructions/Food"></div>
+    <div class="col-md-1 text-center"><button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.medicineRow').remove()">&times;</button></div>
+  `;
+  container.appendChild(div);
+}
+
+function addTreatmentEditRow() {
+  const container = document.getElementById("treatmentEditContainer");
+  const div = document.createElement("div");
+  div.className = "row g-2 mb-2 treatmentEditRow align-items-center";
+  div.innerHTML = `
+    <div class="col-md-4"><input type="text" name="treatment_name[]" class="form-control" placeholder="Treatment Name"></div>
+    <div class="col-md-3"><input type="text" name="tailam[]" class="form-control" placeholder="Tailam / Oil"></div>
+    <div class="col-md-4"><input type="text" name="treatment_instructions[]" class="form-control" placeholder="Instructions"></div>
+    <div class="col-md-1 text-center"><button type="button" class="btn btn-outline-danger btn-sm" onclick="this.closest('.treatmentEditRow').remove()">&times;</button></div>
+  `;
+  container.appendChild(div);
+}
+</script>
 </body>
 </html>
+

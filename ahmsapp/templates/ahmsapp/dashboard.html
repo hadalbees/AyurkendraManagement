@@ -133,25 +133,35 @@
 
         <form id="presForm" method="post" action="{% url 'prescriptionmgmt:create' %}">
         {% csrf_token %}
-        <input type="hidden" name="prescription_no" value="{{ prescription_no }}">
 
-        <!-- ================= PATIENT DETAILS ================= -->
+        <!-- ================= PATIENT DETAILS & CASE SHEET ================= -->
         <div class="card mb-4">
           <div class="card-body">
-            <h5 class="mb-3">Patient Details</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="mb-0">New Case Sheet & Prescription</h5>
+            </div>
+
+            <!-- Date-wise History Summary Pills/Timeline -->
+            <div id="patientHistoryBadgeBar" class="mb-3 p-3 bg-light-subtle rounded border border-primary-subtle" style="display:none;">
+              <div class="d-flex align-items-center gap-2 flex-wrap text-sm">
+                <span class="fw-bold text-primary"><i class="material-symbols-rounded align-middle fs-5 me-1">history</i> Past Case Sheets:</span>
+                <div id="historyPillsList" class="d-flex gap-2 flex-wrap align-items-center"></div>
+              </div>
+            </div>
 
             <div class="row g-3">
-              <div class="col-md-3 col-6">
+              <div class="col-md-2 col-6">
                 <label>Prescription No</label>
-                <input type="text" class="form-control"
+                <input type="text" id="pres_no_input" name="prescription_no" class="form-control fw-bold text-primary bg-light"
                       value="{{ prescription_no }}" readonly>
               </div>
 
-              <div class="col-md-3 col-6">
+              <div class="col-md-2 col-6">
                 <label>Patient ID</label>
                 <input type="text" id="patient_id"
                       name="patient_id"
                       class="form-control"
+                      placeholder="e.g. PAT001"
                       onblur="fetchPatientById()">
               </div>
 
@@ -160,10 +170,11 @@
                 <input list="patientList"
                       id="patient_name"
                       class="form-control"
+                      placeholder="Search or type name..."
                       onblur="fetchPatientByName()">
                 <datalist id="patientList">
                   {% for p in patients %}
-                  <option value="{{ p.patient_name }}"></option>
+                  <option value="{{ p.patient_name }}">{{ p.patient_unique_id }}</option>
                   {% endfor %}
                 </datalist>
               </div>
@@ -185,6 +196,180 @@
                       class="form-control"
                       readonly>
               </div>
+
+              <div class="col-md-2 col-12">
+                <label>Occupation</label>
+                <input type="text"
+                      name="occupation"
+                      id="p_occupation"
+                      class="form-control"
+                      placeholder="Occupation">
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- ================= CLINICAL COMPLAINTS & HISTORY ================= -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="mb-3">Clinical Complaints & History</h5>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="fw-semibold">Presenting Complaints</label>
+                <textarea name="presenting_complaints" id="c_presenting_complaints" class="form-control" rows="3" placeholder="Describe presenting complaints..."></textarea>
+              </div>
+
+              <div class="col-md-6">
+                <label class="fw-semibold">Associated Complaints</label>
+                <textarea name="associated_complaints" id="c_associated_complaints" class="form-control" rows="3" placeholder="Describe associated complaints..."></textarea>
+              </div>
+
+              <div class="col-md-6">
+                <label class="fw-semibold">History of Present Illness</label>
+                <textarea name="history_present_illness" id="c_history_present_illness" class="form-control" rows="3" placeholder="History of present illness..."></textarea>
+              </div>
+
+              <div class="col-md-6">
+                <label class="fw-semibold">History of Past Illness</label>
+                <textarea name="history_past_illness" id="c_history_past_illness" class="form-control" rows="3" placeholder="History of past illness..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= CO-MORBIDITIES & CURRENT MEDS ================= -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="mb-3">Co-morbidities & Current Medications</h5>
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="fw-semibold d-block mb-2">Co-morbidities</label>
+                <div class="d-flex flex-wrap gap-3 p-2 bg-light rounded border mb-2">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="comorbid_diabetes" id="comorbid_diabetes">
+                    <label class="form-check-label" for="comorbid_diabetes">Diabetes</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="comorbid_hypertension" id="comorbid_hypertension">
+                    <label class="form-check-label" for="comorbid_hypertension">Hypertension</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="comorbid_thyroid" id="comorbid_thyroid">
+                    <label class="form-check-label" for="comorbid_thyroid">Thyroid Disease</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="comorbid_cardiac" id="comorbid_cardiac">
+                    <label class="form-check-label" for="comorbid_cardiac">Cardiac Disease</label>
+                  </div>
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="comorbid_kidney" id="comorbid_kidney">
+                    <label class="form-check-label" for="comorbid_kidney">Kidney Disease</label>
+                  </div>
+                </div>
+                <input type="text" name="comorbid_others" id="comorbid_others" class="form-control" placeholder="Others (specify)...">
+              </div>
+
+              <div class="col-md-6">
+                <label class="fw-semibold">Current Medications</label>
+                <textarea name="current_medications" id="c_current_medications" class="form-control" rows="3" placeholder="List current medications patient is taking..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= VITALS & AYURVEDIC EXAMINATION (4x4 GRID) ================= -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="mb-3">Vitals & Ayurvedic Examination</h5>
+
+            <div class="table-responsive">
+              <table class="table table-bordered align-middle text-center mb-0">
+                <thead class="bg-light">
+                  <tr>
+                    <th width="25%">ASHTASTHANA / GENERAL</th>
+                    <th width="25%">EXAMINATION</th>
+                    <th width="25%">EXAMINATION</th>
+                    <th width="25%">VITALS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">MALAM</small>
+                      <input type="text" name="exam_malam" id="exam_malam" class="form-control form-control-sm text-center">
+                    </td>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">NADI</small>
+                      <input type="text" name="exam_nadi" id="exam_nadi" class="form-control form-control-sm text-center">
+                    </td>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">JIVHA</small>
+                      <input type="text" name="exam_jivha" id="exam_jivha" class="form-control form-control-sm text-center">
+                    </td>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">AKRI</small>
+                      <input type="text" name="exam_akri" id="exam_akri" class="form-control form-control-sm text-center">
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">DIET/HABIT</small>
+                      <input type="text" name="exam_diet_habit" id="exam_diet_habit" class="form-control form-control-sm text-center">
+                    </td>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">MUTR</small>
+                      <input type="text" name="exam_mutr" id="exam_mutr" class="form-control form-control-sm text-center">
+                    </td>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">SHABDA</small>
+                      <input type="text" name="exam_shabda" id="exam_shabda" class="form-control form-control-sm text-center">
+                    </td>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">BP</small>
+                      <input type="text" name="exam_bp" id="exam_bp" class="form-control form-control-sm text-center" placeholder="e.g. 120/80">
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">ADDICTION</small>
+                      <input type="text" name="exam_addiction" id="exam_addiction" class="form-control form-control-sm text-center">
+                    </td>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">LMP</small>
+                      <input type="text" name="exam_lmp" id="exam_lmp" class="form-control form-control-sm text-center">
+                    </td>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">SHARIRA</small>
+                      <input type="text" name="exam_sharira" id="exam_sharira" class="form-control form-control-sm text-center">
+                    </td>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">SPARSHA</small>
+                      <input type="text" name="exam_sparsha" id="exam_sparsha" class="form-control form-control-sm text-center">
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">ALLERGIES</small>
+                      <input type="text" name="exam_allergies" id="exam_allergies" class="form-control form-control-sm text-center">
+                    </td>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">PULSE</small>
+                      <input type="text" name="exam_pulse" id="exam_pulse" class="form-control form-control-sm text-center" placeholder="e.g. 72 bpm">
+                    </td>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">SHIR</small>
+                      <input type="text" name="exam_shir" id="exam_shir" class="form-control form-control-sm text-center">
+                    </td>
+                    <td>
+                      <small class="fw-bold d-block text-start text-muted">NAKHA</small>
+                      <input type="text" name="exam_nakha" id="exam_nakha" class="form-control form-control-sm text-center">
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -217,28 +402,51 @@
           </div>
         </div>
 
-        <!-- ================= NOTES ================= -->
+        <!-- ================= TREATMENT PLAN ================= -->
+        <div class="card mb-4">
+          <div class="card-body">
+            <h5 class="mb-3">Treatment Plan</h5>
+
+            <div class="row fw-bold text-sm mb-2 d-none d-md-flex">
+              <div class="col-md-4">Treatment Name</div>
+              <div class="col-md-3">Tailam / Medicine</div>
+              <div class="col-md-4">Instructions</div>
+              <div class="col-md-1">Action</div>
+            </div>
+
+            <div id="treatmentContainer"></div>
+
+            <button type="button"
+                    class="btn btn-outline-secondary mt-3"
+                    id="addTreatmentBtn" onclick="addTreatmentRow()">
+              + Add Treatment Plan
+            </button>
+          </div>
+        </div>
+
+        <!-- ================= NOTES & SAVE ================= -->
         <div class="card mb-4">
           <div class="card-body">
             <div class="row g-3">
               <div class="col-md-6">
-                <label>Notes</label>
-                <textarea name="notes"
-                          class="form-control"></textarea>
+                <label>Doctor Notes</label>
+                <textarea name="notes" id="p_notes"
+                          class="form-control" rows="2"></textarea>
               </div>
 
               <div class="col-md-3 col-6">
                 <label>Next Visit</label>
                 <input type="date"
                       name="next_visit"
+                      id="p_next_visit"
                       class="form-control"
                       value="{{ today }}">
               </div>
 
               <div class="col-md-3 col-6 d-flex align-items-end">
                 <button type="submit"
-                        class="btn btn-primary w-100">
-                  Save Prescription
+                        class="btn btn-primary w-100 py-2 fw-bold">
+                  Save Case Sheet
                 </button>
               </div>
             </div>
@@ -286,19 +494,47 @@
 
   {% endif %}
 
+<!-- Modal for Viewing Previous Case Sheet Details -->
+<div class="modal fade" id="prevCaseSheetModal" tabindex="-1" aria-labelledby="prevCaseSheetModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title text-white" id="prevCaseSheetModalLabel"><i class="material-symbols-rounded align-middle me-1">history_edu</i> Previous Case Sheet Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="modalCaseSheetContent">
+        <!-- Loaded dynamically -->
+      </div>
+      <div class="modal-footer bg-light justify-content-between">
+        <div>
+          <button type="button" id="modalCopyBtn" class="btn btn-outline-primary fw-bold" data-bs-dismiss="modal">
+            <i class="material-symbols-rounded align-middle me-1">content_copy</i> Copy Data to New Prescription
+          </button>
+          <button type="button" id="modalPrintBtn" class="btn btn-success fw-bold ms-2">
+            <i class="material-symbols-rounded align-middle me-1">print</i> Print Case Sheet
+          </button>
+        </div>
+        <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </main>
 
 {% include "includes/script.html" %}
 
 
-<!-- ===== YOUR ORIGINAL SCRIPT (UNCHANGED) ===== -->
+<!-- ===== SCRIPT FOR CASE SHEET & DATE-WISE HISTORY ===== -->
 <script>
+  const DEFAULT_PRESC_NO = "{{ prescription_no }}";
 
   const ADJUVANTS = {
 {% for a in adjuvants %}
   "{{ a.id }}": "{{ a.name|escapejs }}",
 {% endfor %}
 };
+
 // === FETCH PATIENT USING ID === //
   function fetchPatientById() {
     const pid = document.getElementById("patient_id").value;
@@ -311,6 +547,8 @@
           document.getElementById("patient_name").value = data.patient_name;
           document.getElementById("p_age").value = data.age;
           document.getElementById("p_gender").value = data.gender;
+          if (data.occupation) document.getElementById("p_occupation").value = data.occupation;
+          loadPatientHistory(data.patient_unique_id);
         } else {
           alert(data.error);
         }
@@ -329,10 +567,330 @@
           document.getElementById("patient_id").value = data.patient_unique_id;
           document.getElementById("p_age").value = data.age;
           document.getElementById("p_gender").value = data.gender;
+          if (data.occupation) document.getElementById("p_occupation").value = data.occupation;
+          loadPatientHistory(data.patient_unique_id);
         } else {
           alert(data.error);
         }
       });
+  }
+
+  // === FETCH & DISPLAY DATE-WISE HISTORY PILLS === //
+  function loadPatientHistory(patient_unique_id) {
+    fetch("{% url 'prescriptionmgmt:get_patient_history' %}?patient_id=" + encodeURIComponent(patient_unique_id))
+      .then(r => r.json())
+      .then(data => {
+        const badgeBar = document.getElementById("patientHistoryBadgeBar");
+        const pillsList = document.getElementById("historyPillsList");
+
+        pillsList.innerHTML = "";
+
+        if (data.history && data.history.length > 0) {
+          badgeBar.style.display = "block";
+
+          data.history.forEach(item => {
+            const pill = document.createElement("button");
+            pill.type = "button";
+            pill.className = "btn btn-sm btn-outline-primary rounded-pill me-1 mb-1 py-1 px-2 fw-semibold";
+            pill.innerHTML = `<i class="material-symbols-rounded align-middle fs-6 me-1">visibility</i> ${item.date} (${item.prescription_no})`;
+            pill.onclick = function() {
+              openPreviousCaseSheetModal(item.prescription_no);
+            };
+            pillsList.appendChild(pill);
+          });
+        } else {
+          badgeBar.style.display = "none";
+        }
+      });
+  }
+
+  let currentModalData = null;
+
+  function openPreviousCaseSheetModal(presNo) {
+    fetch("{% url 'prescriptionmgmt:get_prescription_details' %}?prescription_no=" + encodeURIComponent(presNo))
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+          return;
+        }
+        currentModalData = data;
+        renderModalCaseSheet(data);
+        const myModal = new bootstrap.Modal(document.getElementById('prevCaseSheetModal'));
+        myModal.show();
+      });
+  }
+
+  function renderModalCaseSheet(data) {
+    const modalTitle = document.getElementById("prevCaseSheetModalLabel");
+    modalTitle.innerHTML = `<i class="material-symbols-rounded align-middle me-1">history_edu</i> Past Case Sheet — ${data.prescription_no} (${data.created_at_display || data.created_at})`;
+
+    let medsHtml = "";
+    if (data.items && data.items.length > 0) {
+      data.items.forEach((m, idx) => {
+        medsHtml += `<tr>
+          <td>${idx + 1}</td>
+          <td><strong>${m.medicine_name}</strong></td>
+          <td>${m.dosage || '—'}</td>
+          <td>${m.duration_days} days</td>
+          <td>${m.quantity}</td>
+          <td>${m.adjuvant_name || m.food_timing || '—'}</td>
+        </tr>`;
+      });
+    } else {
+      medsHtml = `<tr><td colspan="6" class="text-center text-muted">No medicines prescribed.</td></tr>`;
+    }
+
+    let treatHtml = "";
+    if (data.treatment_plan && data.treatment_plan.length > 0) {
+      data.treatment_plan.forEach((t, idx) => {
+        treatHtml += `<tr>
+          <td>${idx + 1}</td>
+          <td><strong>${t.treatment_name}</strong></td>
+          <td>${t.tailam || '—'}</td>
+          <td>${t.instructions || '—'}</td>
+        </tr>`;
+      });
+    } else {
+      treatHtml = `<tr><td colspan="4" class="text-center text-muted">No treatment plan specified.</td></tr>`;
+    }
+
+    let comBadges = "";
+    if (data.comorbidities) {
+      if (data.comorbidities.diabetes) comBadges += `<span class="badge bg-danger me-1">Diabetes</span>`;
+      if (data.comorbidities.hypertension) comBadges += `<span class="badge bg-danger me-1">Hypertension</span>`;
+      if (data.comorbidities.thyroid) comBadges += `<span class="badge bg-danger me-1">Thyroid</span>`;
+      if (data.comorbidities.cardiac) comBadges += `<span class="badge bg-danger me-1">Cardiac</span>`;
+      if (data.comorbidities.kidney) comBadges += `<span class="badge bg-danger me-1">Kidney</span>`;
+      if (data.comorbidities.others) comBadges += `<div><small><strong>Others:</strong> ${data.comorbidities.others}</small></div>`;
+    }
+
+    const ex = data.examination || {};
+
+    const content = `
+      <div class="p-2 text-sm">
+        <div class="row g-2 mb-3 bg-light p-2 rounded border">
+          <div class="col-6"><strong>Patient:</strong> ${data.patient.name} (${data.patient.unique_id})</div>
+          <div class="col-6"><strong>Doctor:</strong> ${data.doctor_name || 'Doctor'}</div>
+          <div class="col-6"><strong>Date:</strong> ${data.created_at_display || data.created_at}</div>
+          <div class="col-6"><strong>Next Visit:</strong> ${data.next_visit || '—'}</div>
+        </div>
+
+        <h6 class="fw-bold text-primary mb-2">Complaints & History</h6>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <small class="text-muted fw-bold d-block">Presenting Complaints:</small>
+            <div class="p-2 bg-light rounded border">${data.presenting_complaints || 'None'}</div>
+          </div>
+          <div class="col-6">
+            <small class="text-muted fw-bold d-block">Associated Complaints:</small>
+            <div class="p-2 bg-light rounded border">${data.associated_complaints || 'None'}</div>
+          </div>
+          <div class="col-6">
+            <small class="text-muted fw-bold d-block">History Present Illness:</small>
+            <div class="p-2 bg-light rounded border">${data.history_present_illness || 'None'}</div>
+          </div>
+          <div class="col-6">
+            <small class="text-muted fw-bold d-block">History Past Illness:</small>
+            <div class="p-2 bg-light rounded border">${data.history_past_illness || 'None'}</div>
+          </div>
+        </div>
+
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <small class="text-muted fw-bold d-block">Co-morbidities:</small>
+            ${comBadges || '<span class="text-muted">None</span>'}
+          </div>
+          <div class="col-6">
+            <small class="text-muted fw-bold d-block">Current Medications:</small>
+            <div class="p-2 bg-light rounded border">${data.current_medications || 'None'}</div>
+          </div>
+        </div>
+
+        <h6 class="fw-bold text-primary mb-2">Vitals & Examination (4x4 Grid)</h6>
+        <table class="table table-bordered table-sm text-center mb-3 text-xs">
+          <tr>
+            <td><strong>MALAM:</strong> ${ex.malam || '—'}</td>
+            <td><strong>NADI:</strong> ${ex.nadi || '—'}</td>
+            <td><strong>JIVHA:</strong> ${ex.jivha || '—'}</td>
+            <td><strong>AKRI:</strong> ${ex.akri || '—'}</td>
+          </tr>
+          <tr>
+            <td><strong>DIET/HABIT:</strong> ${ex.diet_habit || '—'}</td>
+            <td><strong>MUTR:</strong> ${ex.mutr || '—'}</td>
+            <td><strong>SHABDA:</strong> ${ex.shabda || '—'}</td>
+            <td><strong>BP:</strong> ${ex.bp || '—'}</td>
+          </tr>
+          <tr>
+            <td><strong>ADDICTION:</strong> ${ex.addiction || '—'}</td>
+            <td><strong>LMP:</strong> ${ex.lmp || '—'}</td>
+            <td><strong>SHARIRA:</strong> ${ex.sharira || '—'}</td>
+            <td><strong>SPARSHA:</strong> ${ex.sparsha || '—'}</td>
+          </tr>
+          <tr>
+            <td><strong>ALLERGIES:</strong> ${ex.allergies || '—'}</td>
+            <td><strong>PULSE:</strong> ${ex.pulse || '—'}</td>
+            <td><strong>SHIR:</strong> ${ex.shir || '—'}</td>
+            <td><strong>NAKHA:</strong> ${ex.nakha || '—'}</td>
+          </tr>
+        </table>
+
+        <h6 class="fw-bold text-primary mb-2">Medicine Prescribed</h6>
+        <table class="table table-bordered table-sm text-xs mb-3">
+          <thead>
+            <tr class="bg-light"><th>#</th><th>Medicine Name</th><th>Dosage</th><th>Days</th><th>Qty</th><th>Timing/Adjuvant</th></tr>
+          </thead>
+          <tbody>${medsHtml}</tbody>
+        </table>
+
+        <h6 class="fw-bold text-primary mb-2">Treatment Plan</h6>
+        <table class="table table-bordered table-sm text-xs mb-3">
+          <thead>
+            <tr class="bg-light"><th>#</th><th>Treatment Name</th><th>Tailam</th><th>Instructions</th></tr>
+          </thead>
+          <tbody>${treatHtml}</tbody>
+        </table>
+
+        ${data.notes ? `<div class="mb-2"><strong>Notes:</strong> ${data.notes}</div>` : ''}
+      </div>
+    `;
+
+    document.getElementById("modalCaseSheetContent").innerHTML = content;
+
+    document.getElementById("modalPrintBtn").onclick = function() {
+      window.open('/prescription/print/' + data.prescription_no + '/', '_blank');
+    };
+
+    document.getElementById("modalCopyBtn").onclick = function() {
+      // Copy data to form for current NEW prescription, maintaining DEFAULT_PRESC_NO
+      const newPresNo = DEFAULT_PRESC_NO;
+      populateCaseSheetForm(data);
+      document.getElementById("pres_no_input").value = newPresNo;
+    };
+  }
+
+
+  function clearCaseSheetForm() {
+    document.getElementById("p_occupation").value = "";
+    document.getElementById("c_presenting_complaints").value = "";
+    document.getElementById("c_associated_complaints").value = "";
+    document.getElementById("c_history_present_illness").value = "";
+    document.getElementById("c_history_past_illness").value = "";
+
+    document.getElementById("comorbid_diabetes").checked = false;
+    document.getElementById("comorbid_hypertension").checked = false;
+    document.getElementById("comorbid_thyroid").checked = false;
+    document.getElementById("comorbid_cardiac").checked = false;
+    document.getElementById("comorbid_kidney").checked = false;
+    document.getElementById("comorbid_others").value = "";
+    document.getElementById("c_current_medications").value = "";
+
+    const examFields = ["malam", "nadi", "jivha", "akri", "diet_habit", "mutr", "shabda", "bp", "addiction", "lmp", "sharira", "sparsha", "allergies", "pulse", "shir", "nakha"];
+    examFields.forEach(f => {
+      const el = document.getElementById("exam_" + f);
+      if (el) el.value = "";
+    });
+
+    document.getElementById("medContainer").innerHTML = "";
+    addMedRow();
+
+    document.getElementById("treatmentContainer").innerHTML = "";
+    addTreatmentRow();
+
+    document.getElementById("p_notes").value = "";
+    document.getElementById("p_next_visit").value = "{{ today }}";
+  }
+
+  function populateCaseSheetForm(data) {
+    document.getElementById("pres_no_input").value = data.prescription_no;
+    if (data.occupation) document.getElementById("p_occupation").value = data.occupation;
+    document.getElementById("c_presenting_complaints").value = data.presenting_complaints || "";
+    document.getElementById("c_associated_complaints").value = data.associated_complaints || "";
+    document.getElementById("c_history_present_illness").value = data.history_present_illness || "";
+    document.getElementById("c_history_past_illness").value = data.history_past_illness || "";
+
+    if (data.comorbidities) {
+      document.getElementById("comorbid_diabetes").checked = !!data.comorbidities.diabetes;
+      document.getElementById("comorbid_hypertension").checked = !!data.comorbidities.hypertension;
+      document.getElementById("comorbid_thyroid").checked = !!data.comorbidities.thyroid;
+      document.getElementById("comorbid_cardiac").checked = !!data.comorbidities.cardiac;
+      document.getElementById("comorbid_kidney").checked = !!data.comorbidities.kidney;
+      document.getElementById("comorbid_others").value = data.comorbidities.others || "";
+    }
+
+    document.getElementById("c_current_medications").value = data.current_medications || "";
+
+    if (data.examination) {
+      for (const f in data.examination) {
+        const el = document.getElementById("exam_" + f);
+        if (el) el.value = data.examination[f] || "";
+      }
+    }
+
+    // Populate medicines
+    const medContainer = document.getElementById("medContainer");
+    medContainer.innerHTML = "";
+    if (data.items && data.items.length > 0) {
+      data.items.forEach(item => {
+        addMedRow({
+          stock_id: item.stock_id,
+          medicine_name: item.medicine_name,
+          dosage: item.dosage,
+          duration: item.duration_days,
+          quantity: item.quantity,
+          food_timing: item.food_timing,
+          adjuvant: item.adjuvant_id
+        });
+      });
+    } else {
+      addMedRow();
+    }
+
+    // Populate treatment plan
+    const treatContainer = document.getElementById("treatmentContainer");
+    treatContainer.innerHTML = "";
+    if (data.treatment_plan && data.treatment_plan.length > 0) {
+      data.treatment_plan.forEach(t => {
+        addTreatmentRow({
+          treatment_name: t.treatment_name,
+          tailam: t.tailam,
+          instructions: t.instructions
+        });
+      });
+    } else {
+      addTreatmentRow();
+    }
+
+    document.getElementById("p_notes").value = data.notes || "";
+    if (data.next_visit) {
+      document.getElementById("p_next_visit").value = data.next_visit;
+    }
+  }
+
+  function addTreatmentRow(prefill = {}) {
+    const container = document.getElementById("treatmentContainer");
+
+    const row = document.createElement("div");
+    row.className = "row g-2 mb-2 treatment-row align-items-center";
+
+    row.innerHTML = `
+      <div class="col-md-4">
+        <input type="text" name="treatment_name[]" class="form-control" placeholder="e.g. Abhyanga, Nasyam, Vamanam..." value="${prefill.treatment_name || ''}">
+      </div>
+      <div class="col-md-3">
+        <input type="text" name="tailam[]" class="form-control" placeholder="e.g. Dhanwantharam Thailam" value="${prefill.tailam || ''}">
+      </div>
+      <div class="col-md-4">
+        <input type="text" name="treatment_instructions[]" class="form-control" placeholder="Instructions..." value="${prefill.instructions || ''}">
+      </div>
+      <div class="col-md-1 d-flex justify-content-center align-items-center">
+        <div class="delete-icon" style="cursor:pointer;" onclick="this.closest('.treatment-row').remove()">
+          <i class="material-symbols-rounded" style="font-variation-settings:'FILL' 1;">delete</i>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(row);
   }
 
 // =========================
@@ -353,7 +911,7 @@ const STOCKS = {
 // =========================
 // SEARCHABLE MEDICINE ROW
 // =========================
-document.getElementById("addMedBtn").addEventListener("click", addMedRow);
+document.getElementById("addMedBtn").addEventListener("click", () => addMedRow());
 
 function addMedRow(prefill = {}) {
   const container = document.getElementById("medContainer");
@@ -639,12 +1197,36 @@ function addMedRow(prefill = {}) {
     searchInput.value = stock.name;
     medNameInput.value = stock.name;
     unitInput.value = stock.unit;
+  } else if (prefill.medicine_name) {
+    searchInput.value = prefill.medicine_name;
+    medNameInput.value = prefill.medicine_name;
   }
+  if (prefill.dosage) {
+    let matched = false;
+    for (let i = 0; i < dosageSelect.options.length; i++) {
+      if (dosageSelect.options[i].value === prefill.dosage) {
+        dosageSelect.selectedIndex = i;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      dosageSelect.value = "Other";
+      customDoseInput.classList.remove("d-none");
+      customDoseInput.value = prefill.dosage;
+    }
+  }
+  if (prefill.duration) durInput.value = prefill.duration;
+  if (prefill.quantity) qtyInput.value = prefill.quantity;
+  if (prefill.food_timing) foodSel.value = prefill.food_timing;
+  if (prefill.adjuvant) adjSel.value = prefill.adjuvant;
 }
 
-// Initial row
+// Initial rows
 addMedRow();
+addTreatmentRow();
 </script>
+
 
 </body>
 </html>

@@ -10,68 +10,213 @@
 
 <div class="container-fluid py-4">
 
-  <div class="mb-4">
-    <h4 class="fw-bold mb-1">Prescription Details</h4>
-    <p class="text-muted text-sm mb-0">
-      View prescription information.
-    </p>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-1">Prescription & Case Sheet Details</h4>
+      <p class="text-muted text-sm mb-0">
+        Record #{{ prescription.prescription_no }} — {{ prescription.patient.patient_name }}
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'prescriptionmgmt:print' prescription.prescription_no %}" target="_blank" class="btn btn-success fw-bold">
+        <i class="material-symbols-rounded align-middle me-1">print</i> Print Case Sheet
+      </a>
+      <a href="{% url 'reportmgmt:prescription_edit' prescription.id %}" class="btn btn-outline-primary fw-bold">
+        <i class="material-symbols-rounded align-middle me-1">edit</i> Edit
+      </a>
+      <a href="{% url 'reportmgmt:prescription_list' %}" class="btn btn-light fw-bold">
+        Back to List
+      </a>
+    </div>
   </div>
 
-  <div class="card shadow-sm border-0">
+  <!-- PATIENT & CASE SHEET CARD -->
+  <div class="card shadow-sm border-0 mb-4">
     <div class="card-body">
+      <h5 class="fw-bold text-primary mb-3"><i class="material-symbols-rounded align-middle me-1">badge</i> Patient Header</h5>
+      <div class="row g-3 text-sm">
+        <div class="col-md-3"><strong>Prescription No:</strong> <span class="badge bg-primary text-white">{{ prescription.prescription_no }}</span></div>
+        <div class="col-md-3"><strong>Date:</strong> {{ prescription.created_at|date:"d M Y H:i" }}</div>
+        <div class="col-md-3"><strong>Patient Name:</strong> {{ prescription.patient.patient_name }} ({{ prescription.patient.patient_unique_id }})</div>
+        <div class="col-md-3"><strong>Age / Gender:</strong> {{ prescription.patient.age }} Y / {{ prescription.patient.get_gender_display }}</div>
+        <div class="col-md-3"><strong>Occupation:</strong> {{ prescription.occupation|default:"—" }}</div>
+        <div class="col-md-3"><strong>Contact No:</strong> {{ prescription.patient.phone|default:"—" }}</div>
+        <div class="col-md-3"><strong>Doctor:</strong> {{ prescription.doctor.get_full_name|default:prescription.doctor }}</div>
+        <div class="col-md-3"><strong>Next Visit:</strong> {{ prescription.next_visit|date:"d M Y"|default:"—" }}</div>
+      </div>
+    </div>
+  </div>
 
-      <div class="row mb-3">
+  <!-- CLINICAL COMPLAINTS & HISTORY -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <h5 class="fw-bold text-primary mb-3"><i class="material-symbols-rounded align-middle me-1">clinical_notes</i> Clinical Complaints & History</h5>
+      <div class="row g-3 text-sm">
         <div class="col-md-6">
-          <strong>Prescription No:</strong> {{ prescription.prescription_no }}
+          <strong class="d-block mb-1 text-muted">Presenting Complaints:</strong>
+          <div class="p-3 bg-light rounded border">{{ prescription.presenting_complaints|linebreaksbr|default:"None specified." }}</div>
         </div>
         <div class="col-md-6">
-          <strong>Date:</strong> {{ prescription.created_at|date:"d M Y" }}
+          <strong class="d-block mb-1 text-muted">Associated Complaints:</strong>
+          <div class="p-3 bg-light rounded border">{{ prescription.associated_complaints|linebreaksbr|default:"None specified." }}</div>
+        </div>
+        <div class="col-md-6">
+          <strong class="d-block mb-1 text-muted">History of Present Illness:</strong>
+          <div class="p-3 bg-light rounded border">{{ prescription.history_present_illness|linebreaksbr|default:"None specified." }}</div>
+        </div>
+        <div class="col-md-6">
+          <strong class="d-block mb-1 text-muted">History of Past Illness:</strong>
+          <div class="p-3 bg-light rounded border">{{ prescription.history_past_illness|linebreaksbr|default:"None specified." }}</div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="row mb-3">
+  <!-- CO-MORBIDITIES & CURRENT MEDS -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <h5 class="fw-bold text-primary mb-3"><i class="material-symbols-rounded align-middle me-1">health_metrics</i> Co-morbidities & Current Medications</h5>
+      <div class="row g-3 text-sm">
         <div class="col-md-6">
-          <strong>Patient:</strong> {{ prescription.patient.patient_name }}
+          <strong class="d-block mb-2 text-muted">Co-morbidities:</strong>
+          <div class="d-flex flex-wrap gap-2 mb-2">
+            <span class="badge {% if prescription.comorbid_diabetes %}bg-danger{% else %}bg-secondary opacity-50{% endif %}">Diabetes</span>
+            <span class="badge {% if prescription.comorbid_hypertension %}bg-danger{% else %}bg-secondary opacity-50{% endif %}">Hypertension</span>
+            <span class="badge {% if prescription.comorbid_thyroid %}bg-danger{% else %}bg-secondary opacity-50{% endif %}">Thyroid</span>
+            <span class="badge {% if prescription.comorbid_cardiac %}bg-danger{% else %}bg-secondary opacity-50{% endif %}">Cardiac</span>
+            <span class="badge {% if prescription.comorbid_kidney %}bg-danger{% else %}bg-secondary opacity-50{% endif %}">Kidney</span>
+          </div>
+          {% if prescription.comorbid_others %}
+            <div><strong>Others:</strong> {{ prescription.comorbid_others }}</div>
+          {% endif %}
         </div>
         <div class="col-md-6">
-          <strong>Doctor:</strong> {{ prescription.doctor }}
+          <strong class="d-block mb-1 text-muted">Current Medications:</strong>
+          <div class="p-3 bg-light rounded border">{{ prescription.current_medications|linebreaksbr|default:"None specified." }}</div>
         </div>
       </div>
+    </div>
+  </div>
 
+  <!-- VITALS & EXAMINATION GRID -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <h5 class="fw-bold text-primary mb-3"><i class="material-symbols-rounded align-middle me-1">stethoscope</i> Vitals & Ayurvedic Examination</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center text-sm mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th width="25%">ASHTASTHANA / GENERAL</th>
+              <th width="25%">EXAMINATION</th>
+              <th width="25%">EXAMINATION</th>
+              <th width="25%">VITALS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>MALAM:</strong> {{ prescription.exam_malam|default:"—" }}</td>
+              <td><strong>NADI:</strong> {{ prescription.exam_nadi|default:"—" }}</td>
+              <td><strong>JIVHA:</strong> {{ prescription.exam_jivha|default:"—" }}</td>
+              <td><strong>AKRI:</strong> {{ prescription.exam_akri|default:"—" }}</td>
+            </tr>
+            <tr>
+              <td><strong>DIET/HABIT:</strong> {{ prescription.exam_diet_habit|default:"—" }}</td>
+              <td><strong>MUTR:</strong> {{ prescription.exam_mutr|default:"—" }}</td>
+              <td><strong>SHABDA:</strong> {{ prescription.exam_shabda|default:"—" }}</td>
+              <td><strong>BP:</strong> {{ prescription.exam_bp|default:"—" }}</td>
+            </tr>
+            <tr>
+              <td><strong>ADDICTION:</strong> {{ prescription.exam_addiction|default:"—" }}</td>
+              <td><strong>LMP:</strong> {{ prescription.exam_lmp|default:"—" }}</td>
+              <td><strong>SHARIRA:</strong> {{ prescription.exam_sharira|default:"—" }}</td>
+              <td><strong>SPARSHA:</strong> {{ prescription.exam_sparsha|default:"—" }}</td>
+            </tr>
+            <tr>
+              <td><strong>ALLERGIES:</strong> {{ prescription.exam_allergies|default:"—" }}</td>
+              <td><strong>PULSE:</strong> {{ prescription.exam_pulse|default:"—" }}</td>
+              <td><strong>SHIR:</strong> {{ prescription.exam_shir|default:"—" }}</td>
+              <td><strong>NAKHA:</strong> {{ prescription.exam_nakha|default:"—" }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEDICINES PRESCRIBED -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <h5 class="fw-bold text-primary mb-3"><i class="material-symbols-rounded align-middle me-1">medication</i> Medicines Prescribed</h5>
       <div class="table-responsive">
         <table class="table align-items-center mb-0">
-          <thead>
+          <thead class="bg-light">
             <tr>
-              <th>#</th>
-              <th>Medicine</th>
-              <th>Dosage</th>
-              <th>Days</th>
-              <th>Qty</th>
-              <th>Instructions</th>
+              <th width="8%">#</th>
+              <th width="35%">Medicine Name</th>
+              <th width="15%">Dosage</th>
+              <th width="12%">Duration</th>
+              <th width="10%">Qty</th>
+              <th width="20%">Adjuvant / Instructions</th>
             </tr>
           </thead>
           <tbody>
             {% for item in prescription.items.all %}
             <tr>
               <td>{{ forloop.counter }}</td>
-              <td>{{ item.medicine_name }}</td>
-              <td>{{ item.dosage }}</td>
-              <td>{{ item.duration_days }}</td>
+              <td class="fw-bold">{{ item.medicine_name }}</td>
+              <td>{{ item.dosage|default:"—" }}</td>
+              <td>{{ item.duration_days }} days</td>
               <td>{{ item.quantity }}</td>
-              <td>{{ item.instructions }}</td>
+              <td>{% if item.adjuvant %}{{ item.adjuvant.name }}{% else %}{{ item.instructions|default:"—" }}{% endif %}</td>
             </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-center text-muted py-3">No medicines prescribed.</td></tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
-
-      <div class="mt-3">
-        <strong>Notes:</strong>
-        <p>{{ prescription.notes }}</p>
-      </div>
-
     </div>
   </div>
+
+  <!-- TREATMENT PLAN -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <h5 class="fw-bold text-primary mb-3"><i class="material-symbols-rounded align-middle me-1">spa</i> Treatment Plan</h5>
+      <div class="table-responsive">
+        <table class="table align-items-center mb-0">
+          <thead class="bg-light">
+            <tr>
+              <th width="8%">#</th>
+              <th width="35%">Treatment Name</th>
+              <th width="25%">Tailam / Medicine</th>
+              <th width="32%">Instructions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for t in prescription.treatment_items.all %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td class="fw-bold">{{ t.treatment_name }}</td>
+              <td>{{ t.tailam|default:"—" }}</td>
+              <td>{{ t.instructions|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="text-align:center; color:#666;">No treatment plan specified.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {% if prescription.notes %}
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <h6 class="fw-bold text-dark mb-2">Doctor Notes</h6>
+      <p class="mb-0 text-sm text-secondary">{{ prescription.notes }}</p>
+    </div>
+  </div>
+  {% endif %}
 
 </div>
 
@@ -79,3 +224,4 @@
 {% include "includes/script.html" %}
 </body>
 </html>
+
