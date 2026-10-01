@@ -122,7 +122,7 @@
           <table class="table table-bordered align-middle text-center mb-0">
             <thead class="bg-light">
               <tr>
-                <th width="25%">ASHTASTHANA / GENERAL</th>
+                <th width="25%">EXAMINATION</th>
                 <th width="25%">EXAMINATION</th>
                 <th width="25%">EXAMINATION</th>
                 <th width="25%">VITALS</th>
@@ -131,27 +131,27 @@
             <tbody>
               <tr>
                 <td><small class="fw-bold d-block text-start text-muted">MALAM</small><input type="text" name="exam_malam" class="form-control form-control-sm text-center" value="{{ prescription.exam_malam|default:'' }}"></td>
-                <td><small class="fw-bold d-block text-start text-muted">NADI</small><input type="text" name="exam_nadi" class="form-control form-control-sm text-center" value="{{ prescription.exam_nadi|default:'' }}"></td>
-                <td><small class="fw-bold d-block text-start text-muted">JIVHA</small><input type="text" name="exam_jivha" class="form-control form-control-sm text-center" value="{{ prescription.exam_jivha|default:'' }}"></td>
-                <td><small class="fw-bold d-block text-start text-muted">AKRI</small><input type="text" name="exam_akri" class="form-control form-control-sm text-center" value="{{ prescription.exam_akri|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">MUTHRA</small><input type="text" name="exam_muthra" class="form-control form-control-sm text-center" value="{{ prescription.get_muthra|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">NIDRA</small><input type="text" name="exam_nidra" class="form-control form-control-sm text-center" value="{{ prescription.get_nidra|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">AGNI</small><input type="text" name="exam_agni" class="form-control form-control-sm text-center" value="{{ prescription.get_agni|default:'' }}"></td>
               </tr>
               <tr>
-                <td><small class="fw-bold d-block text-start text-muted">DIET/HABIT</small><input type="text" name="exam_diet_habit" class="form-control form-control-sm text-center" value="{{ prescription.exam_diet_habit|default:'' }}"></td>
-                <td><small class="fw-bold d-block text-start text-muted">MUTR</small><input type="text" name="exam_mutr" class="form-control form-control-sm text-center" value="{{ prescription.exam_mutr|default:'' }}"></td>
-                <td><small class="fw-bold d-block text-start text-muted">SHABDA</small><input type="text" name="exam_shabda" class="form-control form-control-sm text-center" value="{{ prescription.exam_shabda|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">DIET HABIT</small><input type="text" name="exam_diet_habit" class="form-control form-control-sm text-center" value="{{ prescription.exam_diet_habit|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">HEIGHT</small><input type="text" name="exam_height" class="form-control form-control-sm text-center" value="{{ prescription.get_height|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">WEIGHT</small><input type="text" name="exam_weight" class="form-control form-control-sm text-center" value="{{ prescription.get_weight|default:'' }}"></td>
                 <td><small class="fw-bold d-block text-start text-muted">BP</small><input type="text" name="exam_bp" class="form-control form-control-sm text-center" value="{{ prescription.exam_bp|default:'' }}"></td>
               </tr>
               <tr>
                 <td><small class="fw-bold d-block text-start text-muted">ADDICTION</small><input type="text" name="exam_addiction" class="form-control form-control-sm text-center" value="{{ prescription.exam_addiction|default:'' }}"></td>
                 <td><small class="fw-bold d-block text-start text-muted">LMP</small><input type="text" name="exam_lmp" class="form-control form-control-sm text-center" value="{{ prescription.exam_lmp|default:'' }}"></td>
-                <td><small class="fw-bold d-block text-start text-muted">SHARIRA</small><input type="text" name="exam_sharira" class="form-control form-control-sm text-center" value="{{ prescription.exam_sharira|default:'' }}"></td>
-                <td><small class="fw-bold d-block text-start text-muted">SPARSHA</small><input type="text" name="exam_sparsha" class="form-control form-control-sm text-center" value="{{ prescription.exam_sparsha|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">OG HISTORY</small><input type="text" name="exam_og_history" class="form-control form-control-sm text-center" value="{{ prescription.get_og_history|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">PRAKRITHI</small><input type="text" name="exam_prakrithi" class="form-control form-control-sm text-center" value="{{ prescription.get_prakrithi|default:'' }}"></td>
               </tr>
               <tr>
                 <td><small class="fw-bold d-block text-start text-muted">ALLERGIES</small><input type="text" name="exam_allergies" class="form-control form-control-sm text-center" value="{{ prescription.exam_allergies|default:'' }}"></td>
                 <td><small class="fw-bold d-block text-start text-muted">PULSE</small><input type="text" name="exam_pulse" class="form-control form-control-sm text-center" value="{{ prescription.exam_pulse|default:'' }}"></td>
-                <td><small class="fw-bold d-block text-start text-muted">SHIR</small><input type="text" name="exam_shir" class="form-control form-control-sm text-center" value="{{ prescription.exam_shir|default:'' }}"></td>
-                <td><small class="fw-bold d-block text-start text-muted">NAKHA</small><input type="text" name="exam_nakha" class="form-control form-control-sm text-center" value="{{ prescription.exam_nakha|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">TEMP</small><input type="text" name="exam_temp" class="form-control form-control-sm text-center" value="{{ prescription.get_temp|default:'' }}"></td>
+                <td><small class="fw-bold d-block text-start text-muted">RR</small><input type="text" name="exam_rr" class="form-control form-control-sm text-center" value="{{ prescription.get_rr|default:'' }}"></td>
               </tr>
             </tbody>
           </table>

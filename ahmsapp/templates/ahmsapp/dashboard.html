@@ -289,7 +289,7 @@
               <table class="table table-bordered align-middle text-center mb-0">
                 <thead class="bg-light">
                   <tr>
-                    <th width="25%">ASHTASTHANA / GENERAL</th>
+                    <th width="25%">EXAMINATION</th>
                     <th width="25%">EXAMINATION</th>
                     <th width="25%">EXAMINATION</th>
                     <th width="25%">VITALS</th>
@@ -302,30 +302,30 @@
                       <input type="text" name="exam_malam" id="exam_malam" class="form-control form-control-sm text-center">
                     </td>
                     <td>
-                      <small class="fw-bold d-block text-start text-muted">NADI</small>
-                      <input type="text" name="exam_nadi" id="exam_nadi" class="form-control form-control-sm text-center">
+                      <small class="fw-bold d-block text-start text-muted">MUTHRA</small>
+                      <input type="text" name="exam_muthra" id="exam_muthra" class="form-control form-control-sm text-center">
                     </td>
                     <td>
-                      <small class="fw-bold d-block text-start text-muted">JIVHA</small>
-                      <input type="text" name="exam_jivha" id="exam_jivha" class="form-control form-control-sm text-center">
+                      <small class="fw-bold d-block text-start text-muted">NIDRA</small>
+                      <input type="text" name="exam_nidra" id="exam_nidra" class="form-control form-control-sm text-center">
                     </td>
                     <td>
-                      <small class="fw-bold d-block text-start text-muted">AKRI</small>
-                      <input type="text" name="exam_akri" id="exam_akri" class="form-control form-control-sm text-center">
+                      <small class="fw-bold d-block text-start text-muted">AGNI</small>
+                      <input type="text" name="exam_agni" id="exam_agni" class="form-control form-control-sm text-center">
                     </td>
                   </tr>
                   <tr>
                     <td>
-                      <small class="fw-bold d-block text-start text-muted">DIET/HABIT</small>
+                      <small class="fw-bold d-block text-start text-muted">DIET HABIT</small>
                       <input type="text" name="exam_diet_habit" id="exam_diet_habit" class="form-control form-control-sm text-center">
                     </td>
                     <td>
-                      <small class="fw-bold d-block text-start text-muted">MUTR</small>
-                      <input type="text" name="exam_mutr" id="exam_mutr" class="form-control form-control-sm text-center">
+                      <small class="fw-bold d-block text-start text-muted">HEIGHT</small>
+                      <input type="text" name="exam_height" id="exam_height" class="form-control form-control-sm text-center">
                     </td>
                     <td>
-                      <small class="fw-bold d-block text-start text-muted">SHABDA</small>
-                      <input type="text" name="exam_shabda" id="exam_shabda" class="form-control form-control-sm text-center">
+                      <small class="fw-bold d-block text-start text-muted">WEIGHT</small>
+                      <input type="text" name="exam_weight" id="exam_weight" class="form-control form-control-sm text-center">
                     </td>
                     <td>
                       <small class="fw-bold d-block text-start text-muted">BP</small>
@@ -342,12 +342,12 @@
                       <input type="text" name="exam_lmp" id="exam_lmp" class="form-control form-control-sm text-center">
                     </td>
                     <td>
-                      <small class="fw-bold d-block text-start text-muted">SHARIRA</small>
-                      <input type="text" name="exam_sharira" id="exam_sharira" class="form-control form-control-sm text-center">
+                      <small class="fw-bold d-block text-start text-muted">OG HISTORY</small>
+                      <input type="text" name="exam_og_history" id="exam_og_history" class="form-control form-control-sm text-center">
                     </td>
                     <td>
-                      <small class="fw-bold d-block text-start text-muted">SPARSHA</small>
-                      <input type="text" name="exam_sparsha" id="exam_sparsha" class="form-control form-control-sm text-center">
+                      <small class="fw-bold d-block text-start text-muted">PRAKRITHI</small>
+                      <input type="text" name="exam_prakrithi" id="exam_prakrithi" class="form-control form-control-sm text-center">
                     </td>
                   </tr>
                   <tr>
@@ -360,12 +360,12 @@
                       <input type="text" name="exam_pulse" id="exam_pulse" class="form-control form-control-sm text-center" placeholder="e.g. 72 bpm">
                     </td>
                     <td>
-                      <small class="fw-bold d-block text-start text-muted">SHIR</small>
-                      <input type="text" name="exam_shir" id="exam_shir" class="form-control form-control-sm text-center">
+                      <small class="fw-bold d-block text-start text-muted">TEMP</small>
+                      <input type="text" name="exam_temp" id="exam_temp" class="form-control form-control-sm text-center">
                     </td>
                     <td>
-                      <small class="fw-bold d-block text-start text-muted">NAKHA</small>
-                      <input type="text" name="exam_nakha" id="exam_nakha" class="form-control form-control-sm text-center">
+                      <small class="fw-bold d-block text-start text-muted">RR</small>
+                      <input type="text" name="exam_rr" id="exam_rr" class="form-control form-control-sm text-center">
                     </td>
                   </tr>
                 </tbody>
@@ -711,27 +711,27 @@
         <table class="table table-bordered table-sm text-center mb-3 text-xs">
           <tr>
             <td><strong>MALAM:</strong> ${ex.malam || '—'}</td>
-            <td><strong>NADI:</strong> ${ex.nadi || '—'}</td>
-            <td><strong>JIVHA:</strong> ${ex.jivha || '—'}</td>
-            <td><strong>AKRI:</strong> ${ex.akri || '—'}</td>
+            <td><strong>MUTHRA:</strong> ${ex.muthra || ex.mutr || '—'}</td>
+            <td><strong>NIDRA:</strong> ${ex.nidra || ex.nadi || '—'}</td>
+            <td><strong>AGNI:</strong> ${ex.agni || ex.jivha || '—'}</td>
           </tr>
           <tr>
-            <td><strong>DIET/HABIT:</strong> ${ex.diet_habit || '—'}</td>
-            <td><strong>MUTR:</strong> ${ex.mutr || '—'}</td>
-            <td><strong>SHABDA:</strong> ${ex.shabda || '—'}</td>
+            <td><strong>DIET HABIT:</strong> ${ex.diet_habit || '—'}</td>
+            <td><strong>HEIGHT:</strong> ${ex.height || ex.akri || '—'}</td>
+            <td><strong>WEIGHT:</strong> ${ex.weight || ex.shabda || '—'}</td>
             <td><strong>BP:</strong> ${ex.bp || '—'}</td>
           </tr>
           <tr>
             <td><strong>ADDICTION:</strong> ${ex.addiction || '—'}</td>
             <td><strong>LMP:</strong> ${ex.lmp || '—'}</td>
-            <td><strong>SHARIRA:</strong> ${ex.sharira || '—'}</td>
-            <td><strong>SPARSHA:</strong> ${ex.sparsha || '—'}</td>
+            <td><strong>OG HISTORY:</strong> ${ex.og_history || ex.sharira || '—'}</td>
+            <td><strong>PRAKRITHI:</strong> ${ex.prakrithi || ex.sparsha || '—'}</td>
           </tr>
           <tr>
             <td><strong>ALLERGIES:</strong> ${ex.allergies || '—'}</td>
             <td><strong>PULSE:</strong> ${ex.pulse || '—'}</td>
-            <td><strong>SHIR:</strong> ${ex.shir || '—'}</td>
-            <td><strong>NAKHA:</strong> ${ex.nakha || '—'}</td>
+            <td><strong>TEMP:</strong> ${ex.temp || ex.shir || '—'}</td>
+            <td><strong>RR:</strong> ${ex.rr || ex.nakha || '—'}</td>
           </tr>
         </table>
 
@@ -785,7 +785,7 @@
     document.getElementById("comorbid_others").value = "";
     document.getElementById("c_current_medications").value = "";
 
-    const examFields = ["malam", "nadi", "jivha", "akri", "diet_habit", "mutr", "shabda", "bp", "addiction", "lmp", "sharira", "sparsha", "allergies", "pulse", "shir", "nakha"];
+    const examFields = ["malam", "muthra", "nidra", "agni", "diet_habit", "height", "weight", "bp", "addiction", "lmp", "og_history", "prakrithi", "allergies", "pulse", "temp", "rr", "nadi", "jivha", "akri", "mutr", "shabda", "sharira", "sparsha", "shir", "nakha"];
     examFields.forEach(f => {
       const el = document.getElementById("exam_" + f);
       if (el) el.value = "";

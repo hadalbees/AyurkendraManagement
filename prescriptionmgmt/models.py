@@ -30,7 +30,7 @@ class Prescription(models.Model):
     comorbid_others = models.CharField(max_length=255, blank=True, null=True)
     current_medications = models.TextField(blank=True, null=True)
 
-    # Vitals / Ashtasthana & Physical Exam Grid (16 fields)
+    # Vitals / Ashtasthana & Physical Exam Grid (16 fields matching case sheet)
     exam_malam = models.CharField(max_length=100, blank=True, null=True)
     exam_nadi = models.CharField(max_length=100, blank=True, null=True)
     exam_jivha = models.CharField(max_length=100, blank=True, null=True)
@@ -50,6 +50,53 @@ class Prescription(models.Model):
     exam_pulse = models.CharField(max_length=100, blank=True, null=True)
     exam_shir = models.CharField(max_length=100, blank=True, null=True)
     exam_nakha = models.CharField(max_length=100, blank=True, null=True)
+
+    # Additional fields to match exact case sheet image
+    exam_muthra = models.CharField(max_length=100, blank=True, null=True)
+    exam_nidra = models.CharField(max_length=100, blank=True, null=True)
+    exam_agni = models.CharField(max_length=100, blank=True, null=True)
+    exam_height = models.CharField(max_length=100, blank=True, null=True)
+    exam_weight = models.CharField(max_length=100, blank=True, null=True)
+    exam_og_history = models.CharField(max_length=100, blank=True, null=True)
+    exam_prakrithi = models.CharField(max_length=100, blank=True, null=True)
+    exam_temp = models.CharField(max_length=100, blank=True, null=True)
+    exam_rr = models.CharField(max_length=100, blank=True, null=True)
+
+    @property
+    def get_muthra(self):
+        return self.exam_muthra or self.exam_mutr or ""
+
+    @property
+    def get_nidra(self):
+        return self.exam_nidra or self.exam_nadi or ""
+
+    @property
+    def get_agni(self):
+        return self.exam_agni or self.exam_jivha or ""
+
+    @property
+    def get_height(self):
+        return self.exam_height or self.exam_akri or ""
+
+    @property
+    def get_weight(self):
+        return self.exam_weight or self.exam_shabda or ""
+
+    @property
+    def get_og_history(self):
+        return self.exam_og_history or self.exam_sharira or ""
+
+    @property
+    def get_prakrithi(self):
+        return self.exam_prakrithi or self.exam_sparsha or ""
+
+    @property
+    def get_temp(self):
+        return self.exam_temp or self.exam_shir or ""
+
+    @property
+    def get_rr(self):
+        return self.exam_rr or self.exam_nakha or ""
 
     notes = models.TextField(blank=True, null=True)
     next_visit = models.DateField(null=True, blank=True)

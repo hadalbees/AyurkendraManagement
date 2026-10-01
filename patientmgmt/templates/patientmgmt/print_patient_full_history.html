@@ -1,0 +1,311 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Complete Medical History - {{ patient.patient_name }} ({{ patient.patient_unique_id }})</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 8mm 10mm 8mm 10mm;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            font-size: 11px;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 0;
+            line-height: 1.3;
+            background: #fff;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2.5px solid #0d5c3a;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
+        .logo-area {
+            width: 25%;
+        }
+
+        .logo {
+            max-height: 55px;
+            max-width: 160px;
+            object-fit: contain;
+        }
+
+        .center-area {
+            flex: 1;
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        .center-area h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 800;
+            color: #0d5c3a;
+            letter-spacing: 0.3px;
+        }
+
+        .center-area p {
+            margin: 2px 0 0 0;
+            font-size: 10.5px;
+            color: #444;
+        }
+
+        .right-area {
+            width: 25%;
+            text-align: right;
+            font-size: 10px;
+            color: #333;
+        }
+
+        .title-bar {
+            text-align: center;
+            background: #0d5c3a;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 4px 0;
+            margin: 8px 0 12px 0;
+            border-radius: 3px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .grid-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            font-size: 11px;
+        }
+
+        .grid-table td, .grid-table th {
+            border: 1px solid #ddd;
+            padding: 5px 8px;
+            vertical-align: top;
+        }
+
+        .grid-table th {
+            background: #f4f6f8;
+            font-weight: 700;
+            color: #0d5c3a;
+            text-transform: uppercase;
+            font-size: 10px;
+        }
+
+        .section-header {
+            background: #e6f4ea;
+            color: #0d5c3a;
+            font-weight: bold;
+            font-size: 12px;
+            padding: 5px 8px;
+            border-left: 4px solid #0d5c3a;
+            margin: 15px 0 8px 0;
+            text-transform: uppercase;
+        }
+
+        .badge-status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9.5px;
+            font-weight: bold;
+        }
+        .bg-success { background: #d1e7dd; color: #0f5132; }
+        .bg-primary { background: #cfe2ff; color: #084298; }
+        .bg-warning { background: #fff3cd; color: #664d03; }
+
+        @media print {
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+    <div class="logo-area">
+        {% if hospital.hospital_logo %}
+            <img src="{{ hospital.hospital_logo.url }}" class="logo">
+        {% else %}
+            <strong style="font-size: 16px; color:#0d5c3a;">{{ hospital.hospital_name|default:"AYURKENDRA MANAGEMENT" }}</strong>
+        {% endif %}
+    </div>
+    <div class="center-area">
+        <h2>{{ hospital.hospital_name|default:"AYURKENDRA MANAGEMENT" }}</h2>
+        <p>{{ hospital.address }}</p>
+        <p>Ph: {{ hospital.phone }} | Email: {{ hospital.email|default:"info@ayurkendra.com" }}</p>
+    </div>
+    <div class="right-area">
+        <p><strong>Report Date:</strong> {{ today|date:"d-m-Y" }}</p>
+        <p><strong>UHID:</strong> {{ patient.patient_unique_id }}</p>
+    </div>
+</div>
+
+<div class="title-bar">PATIENT COMPREHENSIVE MEDICAL HISTORY REPORT</div>
+
+<!-- PATIENT SUMMARY TABLE -->
+<table class="grid-table">
+    <tr>
+        <td width="25%"><strong>Patient Name:</strong><br>{{ patient.patient_name }}</td>
+        <td width="25%"><strong>UHID / ID:</strong><br>{{ patient.patient_unique_id }}</td>
+        <td width="25%"><strong>Age / Gender:</strong><br>{{ patient.age }} Y / {{ patient.get_gender_display }}</td>
+        <td width="25%"><strong>Contact Phone:</strong><br>{{ patient.phone|default:"—" }}</td>
+    </tr>
+    <tr>
+        <td><strong>Patient Type:</strong><br>{{ patient.get_patient_type_display }}</td>
+        <td><strong>First Visit Date:</strong><br>{{ patient.visit_date|date:"d-m-Y" }}</td>
+        <td><strong>Consultant Doctor:</strong><br>{{ patient.consultant_doctor|default:"—" }}</td>
+        <td><strong>Department:</strong><br>{{ patient.department|default:"—" }}</td>
+    </tr>
+    {% if patient.address %}
+    <tr>
+        <td colspan="4"><strong>Address:</strong> {{ patient.address }}</td>
+    </tr>
+    {% endif %}
+</table>
+
+<!-- 1. CASE SHEETS & PRESCRIPTIONS -->
+<div class="section-header">1. Prescriptions & Case Sheets History</div>
+<table class="grid-table">
+    <thead>
+        <tr>
+            <th width="8%">S.No</th>
+            <th width="15%">Presc No</th>
+            <th width="12%">Date</th>
+            <th width="20%">Doctor</th>
+            <th width="45%">Complaints & Diagnosis</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in prescriptions %}
+        <tr>
+            <td style="text-align: center;">{{ forloop.counter }}</td>
+            <td><strong>{{ p.prescription_no }}</strong></td>
+            <td>{{ p.created_at|date:"d-m-Y" }}</td>
+            <td>{{ p.doctor.get_full_name|default:p.doctor.username|default:"Doctor" }}</td>
+            <td>
+                {% if p.presenting_complaints %}<strong>Complaints:</strong> {{ p.presenting_complaints|truncatechars:120 }}<br>{% endif %}
+                {% if p.history_present_illness %}<strong>Illness:</strong> {{ p.history_present_illness|truncatechars:120 }}{% endif %}
+                {% if not p.presenting_complaints and not p.history_present_illness %}—{% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" style="text-align:center; color:#777;">No prescription records found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- 2. INPATIENT ADMISSIONS & DISCHARGE SUMMARIES -->
+<div class="section-header">2. Inpatient Admissions & Discharge Summaries</div>
+<table class="grid-table">
+    <thead>
+        <tr>
+            <th width="8%">S.No</th>
+            <th width="15%">Summary No</th>
+            <th width="15%">Admit Date</th>
+            <th width="15%">Discharge Date</th>
+            <th width="22%">Doctor</th>
+            <th width="25%">Condition at Discharge</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ds in discharge_summaries %}
+        <tr>
+            <td style="text-align: center;">{{ forloop.counter }}</td>
+            <td><strong>{{ ds.summary_no }}</strong></td>
+            <td>{{ ds.admission_date|date:"d-m-Y" }}</td>
+            <td>{{ ds.discharge_date|date:"d-m-Y" }}</td>
+            <td>{{ ds.consultant_doctor }}</td>
+            <td><span class="badge-status bg-success">{{ ds.get_condition_at_discharge_display }}</span></td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" style="text-align:center; color:#777;">No inpatient discharge summaries found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- 3. LAB & ATTACHED PATIENT REPORTS -->
+<div class="section-header">3. Patient Reports & Laboratory Documents</div>
+<table class="grid-table">
+    <thead>
+        <tr>
+            <th width="8%">S.No</th>
+            <th width="35%">Report Title</th>
+            <th width="20%">Type</th>
+            <th width="15%">Report Date</th>
+            <th width="22%">Notes</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in reports %}
+        <tr>
+            <td style="text-align: center;">{{ forloop.counter }}</td>
+            <td><strong>{{ r.report_title }}</strong></td>
+            <td>{{ r.get_report_type_display }}</td>
+            <td>{{ r.report_date|date:"d-m-Y" }}</td>
+            <td>{{ r.notes|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" style="text-align:center; color:#777;">No laboratory or attached documents uploaded.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- 4. BILLING SUMMARY -->
+<div class="section-header">4. Billing History</div>
+<table class="grid-table">
+    <thead>
+        <tr>
+            <th width="8%">S.No</th>
+            <th width="20%">Bill Type</th>
+            <th width="25%">Bill No</th>
+            <th width="20%">Date</th>
+            <th width="15%">Amount</th>
+            <th width="12%">Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for b in bills %}
+        <tr>
+            <td style="text-align: center;">{{ forloop.counter }}</td>
+            <td>{{ b.type }}</td>
+            <td><strong>{{ b.bill_no }}</strong></td>
+            <td>{{ b.date|date:"d-m-Y" }}</td>
+            <td><strong>₹ {{ b.total }}</strong></td>
+            <td><span class="badge-status {% if b.status == 'Paid' %}bg-success{% else %}bg-warning{% endif %}">{{ b.status }}</span></td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="6" style="text-align:center; color:#777;">No billing records found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="no-print" style="text-align:center; margin-top:25px;">
+    <button onclick="window.print()" style="padding:8px 20px; background:#0d5c3a; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:13px;">🖨 Print Full Medical Report</button>
+    <button onclick="window.close()" style="padding:8px 20px; background:#6c757d; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:13px; margin-left:10px;">Close</button>
+</div>
+
+</body>
+</html>

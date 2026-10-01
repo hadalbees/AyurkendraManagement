@@ -111,27 +111,27 @@ table.grid-table th { background: #f0f0f0; text-align: left; font-weight: bold; 
 <table class="grid-table" style="text-align: center;">
   <tr>
     <td width="25%"><strong>MALAM:</strong> {{ prescription.exam_malam|default:"—" }}</td>
-    <td width="25%"><strong>NADI:</strong> {{ prescription.exam_nadi|default:"—" }}</td>
-    <td width="25%"><strong>JIVHA:</strong> {{ prescription.exam_jivha|default:"—" }}</td>
-    <td width="25%"><strong>AKRI:</strong> {{ prescription.exam_akri|default:"—" }}</td>
+    <td width="25%"><strong>MUTHRA:</strong> {{ prescription.get_muthra|default:"—" }}</td>
+    <td width="25%"><strong>NIDRA:</strong> {{ prescription.get_nidra|default:"—" }}</td>
+    <td width="25%"><strong>AGNI:</strong> {{ prescription.get_agni|default:"—" }}</td>
   </tr>
   <tr>
-    <td><strong>DIET/HABIT:</strong> {{ prescription.exam_diet_habit|default:"—" }}</td>
-    <td><strong>MUTR:</strong> {{ prescription.exam_mutr|default:"—" }}</td>
-    <td><strong>SHABDA:</strong> {{ prescription.exam_shabda|default:"—" }}</td>
+    <td><strong>DIET HABIT:</strong> {{ prescription.exam_diet_habit|default:"—" }}</td>
+    <td><strong>HEIGHT:</strong> {{ prescription.get_height|default:"—" }}</td>
+    <td><strong>WEIGHT:</strong> {{ prescription.get_weight|default:"—" }}</td>
     <td><strong>BP:</strong> {{ prescription.exam_bp|default:"—" }}</td>
   </tr>
   <tr>
     <td><strong>ADDICTION:</strong> {{ prescription.exam_addiction|default:"—" }}</td>
     <td><strong>LMP:</strong> {{ prescription.exam_lmp|default:"—" }}</td>
-    <td><strong>SHARIRA:</strong> {{ prescription.exam_sharira|default:"—" }}</td>
-    <td><strong>SPARSHA:</strong> {{ prescription.exam_sparsha|default:"—" }}</td>
+    <td><strong>OG HISTORY:</strong> {{ prescription.get_og_history|default:"—" }}</td>
+    <td><strong>PRAKRITHI:</strong> {{ prescription.get_prakrithi|default:"—" }}</td>
   </tr>
   <tr>
     <td><strong>ALLERGIES:</strong> {{ prescription.exam_allergies|default:"—" }}</td>
     <td><strong>PULSE:</strong> {{ prescription.exam_pulse|default:"—" }}</td>
-    <td><strong>SHIR:</strong> {{ prescription.exam_shir|default:"—" }}</td>
-    <td><strong>NAKHA:</strong> {{ prescription.exam_nakha|default:"—" }}</td>
+    <td><strong>TEMP:</strong> {{ prescription.get_temp|default:"—" }}</td>
+    <td><strong>RR:</strong> {{ prescription.get_rr|default:"—" }}</td>
   </tr>
 </table>
 
@@ -146,15 +146,14 @@ table.grid-table th { background: #f0f0f0; text-align: left; font-weight: bold; 
   </div>
 </div>
 
-<div class="section-heading">Medicine Prescribed:</div>
+<div class="section-heading">Medicine Prescribed :</div>
 <table class="grid-table">
   <thead>
     <tr>
       <th width="8%" style="text-align:center;">S.NO</th>
-      <th width="35%">MEDICINE NAME</th>
-      <th width="15%">DOSAGE</th>
-      <th width="15%">TIMING</th>
-      <th width="27%">ANUPANAM / ADJUVANT</th>
+      <th width="42%">MEDICINE NAME</th>
+      <th width="25%">DOSAGE</th>
+      <th width="25%">ANUPANAM</th>
     </tr>
   </thead>
   <tbody>
@@ -162,17 +161,16 @@ table.grid-table th { background: #f0f0f0; text-align: left; font-weight: bold; 
       <tr>
         <td style="text-align:center;">{{ forloop.counter }}</td>
         <td><strong>{{ it.medicine_name }}</strong>{% if it.duration_days %} <small>({{ it.duration_days }} days)</small>{% endif %}</td>
-        <td>{{ it.dosage }}</td>
-        <td>{{ it.food_timing|default:"—" }}</td>
+        <td>{{ it.dosage }}{% if it.food_timing %} ({{ it.food_timing }}){% endif %}</td>
         <td>{% if it.adjuvant %}{{ it.adjuvant.name }}{% else %}{{ it.instructions|default:"—" }}{% endif %}</td>
       </tr>
     {% empty %}
-      <tr><td colspan="5" style="text-align:center; color:#666;">No medicines prescribed.</td></tr>
+      <tr><td colspan="4" style="text-align:center; color:#666;">No medicines prescribed.</td></tr>
     {% endfor %}
   </tbody>
 </table>
 
-<div class="section-heading" style="margin-top:20px;">Treatment Plan:</div>
+<div class="section-heading" style="margin-top:20px;">Treatment Plan :</div>
 <table class="grid-table">
   <thead>
     <tr>
@@ -210,7 +208,7 @@ table.grid-table th { background: #f0f0f0; text-align: left; font-weight: bold; 
 
 <div class="signature-box">
   <br><br><br>
-  Doctor's signature: ______________________<br>
+  Doctors signature : ______________________<br>
   {% if prescription.doctor %}<small>({{ prescription.doctor.get_full_name|default:prescription.doctor.username }})</small>{% endif %}
 </div>
 

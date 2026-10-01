@@ -12,6 +12,7 @@ urlpatterns = [
     # Patient list, detail, edit, deactivate
     path("patients/", views.PatientListView.as_view(), name="patient_list"),
     path("<int:pk>/detail/", views.PatientDetailView.as_view(), name="patient_detail"),
+    path("<int:pk>/history/print/", views.PatientFullHistoryPrintView.as_view(), name="patient_history_print"),
     path("<int:pk>/edit/", views.PatientEditView.as_view(), name="patient_edit"),
     path("<int:pk>/deactivate/", views.PatientDeactivateView.as_view(), name="patient_deactivate"),
 

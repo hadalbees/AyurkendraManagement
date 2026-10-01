@@ -47,26 +47,26 @@ def create_prescription(request):
         comorbid_others = request.POST.get("comorbid_others", "").strip()
         current_medications = request.POST.get("current_medications", "").strip()
 
-        # Vitals / Examination Grid (16 fields)
+        # Vitals / Examination Grid (16 exact fields matching case sheet image)
         exam_malam = request.POST.get("exam_malam", "").strip()
-        exam_nadi = request.POST.get("exam_nadi", "").strip()
-        exam_jivha = request.POST.get("exam_jivha", "").strip()
-        exam_akri = request.POST.get("exam_akri", "").strip()
+        exam_muthra = request.POST.get("exam_muthra", "").strip() or request.POST.get("exam_mutr", "").strip()
+        exam_nidra = request.POST.get("exam_nidra", "").strip() or request.POST.get("exam_nadi", "").strip()
+        exam_agni = request.POST.get("exam_agni", "").strip() or request.POST.get("exam_jivha", "").strip()
 
         exam_diet_habit = request.POST.get("exam_diet_habit", "").strip()
-        exam_mutr = request.POST.get("exam_mutr", "").strip()
-        exam_shabda = request.POST.get("exam_shabda", "").strip()
+        exam_height = request.POST.get("exam_height", "").strip() or request.POST.get("exam_akri", "").strip()
+        exam_weight = request.POST.get("exam_weight", "").strip() or request.POST.get("exam_shabda", "").strip()
         exam_bp = request.POST.get("exam_bp", "").strip()
 
         exam_addiction = request.POST.get("exam_addiction", "").strip()
         exam_lmp = request.POST.get("exam_lmp", "").strip()
-        exam_sharira = request.POST.get("exam_sharira", "").strip()
-        exam_sparsha = request.POST.get("exam_sparsha", "").strip()
+        exam_og_history = request.POST.get("exam_og_history", "").strip() or request.POST.get("exam_sharira", "").strip()
+        exam_prakrithi = request.POST.get("exam_prakrithi", "").strip() or request.POST.get("exam_sparsha", "").strip()
 
         exam_allergies = request.POST.get("exam_allergies", "").strip()
         exam_pulse = request.POST.get("exam_pulse", "").strip()
-        exam_shir = request.POST.get("exam_shir", "").strip()
-        exam_nakha = request.POST.get("exam_nakha", "").strip()
+        exam_temp = request.POST.get("exam_temp", "").strip() or request.POST.get("exam_shir", "").strip()
+        exam_rr = request.POST.get("exam_rr", "").strip() or request.POST.get("exam_nakha", "").strip()
 
         # Medicine Allocations
         stock_ids = request.POST.getlist("stock_id[]")
@@ -122,21 +122,32 @@ def create_prescription(request):
         prescription.current_medications = current_medications
 
         prescription.exam_malam = exam_malam
-        prescription.exam_nadi = exam_nadi
-        prescription.exam_jivha = exam_jivha
-        prescription.exam_akri = exam_akri
+        prescription.exam_muthra = exam_muthra
+        prescription.exam_nidra = exam_nidra
+        prescription.exam_agni = exam_agni
         prescription.exam_diet_habit = exam_diet_habit
-        prescription.exam_mutr = exam_mutr
-        prescription.exam_shabda = exam_shabda
+        prescription.exam_height = exam_height
+        prescription.exam_weight = exam_weight
         prescription.exam_bp = exam_bp
         prescription.exam_addiction = exam_addiction
         prescription.exam_lmp = exam_lmp
-        prescription.exam_sharira = exam_sharira
-        prescription.exam_sparsha = exam_sparsha
+        prescription.exam_og_history = exam_og_history
+        prescription.exam_prakrithi = exam_prakrithi
         prescription.exam_allergies = exam_allergies
         prescription.exam_pulse = exam_pulse
-        prescription.exam_shir = exam_shir
-        prescription.exam_nakha = exam_nakha
+        prescription.exam_temp = exam_temp
+        prescription.exam_rr = exam_rr
+
+        # Legacy backward compatible field aliases
+        prescription.exam_mutr = exam_muthra
+        prescription.exam_nadi = exam_nidra
+        prescription.exam_jivha = exam_agni
+        prescription.exam_akri = exam_height
+        prescription.exam_shabda = exam_weight
+        prescription.exam_sharira = exam_og_history
+        prescription.exam_sparsha = exam_prakrithi
+        prescription.exam_shir = exam_temp
+        prescription.exam_nakha = exam_rr
 
         prescription.save()
 
@@ -324,21 +335,30 @@ def ajax_get_prescription_details(request):
         "current_medications": pres.current_medications or "",
         "examination": {
             "malam": pres.exam_malam or "",
-            "nadi": pres.exam_nadi or "",
-            "jivha": pres.exam_jivha or "",
-            "akri": pres.exam_akri or "",
+            "muthra": pres.get_muthra,
+            "nidra": pres.get_nidra,
+            "agni": pres.get_agni,
             "diet_habit": pres.exam_diet_habit or "",
-            "mutr": pres.exam_mutr or "",
-            "shabda": pres.exam_shabda or "",
+            "height": pres.get_height,
+            "weight": pres.get_weight,
             "bp": pres.exam_bp or "",
             "addiction": pres.exam_addiction or "",
             "lmp": pres.exam_lmp or "",
-            "sharira": pres.exam_sharira or "",
-            "sparsha": pres.exam_sparsha or "",
+            "og_history": pres.get_og_history,
+            "prakrithi": pres.get_prakrithi,
             "allergies": pres.exam_allergies or "",
             "pulse": pres.exam_pulse or "",
-            "shir": pres.exam_shir or "",
-            "nakha": pres.exam_nakha or "",
+            "temp": pres.get_temp,
+            "rr": pres.get_rr,
+            "nadi": pres.get_nidra,
+            "jivha": pres.get_agni,
+            "akri": pres.get_height,
+            "mutr": pres.get_muthra,
+            "shabda": pres.get_weight,
+            "sharira": pres.get_og_history,
+            "sparsha": pres.get_prakrithi,
+            "shir": pres.get_temp,
+            "nakha": pres.get_rr,
         },
         "items": items,
         "treatment_plan": treatments,
