@@ -334,11 +334,59 @@ class PatientDetailView(LoginRequiredMixin, DetailView):
                 "ref": b.bill_no,
             })
 
+        from prescriptionmgmt.models import Prescription
+        from reportmgmt.models import PatientReport
+
+        ctx["prescriptions"] = Prescription.objects.filter(patient=patient).select_related('doctor').order_by('-created_at')
+        ctx["reports"] = PatientReport.objects.filter(patient=patient).order_by('-report_date')
+        ctx["admissions"] = patient.admissions.all().order_by('-admission_date')
+        ctx["discharge_summaries"] = patient.discharge_summaries.all().order_by('-created_at')
+        ctx["visits"] = patient.visits.all().order_by('-visit_date')
+
         # sort by date desc
-        bills.sort(key=lambda x: x["date"] or "", reverse=True)
+        bills.sort(key=lambda x: str(x["date"] or ""), reverse=True)
 
         ctx["all_bills"] = bills
         return ctx
+
+
+class PatientFullHistoryPrintView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        from prescriptionmgmt.models import Prescription
+        from reportmgmt.models import PatientReport
+
+        patient = get_object_or_404(Patient, pk=pk)
+        hospital = HospitalSetting.objects.first()
+
+        prescriptions = Prescription.objects.filter(patient=patient).select_related('doctor').prefetch_related('items', 'treatment_items').order_by('-created_at')
+        reports = PatientReport.objects.filter(patient=patient).order_by('-report_date')
+        admissions = patient.admissions.all().order_by('-admission_date')
+        discharge_summaries = patient.discharge_summaries.all().order_by('-created_at')
+        visits = patient.visits.all().order_by('-visit_date')
+
+        bills = []
+        for b in MedicalBill.objects.filter(patient=patient):
+            bills.append({"type": "Medical", "bill_no": b.bill_no, "date": b.bill_date, "total": b.total, "status": b.payment_status})
+        for b in InpatientBill.objects.filter(patient=patient):
+            bills.append({"type": "Inpatient", "bill_no": b.bill_no, "date": b.admit_date, "total": b.total, "status": b.payment_status})
+        for b in OutpatientBill.objects.filter(patient=patient):
+            bills.append({"type": "Outpatient", "bill_no": b.bill_no, "date": b.visit_date, "total": b.total, "status": "Paid"})
+        for b in TherapyBill.objects.filter(patient=patient):
+            bills.append({"type": "Therapy", "bill_no": b.bill_no, "date": b.bill_date, "total": b.total, "status": b.payment_status})
+        bills.sort(key=lambda x: str(x["date"] or ""), reverse=True)
+
+        context = {
+            "patient": patient,
+            "hospital": hospital,
+            "prescriptions": prescriptions,
+            "reports": reports,
+            "admissions": admissions,
+            "discharge_summaries": discharge_summaries,
+            "visits": visits,
+            "bills": bills,
+            "today": timezone.localdate(),
+        }
+        return render(request, "patientmgmt/print_patient_full_history.html", context)
 
 
 # -----------------------------
@@ -1526,7 +1574,10 @@ class DischargeSummaryCreateView(LoginRequiredMixin, View):
         return render(request, self.template_name, context)
 
     def post(self, request, patient_id=None):
-        patient_id_val = request.POST.get("patient_id")
+        patient_id_val = request.POST.get("patient_id") or patient_id
+        if not patient_id_val:
+            messages.error(request, "Please select a valid patient to create a discharge summary.")
+            return redirect("patientmgmt:discharge_summary_create")
         patient = get_object_or_404(Patient, pk=patient_id_val)
 
         admission_id = request.POST.get("admission_id")
@@ -1597,6 +1648,7 @@ class DischargeSummaryEditView(LoginRequiredMixin, View):
     template_name = "patientmgmt/discharge_summary_edit.html"
 
     def get(self, request, pk):
+        summary = get_object_or_404(DischargeSummary, pk=pk)
         patients = Patient.objects.filter(is_active=True).order_by('patient_name')
         doctors = CustomUser.objects.filter(
             models.Q(role__role_name__icontains="doctor") |

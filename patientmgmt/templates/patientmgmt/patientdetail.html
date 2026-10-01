@@ -28,6 +28,17 @@
   font-weight: 700;
   color: #065f46;
 }
+.nav-tabs .nav-link {
+  font-weight: 600;
+  color: #4b5563;
+  border-radius: 8px 8px 0 0;
+  padding: 10px 18px;
+}
+.nav-tabs .nav-link.active {
+  color: #065f46;
+  border-bottom: 3px solid #065f46;
+  background-color: #ffffff;
+}
 </style>
 
 <body class="g-sidenav-show bg-gray-100">
@@ -41,219 +52,399 @@
 <div class="container-fluid py-4">
 
   <!-- ================= HEADER ================= -->
-  <div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
       <h4 class="fw-bold mb-1">{{ patient.patient_name }}</h4>
       <p class="text-muted text-sm mb-0">
-        Patient Profile & Medical Summary
+        UHID: <strong>{{ patient.patient_unique_id }}</strong> | Patient Medical Profile & Entire History
       </p>
     </div>
 
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
       <a href="{% url 'patientmgmt:patient_edit' patient.id %}"
-         class="btn btn-success rounded-pill px-4">
-        ✏ Edit Patient
+         class="btn btn-outline-secondary rounded-pill px-3">
+        ✏ Edit Profile
+      </a>
+      <a href="{% url 'reportmgmt:addreport' patient.id %}"
+         class="btn btn-outline-primary rounded-pill px-3">
+        ➕ Upload Report
       </a>
       <a href="{% url 'patientmgmt:discharge_summary_create_patient' patient.id %}"
-         class="btn btn-outline-success rounded-pill px-4">
+         class="btn btn-outline-success rounded-pill px-3">
         📄 Discharge Summary
       </a>
-      <a href="{% url 'reportmgmt:patientreports' patient.pk %}"
-         class="btn btn-outline-primary rounded-pill px-4">
-        📁 Reports
+      <a href="{% url 'patientmgmt:patient_history_print' patient.id %}"
+         target="_blank"
+         class="btn btn-success rounded-pill px-4" style="background:#065f46; color:#fff;">
+        🖨 Print Full Medical Report
       </a>
     </div>
   </div>
 
-  <!-- ================= PATIENT INFO ================= -->
+  <!-- ================= PATIENT SUMMARY CARD ================= -->
   <div class="card patient-card mb-4">
     <div class="card-body">
 
-      <div class="section-title mb-3">Basic Information</div>
+      <div class="section-title mb-3">Basic & Clinical Information</div>
 
-      <div class="row g-3 mb-4">
+      <div class="row g-3 mb-3">
 
-        <div class="col-md-3">
+        <div class="col-md-3 col-6">
           <div class="info-box">
-            <div class="info-title">Patient ID</div>
-            <div class="info-value">{{ patient.id }}</div>
+            <div class="info-title">UHID / Patient ID</div>
+            <div class="info-value">{{ patient.patient_unique_id }}</div>
           </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-3 col-6">
           <div class="info-box">
-            <div class="info-title">Gender</div>
-            <div class="info-value">{{ patient.get_gender_display }}</div>
+            <div class="info-title">Gender / Age</div>
+            <div class="info-value">{{ patient.get_gender_display }} / {{ patient.age }} Y</div>
           </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-3 col-6">
           <div class="info-box">
-            <div class="info-title">Age</div>
-            <div class="info-value">{{ patient.age }}</div>
+            <div class="info-title">Phone</div>
+            <div class="info-value">{{ patient.phone|default:"-" }}</div>
           </div>
         </div>
 
-        <div class="col-md-3">
+        <div class="col-md-3 col-6">
           <div class="info-box">
             <div class="info-title">Patient Type</div>
-            <span class="badge bg-primary mt-1">
+            <span class="badge bg-primary mt-1 px-3 py-1">
               {{ patient.get_patient_type_display }}
             </span>
           </div>
         </div>
 
-      </div>
-
-      <div class="section-title mb-3">Contact & Clinical Info</div>
-
-      <div class="row g-3 mb-4">
-
-        <div class="col-md-3">
-          <div class="info-box">
-            <div class="info-title">Phone</div>
-            <div class="info-value">{{ patient.phone }}</div>
-          </div>
-        </div>
-
-        <div class="col-md-3">
-          <div class="info-box">
-            <div class="info-title">Email</div>
-            <div class="info-value">{{ patient.email|default:"-" }}</div>
-          </div>
-        </div>
-
-        <div class="col-md-3">
-          <div class="info-box">
-            <div class="info-title">Department</div>
-            <div class="info-value">{{ patient.department|default:"-" }}</div>
-          </div>
-        </div>
-
-        <div class="col-md-3">
+        <div class="col-md-3 col-6">
           <div class="info-box">
             <div class="info-title">Consultant Doctor</div>
             <div class="info-value">{{ patient.consultant_doctor|default:"-" }}</div>
           </div>
         </div>
 
+        <div class="col-md-3 col-6">
+          <div class="info-box">
+            <div class="info-title">Department</div>
+            <div class="info-value">{{ patient.department|default:"-" }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+          <div class="info-box">
+            <div class="info-title">Visit Date</div>
+            <div class="info-value">{{ patient.visit_date|date:"d M Y" }}</div>
+          </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+          <div class="info-box">
+            <div class="info-title">Email</div>
+            <div class="info-value text-truncate">{{ patient.email|default:"-" }}</div>
+          </div>
+        </div>
+
       </div>
 
-      <div class="section-title mb-2">Notes</div>
-      <div class="info-box">
-        {{ patient.notes|default:"No notes added." }}
+      {% if patient.address or patient.notes %}
+      <div class="row g-3">
+        {% if patient.address %}
+        <div class="col-md-6">
+          <div class="info-box">
+            <div class="info-title">Address</div>
+            <div class="text-sm text-dark font-weight-bold">{{ patient.address }}</div>
+          </div>
+        </div>
+        {% endif %}
+        {% if patient.notes %}
+        <div class="col-md-6">
+          <div class="info-box">
+            <div class="info-title">Clinical Notes</div>
+            <div class="text-sm text-dark font-weight-bold">{{ patient.notes }}</div>
+          </div>
+        </div>
+        {% endif %}
       </div>
+      {% endif %}
 
     </div>
   </div>
 
-<!-- ================= BILLING HISTORY ================= -->
-<div class="card patient-card mb-5">
-  <div class="card-body">
 
-    <!-- SECTION TITLE (SAME AS PROFILE) -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <div class="section-title">
-        Billing History
+  <!-- ================= TABS NAVIGATION FOR FULL HISTORY ================= -->
+  <div class="card patient-card mb-5">
+    <div class="card-header bg-white pb-0 border-0 pt-3">
+      <ul class="nav nav-tabs border-bottom-0" id="patientHistoryTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="prescriptions-tab" data-bs-toggle="tab" data-bs-target="#prescriptions-tab-pane" type="button" role="tab">
+            🩺 Prescriptions & Case Sheets ({% if prescriptions %}{{ prescriptions|length }}{% else %}0{% endif %})
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports-tab-pane" type="button" role="tab">
+            📁 Reports & Documents ({% if reports %}{{ reports|length }}{% else %}0{% endif %})
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="admissions-tab" data-bs-toggle="tab" data-bs-target="#admissions-tab-pane" type="button" role="tab">
+            🏥 Admissions & Discharge ({% if discharge_summaries %}{{ discharge_summaries|length }}{% else %}0{% endif %})
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="bills-tab" data-bs-toggle="tab" data-bs-target="#bills-tab-pane" type="button" role="tab">
+            💳 Billing History ({% if all_bills %}{{ all_bills|length }}{% else %}0{% endif %})
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="visits-tab" data-bs-toggle="tab" data-bs-target="#visits-tab-pane" type="button" role="tab">
+            📅 Consultation Visits ({% if visits %}{{ visits|length }}{% else %}0{% endif %})
+          </button>
+        </li>
+      </ul>
+    </div>
+
+    <div class="card-body">
+      <div class="tab-content" id="patientHistoryTabContent">
+
+        <!-- TAB 1: PRESCRIPTIONS & CASE SHEETS -->
+        <div class="tab-pane fade show active" id="prescriptions-tab-pane" role="tabpanel">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-success mb-0">Case Sheets & Prescriptions History</h6>
+            <a href="{% url 'dashboard' %}" class="btn btn-sm btn-outline-success rounded-pill">+ New Case Sheet</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table align-items-center mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Prescription No</th>
+                  <th>Date</th>
+                  <th>Doctor</th>
+                  <th>Presenting Complaints</th>
+                  <th class="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for p in prescriptions %}
+                <tr>
+                  <td class="fw-semibold">{{ forloop.counter }}</td>
+                  <td><span class="fw-bold text-dark">{{ p.prescription_no }}</span></td>
+                  <td>{{ p.created_at|date:"d M Y" }}</td>
+                  <td>{{ p.doctor.get_full_name|default:p.doctor.username|default:"Doctor" }}</td>
+                  <td>{{ p.presenting_complaints|default:"—"|truncatechars:80 }}</td>
+                  <td class="text-center">
+                    <a href="{% url 'prescriptionmgmt:print' p.prescription_no %}" target="_blank" class="btn btn-sm btn-outline-primary mb-0 py-1 px-3">
+                      🖨 View / Print
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center text-muted py-4">No prescription history found for this patient.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 2: REPORTS & DOCUMENTS -->
+        <div class="tab-pane fade" id="reports-tab-pane" role="tabpanel">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-success mb-0">Uploaded Patient Reports & Documents</h6>
+            <a href="{% url 'reportmgmt:addreport' patient.id %}" class="btn btn-sm btn-outline-primary rounded-pill">+ Upload New Report</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table align-items-center mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Report Title</th>
+                  <th>Category</th>
+                  <th>Report Date</th>
+                  <th>Notes</th>
+                  <th class="text-center">File</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in reports %}
+                <tr>
+                  <td class="fw-semibold">{{ forloop.counter }}</td>
+                  <td class="fw-bold text-dark">{{ r.report_title }}</td>
+                  <td><span class="badge bg-light text-dark">{{ r.get_report_type_display }}</span></td>
+                  <td>{{ r.report_date|date:"d M Y" }}</td>
+                  <td>{{ r.notes|default:"—" }}</td>
+                  <td class="text-center">
+                    {% if r.uploaded_file %}
+                      <a href="{{ r.uploaded_file.url }}" target="_blank" class="btn btn-sm btn-outline-success mb-0 py-1 px-3">
+                        📥 Download / View
+                      </a>
+                    {% else %}
+                      <span class="text-muted">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center text-muted py-4">No reports uploaded yet. Click "Upload New Report" to attach lab tests or scans.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 3: ADMISSIONS & DISCHARGE SUMMARIES -->
+        <div class="tab-pane fade" id="admissions-tab-pane" role="tabpanel">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-success mb-0">Inpatient Admissions & Discharge Summaries</h6>
+            <a href="{% url 'patientmgmt:discharge_summary_create_patient' patient.id %}" class="btn btn-sm btn-outline-success rounded-pill">+ Create Discharge Summary</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table align-items-center mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Summary No / Ref</th>
+                  <th>Admit Date</th>
+                  <th>Discharge Date</th>
+                  <th>Consultant Doctor</th>
+                  <th>Condition</th>
+                  <th class="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for ds in discharge_summaries %}
+                <tr>
+                  <td class="fw-semibold">{{ forloop.counter }}</td>
+                  <td class="fw-bold text-dark">{{ ds.summary_no }}</td>
+                  <td>{{ ds.admission_date|date:"d M Y" }}</td>
+                  <td>{{ ds.discharge_date|date:"d M Y" }}</td>
+                  <td>{{ ds.consultant_doctor }}</td>
+                  <td>
+                    <span class="badge 
+                      {% if ds.condition_at_discharge == 'IMPROVED' %}bg-success
+                      {% elif ds.condition_at_discharge == 'RECOVERED' %}bg-primary
+                      {% else %}bg-warning text-dark{% endif %}">
+                      {{ ds.get_condition_at_discharge_display }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <a href="{% url 'patientmgmt:discharge_summary_detail' ds.pk %}" class="btn btn-sm btn-outline-primary me-1 mb-0 py-1 px-2">
+                      View Detail
+                    </a>
+                    <a href="{% url 'patientmgmt:discharge_summary_print' ds.pk %}" target="_blank" class="btn btn-sm btn-outline-success mb-0 py-1 px-2">
+                      🖨 Print
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center text-muted py-4">No discharge summary records found for this patient.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 4: BILLING HISTORY -->
+        <div class="tab-pane fade" id="bills-tab-pane" role="tabpanel">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-success mb-0">Billing & Invoice History</h6>
+            <a href="{% url 'billingmgmt:download_all_bills' patient.id %}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill">Download All Bills</a>
+          </div>
+          <div class="table-responsive">
+            <table class="table align-items-center mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Bill Type</th>
+                  <th>Bill No</th>
+                  <th>Date</th>
+                  <th>Amount</th>
+                  <th class="text-center">Status</th>
+                  <th class="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for b in all_bills %}
+                <tr>
+                  <td class="fw-semibold">{{ forloop.counter }}</td>
+                  <td><span class="badge bg-light text-dark px-3 py-1">{{ b.type }}</span></td>
+                  <td class="fw-semibold">{{ b.bill_no }}</td>
+                  <td>{{ b.date|date:"d M Y" }}</td>
+                  <td class="fw-bold">₹ {{ b.total }}</td>
+                  <td class="text-center">
+                    {% if b.status == "Paid" %}
+                      <span class="badge bg-success">Paid</span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">Pending</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    <a href="{% url b.pdf_url b.ref %}" class="btn btn-sm btn-outline-primary mb-0 py-1 px-3" target="_blank">
+                      View Bill
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center text-muted py-4">No billing records found.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- TAB 5: CONSULTATION VISITS -->
+        <div class="tab-pane fade" id="visits-tab-pane" role="tabpanel">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold text-success mb-0">Consultation Visits History</h6>
+          </div>
+          <div class="table-responsive">
+            <table class="table align-items-center mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Visit Date</th>
+                  <th>Diagnosis</th>
+                  <th>Prescription Notes</th>
+                  <th class="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for v in visits %}
+                <tr>
+                  <td class="fw-semibold">{{ forloop.counter }}</td>
+                  <td>{{ v.visit_date|date:"d M Y" }}</td>
+                  <td>{{ v.diagnosis|default:"—" }}</td>
+                  <td>{{ v.prescription_notes|default:"—" }}</td>
+                  <td class="text-center">
+                    <a href="{% url 'patientmgmt:consultation_edit' patient.id v.id %}" class="btn btn-sm btn-outline-secondary mb-0 py-1 px-2">
+                      ✏ Edit Visit
+                    </a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted py-4">No consultation visit records logged.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
-
-      <a href="{% url 'billingmgmt:download_all_bills' patient.id %}"
-         class="btn btn-sm btn-outline-secondary"
-         target="_blank">
-        Download All
-      </a>
     </div>
-
-    <!-- TABLE -->
-    <div class="table-responsive">
-      <table class="table align-items-center mb-0">
-
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Bill Type</th>
-            <th>Bill No</th>
-            <th>Date</th>
-            <th>Amount</th>
-            <th class="text-center">Status</th>
-            <th class="text-center">Action</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          {% for b in all_bills %}
-          <tr>
-
-            <!-- S NO -->
-            <td class="fw-semibold">
-              {{ forloop.counter }}
-            </td>
-
-            <!-- TYPE -->
-            <td>
-              <span class="badge bg-light text-dark px-3 py-1">
-                {{ b.type }}
-              </span>
-            </td>
-
-            <!-- BILL NO -->
-            <td class="fw-semibold">
-              {{ b.bill_no }}
-            </td>
-
-            <!-- DATE -->
-            <td>
-              {{ b.date|date:"d M Y" }}
-            </td>
-
-            <!-- AMOUNT -->
-            <td class="fw-bold">
-              ₹ {{ b.total }}
-            </td>
-
-            <!-- STATUS -->
-            <td class="text-center">
-              {% if b.status == "Paid" %}
-                <span class="badge bg-success">Paid</span>
-              {% else %}
-                <span class="badge bg-warning text-dark">Pending</span>
-              {% endif %}
-            </td>
-
-            <!-- ACTION -->
-            <td class="text-center">
-              <a href="{% url b.pdf_url b.ref %}"
-                 class="btn btn-sm btn-outline-primary"
-                 target="_blank"
-                 title="View Bill">
-                View
-              </a>
-            </td>
-
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="7" class="text-center text-muted py-4">
-              No billing records found
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-
-      </table>
-    </div>
-
   </div>
-</div>
-
-
-
-
-
 
 </div>
-
-
 
 </main>
 

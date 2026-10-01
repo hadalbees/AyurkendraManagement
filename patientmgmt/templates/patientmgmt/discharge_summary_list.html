@@ -54,7 +54,7 @@
           <tbody>
             {% for s in summaries %}
             <tr>
-              <td class="fw-semibold">{{ forloop.counter0|add:summaries.start_index }}</td>
+              <td class="fw-semibold">{{ forloop.counter0|add:page_obj.start_index }}</td>
               <td>
                 <span class="fw-bold text-dark">{{ s.summary_no }}</span>
               </td>
@@ -98,23 +98,23 @@
       </div>
 
       <!-- PAGINATION -->
-      {% if summaries.has_other_pages %}
+      {% if page_obj.has_other_pages %}
       <div class="p-3 d-flex justify-content-between align-items-center border-top">
-        <small class="text-muted">Showing {{ summaries.start_index }} to {{ summaries.end_index }} of {{ summaries.paginator.count }} summaries</small>
+        <small class="text-muted">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} summaries</small>
         <nav>
           <ul class="pagination mb-0">
-            {% if summaries.has_previous %}
-            <li class="page-item"><a class="page-link" href="?page={{ summaries.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">Previous</a></li>
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if q %}&q={{ q }}{% endif %}">Previous</a></li>
             {% endif %}
-            {% for num in summaries.paginator.page_range %}
-              {% if summaries.number == num %}
+            {% for num in page_obj.paginator.page_range %}
+              {% if page_obj.number == num %}
               <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-              {% elif num > summaries.number|add:"-2" and num < summaries.number|add:"2" %}
+              {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
               <li class="page-item"><a class="page-link" href="?page={{ num }}{% if q %}&q={{ q }}{% endif %}">{{ num }}</a></li>
               {% endif %}
             {% endfor %}
-            {% if summaries.has_next %}
-            <li class="page-item"><a class="page-link" href="?page={{ summaries.next_page_number }}{% if q %}&q={{ q }}{% endif %}">Next</a></li>
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if q %}&q={{ q }}{% endif %}">Next</a></li>
             {% endif %}
           </ul>
         </nav>

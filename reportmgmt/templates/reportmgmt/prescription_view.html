@@ -115,27 +115,27 @@
           <tbody>
             <tr>
               <td><strong>MALAM:</strong> {{ prescription.exam_malam|default:"—" }}</td>
-              <td><strong>NADI:</strong> {{ prescription.exam_nadi|default:"—" }}</td>
-              <td><strong>JIVHA:</strong> {{ prescription.exam_jivha|default:"—" }}</td>
-              <td><strong>AKRI:</strong> {{ prescription.exam_akri|default:"—" }}</td>
+              <td><strong>MUTHRA:</strong> {{ prescription.get_muthra|default:"—" }}</td>
+              <td><strong>NIDRA:</strong> {{ prescription.get_nidra|default:"—" }}</td>
+              <td><strong>AGNI:</strong> {{ prescription.get_agni|default:"—" }}</td>
             </tr>
             <tr>
-              <td><strong>DIET/HABIT:</strong> {{ prescription.exam_diet_habit|default:"—" }}</td>
-              <td><strong>MUTR:</strong> {{ prescription.exam_mutr|default:"—" }}</td>
-              <td><strong>SHABDA:</strong> {{ prescription.exam_shabda|default:"—" }}</td>
+              <td><strong>DIET HABIT:</strong> {{ prescription.exam_diet_habit|default:"—" }}</td>
+              <td><strong>HEIGHT:</strong> {{ prescription.get_height|default:"—" }}</td>
+              <td><strong>WEIGHT:</strong> {{ prescription.get_weight|default:"—" }}</td>
               <td><strong>BP:</strong> {{ prescription.exam_bp|default:"—" }}</td>
             </tr>
             <tr>
               <td><strong>ADDICTION:</strong> {{ prescription.exam_addiction|default:"—" }}</td>
               <td><strong>LMP:</strong> {{ prescription.exam_lmp|default:"—" }}</td>
-              <td><strong>SHARIRA:</strong> {{ prescription.exam_sharira|default:"—" }}</td>
-              <td><strong>SPARSHA:</strong> {{ prescription.exam_sparsha|default:"—" }}</td>
+              <td><strong>OG HISTORY:</strong> {{ prescription.get_og_history|default:"—" }}</td>
+              <td><strong>PRAKRITHI:</strong> {{ prescription.get_prakrithi|default:"—" }}</td>
             </tr>
             <tr>
               <td><strong>ALLERGIES:</strong> {{ prescription.exam_allergies|default:"—" }}</td>
               <td><strong>PULSE:</strong> {{ prescription.exam_pulse|default:"—" }}</td>
-              <td><strong>SHIR:</strong> {{ prescription.exam_shir|default:"—" }}</td>
-              <td><strong>NAKHA:</strong> {{ prescription.exam_nakha|default:"—" }}</td>
+              <td><strong>TEMP:</strong> {{ prescription.get_temp|default:"—" }}</td>
+              <td><strong>RR:</strong> {{ prescription.get_rr|default:"—" }}</td>
             </tr>
           </tbody>
         </table>
